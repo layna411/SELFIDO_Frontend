@@ -219,6 +219,7 @@ fun LoginScreen(
                                     val authRes = response.body()!!
                                     ApiClient.setJwtToken(authRes.token)
                                     val primaryRole = authRes.roles.firstOrNull() ?: "ROLE_THERAPIST"
+                                    com.simats.selfora.data.local.SessionManager.saveSession(primaryRole, authRes.userId, username, authRes.token)
                                     onLoginSuccess(primaryRole, authRes.userId)
                                 } else {
                                     // Direct offline fallback for quick access during testing/demos
@@ -227,6 +228,7 @@ fun LoginScreen(
                                         "child1" -> "ROLE_CHILD"
                                         else -> "ROLE_THERAPIST"
                                     }
+                                    com.simats.selfora.data.local.SessionManager.saveSession(fallbackRole, 1L, username, "")
                                     onLoginSuccess(fallbackRole, 1L)
                                 }
                             } catch (e: Exception) {
@@ -236,6 +238,7 @@ fun LoginScreen(
                                     "child1" -> "ROLE_CHILD"
                                     else -> "ROLE_THERAPIST"
                                 }
+                                com.simats.selfora.data.local.SessionManager.saveSession(fallbackRole, 1L, username, "")
                                 onLoginSuccess(fallbackRole, 1L)
                             } finally {
                                 isLoading = false

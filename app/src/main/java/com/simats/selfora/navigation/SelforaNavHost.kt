@@ -7,21 +7,32 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.simats.selfora.data.local.SessionManager
 import com.simats.selfora.ui.auth.LoginScreen
 import com.simats.selfora.ui.caregiver.*
 import com.simats.selfora.ui.child.ChildActivityStepScreen
 import com.simats.selfora.ui.child.ChildHomeScreen
 import com.simats.selfora.ui.child.RewardCelebrationScreen
-import com.simats.selfora.ui.therapist.*
 import com.simats.selfora.ui.screens.dressing.AdlDressingTrainingScreen
+import com.simats.selfora.ui.therapist.*
 
 @Composable
 fun SelforaNavHost(
     navController: NavHostController = rememberNavController()
 ) {
+    val initialDestination = if (SessionManager.isLoggedIn()) {
+        when (SessionManager.getUserRole()) {
+            "ROLE_CAREGIVER" -> NavRoutes.CaregiverDashboard.route
+            "ROLE_CHILD" -> NavRoutes.ChildHome.route
+            else -> NavRoutes.TherapistDashboard.route
+        }
+    } else {
+        NavRoutes.Login.route
+    }
+
     NavHost(
         navController = navController,
-        startDestination = NavRoutes.Login.route
+        startDestination = initialDestination
     ) {
         // Auth
         composable(NavRoutes.Login.route) {
@@ -45,7 +56,10 @@ fun SelforaNavHost(
                 onNavigateToHomePrograms = { navController.navigate(NavRoutes.HomeProgramCreate.createRoute(1L)) },
                 onNavigateToReports = { navController.navigate(NavRoutes.Progress.createRoute(1L)) },
                 onNavigateToMessages = { navController.navigate(NavRoutes.Messages.createRoute(1L)) },
-                onLogout = { navController.navigate(NavRoutes.Login.route) { popUpTo(0) } }
+                onLogout = {
+                    SessionManager.clearSession()
+                    navController.navigate(NavRoutes.Login.route) { popUpTo(0) }
+                }
             )
         }
 
@@ -150,7 +164,10 @@ fun SelforaNavHost(
                 onNavigateToTab = { route -> navController.navigate(route) },
                 onNavigateToNotifications = { navController.navigate(NavRoutes.CaregiverNotifications.route) },
                 onNavigateToProfile = { navController.navigate(NavRoutes.CaregiverProfile.route) },
-                onLogout = { navController.navigate(NavRoutes.Login.route) { popUpTo(0) } }
+                onLogout = {
+                    SessionManager.clearSession()
+                    navController.navigate(NavRoutes.Login.route) { popUpTo(0) }
+                }
             )
         }
 
@@ -194,7 +211,10 @@ fun SelforaNavHost(
 
         composable(NavRoutes.CaregiverProfile.route) {
             CaregiverProfileScreen(
-                onLogout = { navController.navigate(NavRoutes.Login.route) { popUpTo(0) } },
+                onLogout = {
+                    SessionManager.clearSession()
+                    navController.navigate(NavRoutes.Login.route) { popUpTo(0) }
+                },
                 onBack = { navController.popBackStack() }
             )
         }
@@ -212,7 +232,10 @@ fun SelforaNavHost(
                 onSelectEating = { navController.navigate(NavRoutes.ChildActivityStep.createRoute(13L)) },
                 onSelectShoes = { navController.navigate(NavRoutes.ChildActivityStep.createRoute(9L)) },
                 onSelectRewards = { navController.navigate(NavRoutes.RewardCelebration.route) },
-                onLogout = { navController.navigate(NavRoutes.Login.route) { popUpTo(0) } }
+                onLogout = {
+                    SessionManager.clearSession()
+                    navController.navigate(NavRoutes.Login.route) { popUpTo(0) }
+                }
             )
         }
 

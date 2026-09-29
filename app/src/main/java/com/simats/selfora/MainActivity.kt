@@ -7,12 +7,14 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
+import com.simats.selfora.data.local.SessionManager
 import com.simats.selfora.navigation.SelforaNavHost
 import com.simats.selfora.ui.theme.SELFORATheme
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        SessionManager.init(applicationContext)
         setContent {
             SELFORATheme {
                 Surface(
