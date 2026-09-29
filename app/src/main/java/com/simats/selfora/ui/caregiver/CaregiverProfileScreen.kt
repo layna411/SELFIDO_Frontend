@@ -34,6 +34,7 @@ fun CaregiverProfileScreen(
         topBar = {
             TopAppBar(
                 title = { Text("Profile & Settings", fontWeight = FontWeight.Bold, color = SelforaTextPrimary) },
+                modifier = Modifier.statusBarsPadding(),
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = SelforaTextPrimary)

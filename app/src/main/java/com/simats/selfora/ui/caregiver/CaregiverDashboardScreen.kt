@@ -69,7 +69,8 @@ fun CaregiverDashboardScreen(
         topBar = {
             Surface(
                 color = SelforaSurface,
-                shadowElevation = 2.dp
+                shadowElevation = 2.dp,
+                modifier = Modifier.statusBarsPadding()
             ) {
                 Column(
                     modifier = Modifier

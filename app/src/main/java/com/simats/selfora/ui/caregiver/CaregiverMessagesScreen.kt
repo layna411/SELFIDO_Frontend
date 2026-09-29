@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Send
@@ -26,9 +27,9 @@ fun CaregiverMessagesScreen(
     var messages by remember {
         mutableStateOf(
             listOf(
-                MessageResponse(1L, 2L, "Dr. Sarah Jenkins", 1L, "Sunita Sharma (Parent)", "Hello Sunita, please continue practicing the T-shirt activity this week.", "2026-09-28 09:30"),
-                MessageResponse(2L, 1L, "Sunita Sharma (Parent)", 2L, "Dr. Sarah Jenkins", "Sure Doctor! Aarav did really well with putting his arms through the sleeves yesterday.", "2026-09-28 10:15"),
-                MessageResponse(3L, 2L, "Dr. Sarah Jenkins", 1L, "Sunita Sharma (Parent)", "That is fantastic progress! Make sure to encourage him to try line alignment next.", "2026-09-28 11:00")
+                MessageResponse(1L, 2L, "Dr. Sarah Jenkins", 1L, "Sunita Sharma (Parent)", 1L, "Hello Sunita, please continue practicing the T-shirt activity this week.", true, "2026-09-28 09:30"),
+                MessageResponse(2L, 1L, "Sunita Sharma (Parent)", 2L, "Dr. Sarah Jenkins", 1L, "Sure Doctor! Aarav did really well with putting his arms through the sleeves yesterday.", true, "2026-09-28 10:15"),
+                MessageResponse(3L, 2L, "Dr. Sarah Jenkins", 1L, "Sunita Sharma (Parent)", 1L, "That is fantastic progress! Make sure to encourage him to try line alignment next.", true, "2026-09-28 11:00")
             )
         )
     }
@@ -43,6 +44,7 @@ fun CaregiverMessagesScreen(
                         Text("Dr. Sarah Jenkins (Occupational Therapist)", fontSize = 11.sp, color = SelforaPrimary, fontWeight = FontWeight.Bold)
                     }
                 },
+                modifier = Modifier.statusBarsPadding(),
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = SelforaSurface)
             )
         },
@@ -93,7 +95,7 @@ fun CaregiverMessagesScreen(
                                 )
                                 Spacer(modifier = Modifier.height(4.dp))
                                 Text(
-                                    msg.messageContent,
+                                    msg.messageText,
                                     fontSize = 13.sp,
                                     color = if (isCaregiverMsg) Color.White else SelforaTextPrimary
                                 )
@@ -145,7 +147,9 @@ fun CaregiverMessagesScreen(
                                     senderName = "Sunita Sharma (Parent)",
                                     receiverId = 2L,
                                     receiverName = "Dr. Sarah Jenkins",
-                                    messageContent = newMessageText.trim(),
+                                    childId = 1L,
+                                    messageText = newMessageText.trim(),
+                                    isRead = false,
                                     sentAt = "Just now"
                                 )
                                 newMessageText = ""

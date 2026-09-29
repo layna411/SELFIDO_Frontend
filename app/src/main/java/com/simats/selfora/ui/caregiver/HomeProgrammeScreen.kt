@@ -13,6 +13,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -48,15 +49,31 @@ fun HomeProgrammeScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = {
-                    Column {
-                        Text("Home Programme", fontWeight = FontWeight.Bold, fontSize = 20.sp, color = SelforaTextPrimary)
-                        Text("Assigned by: Dr. Sarah Jenkins (Therapist)", fontSize = 12.sp, color = SelforaTextSecondary)
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = SelforaSurface)
-            )
+            Surface(
+                color = SelforaSurface,
+                shadowElevation = 2.dp,
+                modifier = Modifier.statusBarsPadding()
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 12.dp)
+                ) {
+                    Text(
+                        "Home Programme",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 20.sp,
+                        color = SelforaTextPrimary
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        "Assigned by: Dr. Sarah Jenkins (Therapist)",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = SelforaPrimary
+                    )
+                }
+            }
         },
         bottomBar = {
             CaregiverBottomNavigation(
@@ -80,17 +97,17 @@ fun HomeProgrammeScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        "This Week",
+                        "This Week's Programme",
                         fontWeight = FontWeight.Bold,
-                        fontSize = 18.sp,
+                        fontSize = 17.sp,
                         color = SelforaTextPrimary
                     )
                     Surface(
                         shape = RoundedCornerShape(12.dp),
-                        color = SelforaPrimary.copy(alpha = 0.15f)
+                        color = SelforaPrimary.copy(alpha = 0.12f)
                     ) {
                         Text(
-                            "Therapist Prescribed",
+                            "${homePrograms.size} Activities",
                             modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Bold,
@@ -121,6 +138,10 @@ fun HomeProgrammeScreen(
                     )
                 }
             }
+
+            item {
+                Spacer(modifier = Modifier.height(16.dp))
+            }
         }
     }
 }
@@ -142,57 +163,110 @@ fun HomeProgrammeCard(
         colors = CardDefaults.cardColors(containerColor = SelforaSurface),
         elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
     ) {
-        Column(modifier = Modifier.padding(20.dp)) {
+        Column(modifier = Modifier.padding(18.dp)) {
+            // Top Row: Title on Left, Status Badge on Right
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(iconEmoji, fontSize = 24.sp)
-                    Spacer(modifier = Modifier.width(10.dp))
-                    Text(
-                        program.activityTitle,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 17.sp,
-                        color = SelforaTextPrimary
-                    )
+                Row(
+                    modifier = Modifier.weight(1f),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = SelforaPrimary.copy(alpha = 0.1f),
+                        modifier = Modifier.size(42.dp)
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Text(iconEmoji, fontSize = 22.sp)
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.width(12.dp))
+
+                    Column {
+                        Text(
+                            program.activityTitle,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 16.sp,
+                            color = SelforaTextPrimary
+                        )
+                        Text(
+                            "$totalSteps Clinical Steps",
+                            fontSize = 12.sp,
+                            color = SelforaTextSecondary
+                        )
+                    }
                 }
+
                 Surface(
-                    shape = RoundedCornerShape(8.dp),
-                    color = SelforaSecondary.copy(alpha = 0.12f)
+                    shape = RoundedCornerShape(10.dp),
+                    color = if (completedCount > 0) SelforaSuccess.copy(alpha = 0.15f) else SelforaWarning.copy(alpha = 0.15f)
                 ) {
                     Text(
-                        "Practice: ${program.frequencyPerWeek} times this week",
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                        if (completedCount > 0) "In Progress" else "Assigned",
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
-                        color = SelforaSecondary
+                        color = if (completedCount > 0) SelforaSuccess else SelforaWarning
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(14.dp))
 
+            // Sub-row Badges: Practice frequency & Progress stats
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    "Total Steps: $totalSteps",
-                    fontSize = 13.sp,
-                    color = SelforaTextSecondary
-                )
-                Text(
-                    "Status: ${if (completedCount > 0) "In Progress ($completedCount/$totalSteps)" else "Not Started"}",
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = if (completedCount > 0) SelforaPrimary else SelforaWarning
-                )
+                Surface(
+                    shape = RoundedCornerShape(8.dp),
+                    color = SelforaSecondary.copy(alpha = 0.1f),
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("📅", fontSize = 12.sp)
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            "Target: ${program.frequencyPerWeek}x / week",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = SelforaSecondary
+                        )
+                    }
+                }
+
+                Surface(
+                    shape = RoundedCornerShape(8.dp),
+                    color = SelforaBackground,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("📊", fontSize = 12.sp)
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            "Done: $completedCount / $totalSteps",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = SelforaTextPrimary
+                        )
+                    }
+                }
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(14.dp))
 
+            // Therapist Goal Box
             Surface(
                 shape = RoundedCornerShape(12.dp),
                 color = SelforaBackground,
@@ -205,11 +279,13 @@ fun HomeProgrammeCard(
                         fontWeight = FontWeight.Bold,
                         color = SelforaTextSecondary
                     )
+                    Spacer(modifier = Modifier.height(2.dp))
                     Text(
                         program.goalStatement ?: "Improve independent ADL performance.",
                         fontSize = 12.sp,
                         fontWeight = FontWeight.SemiBold,
-                        color = SelforaTextPrimary
+                        color = SelforaTextPrimary,
+                        lineHeight = 16.sp
                     )
                 }
             }

@@ -31,6 +31,7 @@ fun CaregiverProgressScreen(
         topBar = {
             TopAppBar(
                 title = { Text("My Child's Home Practice", fontWeight = FontWeight.Bold, color = SelforaTextPrimary) },
+                modifier = Modifier.statusBarsPadding(),
                 actions = {
                     IconButton(onClick = onNavigateToHistory) {
                         Icon(Icons.Default.History, contentDescription = "History", tint = SelforaPrimary)

@@ -28,6 +28,7 @@ import com.simats.selfora.data.local.OfflineSessionEntity
 import com.simats.selfora.data.local.SelforaDatabase
 import com.simats.selfora.data.model.*
 import com.simats.selfora.data.repository.DressingRepository
+import com.simats.selfora.ui.therapist.*
 import com.simats.selfora.ui.theme.*
 import kotlinx.coroutines.launch
 import java.util.*
@@ -83,10 +84,10 @@ fun HomePracticeScreen(
         isLoading = true
         try {
             steps = when (activityCode) {
-                "eating_spoon_activity" -> DressingRepository.getEatingSteps()
-                "shoes_socks_activity" -> DressingRepository.getShoesSteps()
-                "girl_frock_activity" -> DressingRepository.getGirlFrockSteps()
-                else -> DressingRepository.getBoyTShirtSteps()
+                "eating_spoon_activity" -> getSampleEatingSteps()
+                "shoes_socks_activity" -> getSampleShoesSteps()
+                "girl_frock_activity" -> getSampleGirlFrockSteps()
+                else -> getSampleTShirtSteps()
             }
 
             val sessionRes = ApiClient.apiService.startSession(
@@ -94,7 +95,7 @@ fun HomePracticeScreen(
             )
             activeSessionId = if (sessionRes.isSuccessful && sessionRes.body() != null) sessionRes.body()!!.sessionId else 1L
         } catch (e: Exception) {
-            steps = DressingRepository.getBoyTShirtSteps()
+            steps = getSampleTShirtSteps()
             activeSessionId = 1L
         } finally {
             isLoading = false
@@ -120,6 +121,7 @@ fun HomePracticeScreen(
                         Text("Home Practice Mode", fontSize = 11.sp, color = SelforaPrimary, fontWeight = FontWeight.Bold)
                     }
                 },
+                modifier = Modifier.statusBarsPadding(),
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = SelforaTextPrimary)
