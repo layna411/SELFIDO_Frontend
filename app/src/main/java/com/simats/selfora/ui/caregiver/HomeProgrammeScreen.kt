@@ -48,6 +48,7 @@ fun HomeProgrammeScreen(
     }
 
     Scaffold(
+        containerColor = SelforaBackground,
         topBar = {
             Surface(
                 color = SelforaSurface,
@@ -74,74 +75,75 @@ fun HomeProgrammeScreen(
                     )
                 }
             }
-        },
-        bottomBar = {
-            CaregiverBottomNavigation(
-                currentRoute = "home_programme",
-                onTabSelected = onNavigateToTab
-            )
         }
     ) { padding ->
-        LazyColumn(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding)
+                .padding(top = padding.calculateTopPadding())
                 .background(SelforaBackground)
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            item {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        "This Week's Programme",
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 17.sp,
-                        color = SelforaTextPrimary
-                    )
-                    Surface(
-                        shape = RoundedCornerShape(12.dp),
-                        color = SelforaPrimary.copy(alpha = 0.12f)
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 90.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                item {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            "${homePrograms.size} Activities",
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-                            fontSize = 12.sp,
+                            "This Week's Programme",
                             fontWeight = FontWeight.Bold,
-                            color = SelforaPrimary
+                            fontSize = 17.sp,
+                            color = SelforaTextPrimary
+                        )
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = SelforaPrimary.copy(alpha = 0.12f)
+                        ) {
+                            Text(
+                                "${homePrograms.size} Activities",
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = SelforaPrimary
+                            )
+                        }
+                    }
+                }
+
+                if (isLoading) {
+                    item {
+                        Box(modifier = Modifier.fillMaxWidth().height(150.dp), contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator(color = SelforaPrimary)
+                        }
+                    }
+                } else {
+                    items(homePrograms) { program ->
+                        HomeProgrammeCard(
+                            program = program,
+                            onStartPractice = {
+                                val actCode = when (program.activityId) {
+                                    13L -> "eating_spoon_activity"
+                                    9L -> "shoes_socks_activity"
+                                    else -> "boy_tshirt_activity"
+                                }
+                                onStartPractice(program.id, actCode)
+                            }
                         )
                     }
                 }
             }
 
-            if (isLoading) {
-                item {
-                    Box(modifier = Modifier.fillMaxWidth().height(150.dp), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator(color = SelforaPrimary)
-                    }
-                }
-            } else {
-                items(homePrograms) { program ->
-                    HomeProgrammeCard(
-                        program = program,
-                        onStartPractice = {
-                            val actCode = when (program.activityId) {
-                                13L -> "eating_spoon_activity"
-                                9L -> "shoes_socks_activity"
-                                else -> "boy_tshirt_activity"
-                            }
-                            onStartPractice(program.id, actCode)
-                        }
-                    )
-                }
-            }
-
-            item {
-                Spacer(modifier = Modifier.height(16.dp))
-            }
+            // Floating Navigation Overlay
+            CaregiverBottomNavigation(
+                currentRoute = "home_programme",
+                onTabSelected = onNavigateToTab,
+                modifier = Modifier.align(Alignment.BottomCenter)
+            )
         }
     }
 }

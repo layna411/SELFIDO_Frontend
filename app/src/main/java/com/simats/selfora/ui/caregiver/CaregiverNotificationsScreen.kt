@@ -58,6 +58,7 @@ fun CaregiverNotificationsScreen(
     }
 
     Scaffold(
+        containerColor = SelforaBackground,
         topBar = {
             TopAppBar(
                 title = { Text("Notifications", fontWeight = FontWeight.Bold, color = SelforaTextPrimary) },

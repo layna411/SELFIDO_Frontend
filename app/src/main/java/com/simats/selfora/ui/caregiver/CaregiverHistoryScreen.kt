@@ -39,6 +39,7 @@ fun CaregiverHistoryScreen(
     var selectedItem by remember { mutableStateOf<CaregiverPracticeHistoryItem?>(null) }
 
     Scaffold(
+        containerColor = SelforaBackground,
         topBar = {
             TopAppBar(
                 title = { Text("Practice History", fontWeight = FontWeight.Bold, color = SelforaTextPrimary) },

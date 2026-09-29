@@ -66,6 +66,7 @@ fun CaregiverDashboardScreen(
     }
 
     Scaffold(
+        containerColor = SelforaBackground,
         topBar = {
             Surface(
                 color = SelforaSurface,
@@ -215,125 +216,125 @@ fun CaregiverDashboardScreen(
                     }
                 }
             }
-        },
-        bottomBar = {
-            CaregiverBottomNavigation(
-                currentRoute = "caregiver_dashboard",
-                onTabSelected = onNavigateToTab
-            )
         }
     ) { padding ->
-        LazyColumn(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding)
+                .padding(top = padding.calculateTopPadding())
                 .background(SelforaBackground)
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Section Header
-            item {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        "Today's Practice",
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 18.sp,
-                        color = SelforaTextPrimary
-                    )
-                    Surface(
-                        shape = RoundedCornerShape(12.dp),
-                        color = SelforaSuccess.copy(alpha = 0.15f)
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 90.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                // Section Header
+                item {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            "${homePrograms.size} Activities Assigned",
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-                            fontSize = 12.sp,
+                            "Today's Practice",
                             fontWeight = FontWeight.Bold,
-                            color = SelforaSuccess
+                            fontSize = 18.sp,
+                            color = SelforaTextPrimary
                         )
-                    }
-                }
-            }
-
-            if (isLoading) {
-                item {
-                    Box(modifier = Modifier.fillMaxWidth().height(150.dp), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator(color = SelforaPrimary)
-                    }
-                }
-            } else {
-                items(homePrograms) { program ->
-                    CaregiverActivityCard(
-                        program = program,
-                        onStartPractice = {
-                            val actCode = when (program.activityId) {
-                                13L -> "eating_spoon_activity"
-                                9L -> "shoes_socks_activity"
-                                else -> if (selectedChild.gender == "GIRL") "girl_frock_activity" else "boy_tshirt_activity"
-                            }
-                            onStartPractice(program.id, actCode)
-                        }
-                    )
-                }
-            }
-
-            // Therapist Instructions Card
-            item {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = SelforaSurface),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-                ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                Icons.Default.Chat,
-                                contentDescription = null,
-                                tint = SelforaSecondary,
-                                modifier = Modifier.size(20.dp)
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                "Therapist Instructions",
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 15.sp,
-                                color = SelforaTextPrimary
-                            )
-                        }
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            "Assigned by: ${selectedChild.therapistName}",
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = SelforaTextSecondary
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
                         Surface(
                             shape = RoundedCornerShape(12.dp),
-                            color = SelforaBackground,
-                            modifier = Modifier.fillMaxWidth()
+                            color = SelforaSuccess.copy(alpha = 0.15f)
                         ) {
                             Text(
-                                "Practice dressing before school. Focus on allowing ${selectedChild.name} to attempt the steps independently. Offer gentle verbal guidance if stuck.",
-                                modifier = Modifier.padding(12.dp),
-                                fontSize = 13.sp,
-                                color = SelforaTextPrimary,
-                                lineHeight = 18.sp
+                                "${homePrograms.size} Activities Assigned",
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = SelforaSuccess
                             )
+                        }
+                    }
+                }
+
+                if (isLoading) {
+                    item {
+                        Box(modifier = Modifier.fillMaxWidth().height(150.dp), contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator(color = SelforaPrimary)
+                        }
+                    }
+                } else {
+                    items(homePrograms) { program ->
+                        CaregiverActivityCard(
+                            program = program,
+                            onStartPractice = {
+                                val actCode = when (program.activityId) {
+                                    13L -> "eating_spoon_activity"
+                                    9L -> "shoes_socks_activity"
+                                    else -> if (selectedChild.gender == "GIRL") "girl_frock_activity" else "boy_tshirt_activity"
+                                }
+                                onStartPractice(program.id, actCode)
+                            }
+                        )
+                    }
+                }
+
+                // Therapist Instructions Card
+                item {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(containerColor = SelforaSurface),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    Icons.Default.Chat,
+                                    contentDescription = null,
+                                    tint = SelforaSecondary,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    "Therapist Instructions",
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 15.sp,
+                                    color = SelforaTextPrimary
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                "Assigned by: ${selectedChild.therapistName}",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = SelforaTextSecondary
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Surface(
+                                shape = RoundedCornerShape(12.dp),
+                                color = SelforaBackground,
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text(
+                                    "Practice dressing before school. Focus on allowing ${selectedChild.name} to attempt the steps independently. Offer gentle verbal guidance if stuck.",
+                                    modifier = Modifier.padding(12.dp),
+                                    fontSize = 13.sp,
+                                    color = SelforaTextPrimary,
+                                    lineHeight = 18.sp
+                                )
+                            }
                         }
                     }
                 }
             }
 
-            // Bottom Spacing
-            item {
-                Spacer(modifier = Modifier.height(16.dp))
-            }
+            // Floating Navigation Overlay (NO extra rectangular background layer)
+            CaregiverBottomNavigation(
+                currentRoute = "caregiver_dashboard",
+                onTabSelected = onNavigateToTab,
+                modifier = Modifier.align(Alignment.BottomCenter)
+            )
         }
     }
 }

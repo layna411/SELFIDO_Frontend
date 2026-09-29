@@ -103,6 +103,7 @@ fun HomePracticeScreen(
     }
 
     Scaffold(
+        containerColor = SelforaBackground,
         topBar = {
             TopAppBar(
                 title = {

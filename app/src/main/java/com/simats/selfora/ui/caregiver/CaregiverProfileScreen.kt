@@ -31,6 +31,7 @@ fun CaregiverProfileScreen(
     var notificationsEnabled by remember { mutableStateOf(true) }
 
     Scaffold(
+        containerColor = SelforaBackground,
         topBar = {
             TopAppBar(
                 title = { Text("Profile & Settings", fontWeight = FontWeight.Bold, color = SelforaTextPrimary) },
