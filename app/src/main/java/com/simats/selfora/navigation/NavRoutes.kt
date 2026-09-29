@@ -38,8 +38,8 @@ sealed class NavRoutes(val route: String) {
     object CaregiverHistory : NavRoutes("caregiver_history")
     object CaregiverNotifications : NavRoutes("caregiver_notifications")
     object CaregiverProfile : NavRoutes("caregiver_profile")
-    object CaregiverMessages : NavRoutes("caregiver_messages/{childId}") {
-        fun createRoute(childId: Long = 1L) = "caregiver_messages/$childId"
+    object CaregiverMessages : NavRoutes("caregiver_messages") {
+        fun createRoute(childId: Long = 1L) = "caregiver_messages"
     }
 
     // Child Routes
