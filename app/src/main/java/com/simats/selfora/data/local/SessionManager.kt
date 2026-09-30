@@ -11,6 +11,7 @@ object SessionManager {
     private const val KEY_USER_ID = "user_id"
     private const val KEY_USERNAME = "username"
     private const val KEY_JWT_TOKEN = "jwt_token"
+    private const val KEY_MUST_CHANGE_PASSWORD = "must_change_password"
 
     private lateinit var prefs: SharedPreferences
 
@@ -24,7 +25,7 @@ object SessionManager {
         }
     }
 
-    fun saveSession(role: String, userId: Long, username: String = "", token: String = "") {
+    fun saveSession(role: String, userId: Long, username: String = "", token: String = "", mustChangePassword: Boolean = false) {
         if (!::prefs.isInitialized) return
         prefs.edit().apply {
             putBoolean(KEY_IS_LOGGED_IN, true)
@@ -32,11 +33,22 @@ object SessionManager {
             putLong(KEY_USER_ID, userId)
             putString(KEY_USERNAME, username)
             putString(KEY_JWT_TOKEN, token)
+            putBoolean(KEY_MUST_CHANGE_PASSWORD, mustChangePassword)
             apply()
         }
         if (token.isNotBlank()) {
             ApiClient.setJwtToken(token)
         }
+    }
+
+    fun mustChangePassword(): Boolean {
+        if (!::prefs.isInitialized) return false
+        return prefs.getBoolean(KEY_MUST_CHANGE_PASSWORD, false)
+    }
+
+    fun setMustChangePassword(mustChange: Boolean) {
+        if (!::prefs.isInitialized) return
+        prefs.edit().putBoolean(KEY_MUST_CHANGE_PASSWORD, mustChange).apply()
     }
 
     fun isLoggedIn(): Boolean {

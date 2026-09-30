@@ -3,9 +3,15 @@ package com.simats.selfora.navigation
 sealed class NavRoutes(val route: String) {
     object Login : NavRoutes("login")
 
+    object ChangePassword : NavRoutes("change_password")
+
     // Therapist Routes
     object TherapistDashboard : NavRoutes("therapist_dashboard")
     object ChildList : NavRoutes("child_list")
+    object AddChildWorkflow : NavRoutes("add_child_workflow")
+    object ChildProfile : NavRoutes("child_profile/{childId}") {
+        fun createRoute(childId: Long) = "child_profile/$childId"
+    }
     object Assessment : NavRoutes("assessment/{childId}") {
         fun createRoute(childId: Long) = "assessment/$childId"
     }

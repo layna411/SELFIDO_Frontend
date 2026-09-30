@@ -10,6 +10,31 @@ interface SelforaApiService {
     @POST("api/auth/login")
     suspend fun login(@Body request: LoginRequest): Response<AuthResponse>
 
+    @POST("api/auth/change-password")
+    suspend fun changePassword(@Body request: ChangePasswordRequest): Response<Unit>
+
+    // Therapist Module
+    @GET("api/therapist/dashboard-summary")
+    suspend fun getTherapistDashboardSummary(): Response<TherapistDashboardSummaryResponse>
+
+    @POST("api/therapist/create-child-with-caregiver")
+    suspend fun createChildWithCaregiver(@Body request: CreateChildWithCaregiverRequest): Response<CredentialsSuccessResponse>
+
+    @GET("api/therapist/children")
+    suspend fun getTherapistChildren(
+        @Query("filter") filter: String? = null,
+        @Query("search") search: String? = null
+    ): Response<List<ChildSummaryItem>>
+
+    @POST("api/therapist/caregivers/{caregiverId}/reset-password")
+    suspend fun resetCaregiverPassword(@Path("caregiverId") caregiverId: Long): Response<ResetPasswordResultResponse>
+
+    @POST("api/therapist/caregivers/{caregiverId}/toggle-status")
+    suspend fun toggleCaregiverStatus(
+        @Path("caregiverId") caregiverId: Long,
+        @Query("active") active: Boolean
+    ): Response<Unit>
+
     // Children
     @GET("api/children")
     suspend fun getMyChildren(): Response<List<ChildDto>>

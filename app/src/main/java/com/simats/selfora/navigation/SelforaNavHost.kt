@@ -1,6 +1,6 @@
 package com.simats.selfora.navigation
 
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -8,6 +8,8 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.simats.selfora.data.local.SessionManager
+import com.simats.selfora.data.model.CredentialsSuccessResponse
+import com.simats.selfora.ui.auth.ChangePasswordScreen
 import com.simats.selfora.ui.auth.LoginScreen
 import com.simats.selfora.ui.caregiver.*
 import com.simats.selfora.ui.child.ChildActivityStepScreen
@@ -20,11 +22,17 @@ import com.simats.selfora.ui.therapist.*
 fun SelforaNavHost(
     navController: NavHostController = rememberNavController()
 ) {
+    var createdCredentials by remember { mutableStateOf<CredentialsSuccessResponse?>(null) }
+
     val initialDestination = if (SessionManager.isLoggedIn()) {
-        when (SessionManager.getUserRole()) {
-            "ROLE_CAREGIVER" -> NavRoutes.CaregiverDashboard.route
-            "ROLE_CHILD" -> NavRoutes.ChildHome.route
-            else -> NavRoutes.TherapistDashboard.route
+        if (SessionManager.mustChangePassword()) {
+            NavRoutes.ChangePassword.route
+        } else {
+            when (SessionManager.getUserRole()) {
+                "ROLE_CAREGIVER" -> NavRoutes.CaregiverDashboard.route
+                "ROLE_CHILD" -> NavRoutes.ChildHome.route
+                else -> NavRoutes.TherapistDashboard.route
+            }
         }
     } else {
         NavRoutes.Login.route
@@ -38,10 +46,27 @@ fun SelforaNavHost(
         composable(NavRoutes.Login.route) {
             LoginScreen(
                 onLoginSuccess = { role, _ ->
+                    if (SessionManager.mustChangePassword()) {
+                        navController.navigate(NavRoutes.ChangePassword.route) { popUpTo(NavRoutes.Login.route) { inclusive = true } }
+                    } else {
+                        when (role) {
+                            "ROLE_CAREGIVER" -> navController.navigate(NavRoutes.CaregiverDashboard.route) { popUpTo(NavRoutes.Login.route) { inclusive = true } }
+                            "ROLE_CHILD" -> navController.navigate(NavRoutes.ChildHome.route) { popUpTo(NavRoutes.Login.route) { inclusive = true } }
+                            else -> navController.navigate(NavRoutes.TherapistDashboard.route) { popUpTo(NavRoutes.Login.route) { inclusive = true } }
+                        }
+                    }
+                }
+            )
+        }
+
+        composable(NavRoutes.ChangePassword.route) {
+            ChangePasswordScreen(
+                onPasswordChanged = {
+                    val role = SessionManager.getUserRole()
                     when (role) {
-                        "ROLE_CAREGIVER" -> navController.navigate(NavRoutes.CaregiverDashboard.route) { popUpTo(NavRoutes.Login.route) { inclusive = true } }
-                        "ROLE_CHILD" -> navController.navigate(NavRoutes.ChildHome.route) { popUpTo(NavRoutes.Login.route) { inclusive = true } }
-                        else -> navController.navigate(NavRoutes.TherapistDashboard.route) { popUpTo(NavRoutes.Login.route) { inclusive = true } }
+                        "ROLE_CAREGIVER" -> navController.navigate(NavRoutes.CaregiverDashboard.route) { popUpTo(NavRoutes.ChangePassword.route) { inclusive = true } }
+                        "ROLE_CHILD" -> navController.navigate(NavRoutes.ChildHome.route) { popUpTo(NavRoutes.ChangePassword.route) { inclusive = true } }
+                        else -> navController.navigate(NavRoutes.TherapistDashboard.route) { popUpTo(NavRoutes.ChangePassword.route) { inclusive = true } }
                     }
                 }
             )
@@ -50,12 +75,13 @@ fun SelforaNavHost(
         // Therapist Navigation
         composable(NavRoutes.TherapistDashboard.route) {
             TherapistDashboardScreen(
+                onNavigateToAddChildWorkflow = { navController.navigate(NavRoutes.AddChildWorkflow.route) },
                 onNavigateToChildren = { navController.navigate(NavRoutes.ChildList.route) },
                 onNavigateToAssessment = { navController.navigate(NavRoutes.Assessment.createRoute(1L)) },
-                onNavigateToSession = { navController.navigate(NavRoutes.TherapySession.createRoute(1L, 1L)) },
                 onNavigateToHomePrograms = { navController.navigate(NavRoutes.HomeProgramCreate.createRoute(1L)) },
-                onNavigateToReports = { navController.navigate(NavRoutes.Progress.createRoute(1L)) },
+                onNavigateToProgress = { navController.navigate(NavRoutes.Progress.createRoute(1L)) },
                 onNavigateToMessages = { navController.navigate(NavRoutes.Messages.createRoute(1L)) },
+                onNavigateToNotifications = { navController.navigate(NavRoutes.CaregiverNotifications.route) },
                 onLogout = {
                     SessionManager.clearSession()
                     navController.navigate(NavRoutes.Login.route) { popUpTo(0) }
@@ -63,9 +89,47 @@ fun SelforaNavHost(
             )
         }
 
+        composable(NavRoutes.AddChildWorkflow.route) {
+            if (createdCredentials != null) {
+                CredentialsSuccessScreen(
+                    credentials = createdCredentials!!,
+                    onDone = {
+                        val childId = createdCredentials!!.childId
+                        createdCredentials = null
+                        navController.navigate(NavRoutes.ChildProfile.createRoute(childId)) {
+                            popUpTo(NavRoutes.TherapistDashboard.route)
+                        }
+                    }
+                )
+            } else {
+                AddChildCaregiverWorkflowScreen(
+                    onBack = { navController.popBackStack() },
+                    onSuccess = { res ->
+                        createdCredentials = res
+                    }
+                )
+            }
+        }
+
         composable(NavRoutes.ChildList.route) {
             ChildListScreen(
-                onChildSelected = { childId -> navController.navigate(NavRoutes.Assessment.createRoute(childId)) },
+                onChildSelected = { childId -> navController.navigate(NavRoutes.ChildProfile.createRoute(childId)) },
+                onAddChildClick = { navController.navigate(NavRoutes.AddChildWorkflow.route) },
+                onBack = { navController.popBackStack() }
+            )
+        }
+
+        composable(
+            route = NavRoutes.ChildProfile.route,
+            arguments = listOf(navArgument("childId") { type = NavType.LongType })
+        ) { backStack ->
+            val childId = backStack.arguments?.getLong("childId") ?: 1L
+            ChildProfileScreen(
+                childId = childId,
+                onStartAssessment = { id -> navController.navigate(NavRoutes.Assessment.createRoute(id)) },
+                onAssignProgramme = { id -> navController.navigate(NavRoutes.HomeProgramCreate.createRoute(id)) },
+                onViewProgress = { id -> navController.navigate(NavRoutes.Progress.createRoute(id)) },
+                onMessageCaregiver = { id -> navController.navigate(NavRoutes.Messages.createRoute(id)) },
                 onBack = { navController.popBackStack() }
             )
         }
@@ -77,7 +141,7 @@ fun SelforaNavHost(
             val childId = backStack.arguments?.getLong("childId") ?: 1L
             AssessmentScreen(
                 childId = childId,
-                onAssessmentSaved = { navController.navigate(NavRoutes.TherapySession.createRoute(childId, 1L)) },
+                onAssessmentSaved = { navController.navigate(NavRoutes.Progress.createRoute(childId)) },
                 onBack = { navController.popBackStack() }
             )
         }
@@ -160,7 +224,7 @@ fun SelforaNavHost(
         // Caregiver Navigation
         composable(NavRoutes.CaregiverDashboard.route) {
             CaregiverDashboardScreen(
-                onStartPractice = { progId, actCode -> navController.navigate(NavRoutes.HomePractice.createRoute(progId)) },
+                onStartPractice = { progId, _ -> navController.navigate(NavRoutes.HomePractice.createRoute(progId)) },
                 onNavigateToTab = { route -> navController.navigate(route) },
                 onNavigateToNotifications = { navController.navigate(NavRoutes.CaregiverNotifications.route) },
                 onNavigateToProfile = { navController.navigate(NavRoutes.CaregiverProfile.route) },
@@ -173,7 +237,7 @@ fun SelforaNavHost(
 
         composable(NavRoutes.HomeProgramme.route) {
             HomeProgrammeScreen(
-                onStartPractice = { progId, actCode -> navController.navigate(NavRoutes.HomePractice.createRoute(progId)) },
+                onStartPractice = { progId, _ -> navController.navigate(NavRoutes.HomePractice.createRoute(progId)) },
                 onNavigateToTab = { route -> navController.navigate(route) }
             )
         }

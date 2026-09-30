@@ -1,17 +1,13 @@
 package com.simats.selfora.ui.therapist
 
+import androidx.compose.animation.*
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.ChevronRight
-import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -21,303 +17,235 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.simats.selfora.data.api.ApiClient
-import com.simats.selfora.data.model.ChildDto
+import com.simats.selfora.data.model.ChildSummaryItem
+import com.simats.selfora.ui.components.glass.*
 import com.simats.selfora.ui.theme.*
-import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ChildListScreen(
-    onChildSelected: (childId: Long) -> Unit,
+    onChildSelected: (Long) -> Unit,
+    onAddChildClick: () -> Unit,
     onBack: () -> Unit
 ) {
-    var children by remember { mutableStateOf<List<ChildDto>>(emptyList()) }
+    var searchQuery by remember { mutableStateOf("") }
+    var selectedFilter by remember { mutableStateOf("All") }
+    var childrenList by remember { mutableStateOf<List<ChildSummaryItem>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
-    var showAddDialog by remember { mutableStateOf(false) }
 
-    val scope = rememberCoroutineScope()
+    val filterOptions = listOf("All", "Active", "Assessment Pending", "Home Programme Active")
 
-    fun loadChildren() {
-        scope.launch {
-            isLoading = true
-            try {
-                val res = ApiClient.apiService.getMyChildren()
-                if (res.isSuccessful && res.body() != null && res.body()!!.isNotEmpty()) {
-                    children = res.body()!!
-                } else {
-                    // Seed fallback child for demo
-                    children = listOf(
-                        ChildDto(
-                            id = 1L,
-                            firstName = "Aarav",
-                            lastName = "Sharma",
-                            dateOfBirth = "2019-05-15",
-                            gender = "MALE",
-                            diagnosisNotes = "Occupational Therapy ADL focus on dressing independence and fine motor skills."
-                        )
-                    )
-                }
-            } catch (e: Exception) {
-                children = listOf(
-                    ChildDto(
-                        id = 1L,
-                        firstName = "Aarav",
-                        lastName = "Sharma",
-                        dateOfBirth = "2019-05-15",
-                        gender = "MALE",
-                        diagnosisNotes = "Occupational Therapy ADL focus on dressing independence."
-                    )
-                )
-            } finally {
-                isLoading = false
+    // Default sample list for instant offline responsiveness
+    val defaultChildren = listOf(
+        ChildSummaryItem(1L, "Arjun Kumar", 8, "Priya Kumar", "Mother", 72, 65, 80, true, true),
+        ChildSummaryItem(2L, "Ananya Reddy", 6, "Suresh Reddy", "Father", 85, 90, 78, false, true),
+        ChildSummaryItem(3L, "Kavya Patel", 7, "Meera Patel", "Mother", 45, 50, 60, true, false),
+        ChildSummaryItem(4L, "Rohan Sharma", 9, "Sunita Sharma", "Mother", 92, 88, 95, false, true)
+    )
+
+    LaunchedEffect(searchQuery, selectedFilter) {
+        isLoading = true
+        try {
+            val filterParam = when (selectedFilter) {
+                "Assessment Pending" -> "ASSESSMENT_PENDING"
+                "Home Programme Active" -> "HOME_PROGRAM_ACTIVE"
+                "Active" -> "ACTIVE"
+                else -> null
             }
+            val response = ApiClient.apiService.getTherapistChildren(filterParam, searchQuery.ifBlank { null })
+            val body = response.body()
+            if (response.isSuccessful && body != null && body.isNotEmpty()) {
+                childrenList = body
+            } else {
+                childrenList = defaultChildren.filter {
+                    val matchSearch = searchQuery.isBlank() || it.name.contains(searchQuery, ignoreCase = true)
+                    val matchFilter = when (selectedFilter) {
+                        "Assessment Pending" -> it.hasPendingAssessment
+                        "Home Programme Active" -> it.hasActiveHomeProgram
+                        else -> true
+                    }
+                    matchSearch && matchFilter
+                }
+            }
+        } catch (_: Exception) {
+            childrenList = defaultChildren.filter {
+                val matchSearch = searchQuery.isBlank() || it.name.contains(searchQuery, ignoreCase = true)
+                val matchFilter = when (selectedFilter) {
+                    "Assessment Pending" -> it.hasPendingAssessment
+                    "Home Programme Active" -> it.hasActiveHomeProgram
+                    else -> true
+                }
+                matchSearch && matchFilter
+            }
+        } finally {
+            isLoading = false
         }
-    }
-
-    LaunchedEffect(Unit) {
-        loadChildren()
     }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("My Assigned Children", fontWeight = FontWeight.Bold, color = SelforaTextPrimary) },
+                title = { Text("Children", fontWeight = FontWeight.Bold, fontSize = 20.sp, color = SelforaTextPrimary) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = SelforaTextPrimary)
                     }
                 },
                 actions = {
-                    IconButton(onClick = { showAddDialog = true }) {
-                        Icon(Icons.Default.Add, contentDescription = "Add Child", tint = SelforaTextPrimary)
+                    IconButton(onClick = onAddChildClick) {
+                        Icon(Icons.Default.Add, contentDescription = "Add Child", tint = SelforaPrimary)
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = SelforaSurface,
-                    titleContentColor = SelforaTextPrimary,
-                    navigationIconContentColor = SelforaTextPrimary,
-                    actionIconContentColor = SelforaTextPrimary
-                )
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = SelforaSurface)
             )
-        }
+        },
+        containerColor = SelforaBackground
     ) { padding ->
-        Box(
+        Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .background(SelforaBgLight)
+                .padding(horizontal = 16.dp)
         ) {
-            if (isLoading) {
-                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-            } else {
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    items(children) { child ->
-                        Card(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable { child.id?.let { onChildSelected(it) } },
-                            shape = RoundedCornerShape(16.dp),
-                            colors = CardDefaults.cardColors(containerColor = Color.White),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-                        ) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(16.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Surface(
-                                    shape = CircleShape,
-                                    color = SelforaBlueLight,
-                                    modifier = Modifier.size(48.dp)
-                                ) {
-                                    Box(contentAlignment = Alignment.Center) {
-                                        Icon(Icons.Default.Person, contentDescription = null, tint = SelforaBlueDark)
-                                    }
-                                }
-                                Spacer(modifier = Modifier.width(16.dp))
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(
-                                        "${child.firstName} ${child.lastName}",
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 16.sp,
-                                        color = SelforaTextDark
-                                    )
-                                    Text(
-                                        "Gender: ${child.gender} | DOB: ${child.dateOfBirth}",
-                                        fontSize = 12.sp,
-                                        color = SelforaTextMuted
-                                    )
-                                    child.diagnosisNotes?.let { notes ->
-                                        Spacer(modifier = Modifier.height(4.dp))
-                                        Text(notes, fontSize = 11.sp, color = SelforaTextMuted, maxLines = 2)
-                                    }
-                                }
-                                Icon(Icons.Default.ChevronRight, contentDescription = null, tint = SelforaTextMuted)
-                            }
-                        }
-                    }
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Search Bar
+            GlassTextField(
+                value = searchQuery,
+                onValueChange = { searchQuery = it },
+                label = "",
+                placeholder = "🔍 Search child by name...",
+                leadingIcon = Icons.Default.Search,
+                trailingIcon = if (searchQuery.isNotEmpty()) {
+                    { IconButton(onClick = { searchQuery = "" }) { Icon(Icons.Default.Clear, contentDescription = "Clear") } }
+                } else null
+            )
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            // Filters
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                filterOptions.forEach { filter ->
+                    GlassChip(
+                        text = filter,
+                        selected = selectedFilter == filter,
+                        onClick = { selectedFilter = filter },
+                        modifier = Modifier.weight(1f)
+                    )
                 }
             }
 
-            if (showAddDialog) {
-                CreateChildDialog(
-                    onDismiss = { showAddDialog = false },
-                    onCreated = { newChild ->
-                        showAddDialog = false
-                        scope.launch {
-                            try {
-                                ApiClient.apiService.createChild(newChild)
-                            } catch (e: Exception) {}
-                            loadChildren()
-                        }
+            Spacer(modifier = Modifier.height(16.dp))
+
+            if (isLoading) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(color = SelforaPrimary)
+                }
+            } else if (childrenList.isEmpty()) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("No children found matching criteria", color = SelforaTextSecondary, fontSize = 14.sp)
+                }
+            } else {
+                LazyColumn(
+                    verticalArrangement = Arrangement.spacedBy(14.dp),
+                    contentPadding = PaddingValues(bottom = 24.dp)
+                ) {
+                    items(childrenList) { child ->
+                        GlassChildCard(child = child, onViewChild = { onChildSelected(child.id) })
                     }
-                )
+                }
             }
         }
     }
 }
 
 @Composable
-fun CreateChildDialog(
-    onDismiss: () -> Unit,
-    onCreated: (ChildDto) -> Unit
+fun GlassChildCard(
+    child: ChildSummaryItem,
+    onViewChild: () -> Unit
 ) {
-    var firstName by remember { mutableStateOf("") }
-    var lastName by remember { mutableStateOf("") }
-    var dob by remember { mutableStateOf("2020-01-01") }
-    var gender by remember { mutableStateOf("BOY") } // BOY or GIRL
-    var notes by remember { mutableStateOf("") }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Add New Child Profile", fontWeight = FontWeight.Bold, color = SelforaTextPrimary) },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                Text("Select Child Gender:", fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = SelforaTextPrimary)
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(SelforaBackground, shape = RoundedCornerShape(12.dp))
-                        .padding(4.dp),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+    GlassCard(
+        modifier = Modifier.fillMaxWidth(),
+        elevation = 8.dp,
+        onClick = onViewChild
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Surface(
+                    shape = RoundedCornerShape(16.dp),
+                    color = SelforaBlueLight,
+                    modifier = Modifier.size(46.dp)
                 ) {
-                    val isBoy = gender == "BOY"
-                    val isGirl = gender == "GIRL"
-
-                    Surface(
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(40.dp)
-                            .clickable { gender = "BOY" },
-                        shape = RoundedCornerShape(10.dp),
-                        color = if (isBoy) SelforaPrimary else Color.Transparent
-                    ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Text(
-                                "Boy 👦",
-                                fontWeight = if (isBoy) FontWeight.Bold else FontWeight.Medium,
-                                color = if (isBoy) Color.White else SelforaTextSecondary
-                            )
-                        }
-                    }
-
-                    Surface(
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(40.dp)
-                            .clickable { gender = "GIRL" },
-                        shape = RoundedCornerShape(10.dp),
-                        color = if (isGirl) SelforaSecondary else Color.Transparent
-                    ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Text(
-                                "Girl 👧",
-                                fontWeight = if (isGirl) FontWeight.Bold else FontWeight.Medium,
-                                color = if (isGirl) Color.White else SelforaTextSecondary
-                            )
-                        }
+                    Box(contentAlignment = Alignment.Center) {
+                        Text("👦", fontSize = 24.sp)
                     }
                 }
-
-                OutlinedTextField(
-                    value = firstName,
-                    onValueChange = { firstName = it },
-                    label = { Text("First Name") },
-                    shape = RoundedCornerShape(10.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = SelforaTextPrimary,
-                        unfocusedTextColor = SelforaTextPrimary,
-                        focusedBorderColor = SelforaPrimary,
-                        unfocusedBorderColor = SelforaBorder
-                    )
-                )
-                OutlinedTextField(
-                    value = lastName,
-                    onValueChange = { lastName = it },
-                    label = { Text("Last Name") },
-                    shape = RoundedCornerShape(10.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = SelforaTextPrimary,
-                        unfocusedTextColor = SelforaTextPrimary,
-                        focusedBorderColor = SelforaPrimary,
-                        unfocusedBorderColor = SelforaBorder
-                    )
-                )
-                OutlinedTextField(
-                    value = dob,
-                    onValueChange = { dob = it },
-                    label = { Text("Date of Birth (YYYY-MM-DD)") },
-                    shape = RoundedCornerShape(10.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = SelforaTextPrimary,
-                        unfocusedTextColor = SelforaTextPrimary,
-                        focusedBorderColor = SelforaPrimary,
-                        unfocusedBorderColor = SelforaBorder
-                    )
-                )
-                OutlinedTextField(
-                    value = notes,
-                    onValueChange = { notes = it },
-                    label = { Text("Diagnosis Notes") },
-                    shape = RoundedCornerShape(10.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = SelforaTextPrimary,
-                        unfocusedTextColor = SelforaTextPrimary,
-                        focusedBorderColor = SelforaPrimary,
-                        unfocusedBorderColor = SelforaBorder
-                    )
-                )
+                Spacer(modifier = Modifier.width(12.dp))
+                Column {
+                    Text(child.name, fontWeight = FontWeight.Bold, fontSize = 17.sp, color = SelforaTextPrimary)
+                    Text("Age: ${child.age} • Caregiver: ${child.caregiverName} (${child.caregiverRelationship})", fontSize = 12.sp, color = SelforaTextSecondary)
+                }
             }
-        },
-        confirmButton = {
-            Button(
-                onClick = {
-                    if (firstName.isNotBlank() && lastName.isNotBlank()) {
-                        onCreated(
-                            ChildDto(
-                                firstName = firstName,
-                                lastName = lastName,
-                                dateOfBirth = dob,
-                                gender = gender,
-                                diagnosisNotes = notes
-                            )
-                        )
-                    }
-                },
-                colors = ButtonDefaults.buttonColors(containerColor = SelforaPrimary),
-                shape = RoundedCornerShape(10.dp)
-            ) {
-                Text("Save Profile", fontWeight = FontWeight.Bold, color = Color.White)
+            if (child.hasPendingAssessment) {
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = SelforaWarning.copy(alpha = 0.15f)
+                ) {
+                    Text("Pending Assmt", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = SelforaWarning, modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp))
+                }
             }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Cancel", color = SelforaTextSecondary) }
         }
-    )
+
+        Spacer(modifier = Modifier.height(14.dp))
+
+        // Progress indicators
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            ChildMetricProgress("Dressing", child.dressingPercentage, SelforaPrimary, modifier = Modifier.weight(1f))
+            ChildMetricProgress("Eating", child.eatingPercentage, SelforaSecondary, modifier = Modifier.weight(1f))
+            ChildMetricProgress("Shoes", child.shoesPercentage, SelforaSuccess, modifier = Modifier.weight(1f))
+        }
+
+        Spacer(modifier = Modifier.height(14.dp))
+
+        GlassOutlinedButton(
+            text = "View Child →",
+            onClick = onViewChild,
+            modifier = Modifier.fillMaxWidth()
+        )
+    }
+}
+
+@Composable
+fun ChildMetricProgress(
+    title: String,
+    percentage: Int,
+    color: Color,
+    modifier: Modifier = Modifier
+) {
+    Column(modifier = modifier) {
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            Text(title, fontSize = 11.sp, color = SelforaTextSecondary)
+            Text("$percentage%", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = color)
+        }
+        Spacer(modifier = Modifier.height(4.dp))
+        LinearProgressIndicator(
+            progress = percentage / 100f,
+            color = color,
+            trackColor = color.copy(alpha = 0.15f),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(6.dp)
+                .background(Color.Transparent, shape = RoundedCornerShape(3.dp))
+        )
+    }
 }
