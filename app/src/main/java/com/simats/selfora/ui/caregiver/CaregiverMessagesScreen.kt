@@ -207,15 +207,6 @@ fun CaregiverMessagesScreen(
                     }
                 }
             }
-
-            // Floating Navigation Overlay (hidden when keyboard is open)
-            if (!isKeyboardVisible) {
-                CaregiverBottomNavigation(
-                    currentRoute = "caregiver_messages",
-                    onTabSelected = onNavigateToTab,
-                    modifier = Modifier.align(Alignment.BottomCenter)
-                )
-            }
         }
     }
 }

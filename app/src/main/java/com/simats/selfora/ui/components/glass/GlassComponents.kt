@@ -19,6 +19,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -312,6 +313,15 @@ enum class TherapistTab(val title: String, val icon: ImageVector) {
     MESSAGES("Messages", Icons.Default.Chat)
 }
 
+fun getTimeBasedGreeting(): String {
+    val hour = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)
+    return when (hour) {
+        in 5..11 -> "Good Morning"
+        in 12..16 -> "Good Afternoon"
+        else -> "Good Evening"
+    }
+}
+
 @Composable
 fun GlassNavigationBar(
     currentTab: TherapistTab,
@@ -321,25 +331,25 @@ fun GlassNavigationBar(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 8.dp, vertical = 8.dp),
+            .padding(horizontal = 14.dp, vertical = 6.dp),
         contentAlignment = Alignment.Center
     ) {
         Surface(
             modifier = Modifier
                 .fillMaxWidth()
                 .shadow(
-                    elevation = 16.dp,
-                    shape = RoundedCornerShape(32.dp),
-                    spotColor = Color(0x332563EB)
+                    elevation = 10.dp,
+                    shape = RoundedCornerShape(26.dp),
+                    spotColor = Color(0x292563EB)
                 ),
-            shape = RoundedCornerShape(32.dp),
-            color = Color.White.copy(alpha = 0.94f),
+            shape = RoundedCornerShape(26.dp),
+            color = Color.White.copy(alpha = 0.95f),
             border = androidx.compose.foundation.BorderStroke(
-                1.2.dp,
+                1.1.dp,
                 Brush.horizontalGradient(
                     listOf(
                         Color.White,
-                        SelforaPrimary.copy(alpha = 0.2f),
+                        SelforaPrimary.copy(alpha = 0.25f),
                         Color.White
                     )
                 )
@@ -348,31 +358,37 @@ fun GlassNavigationBar(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 4.dp, vertical = 6.dp),
+                    .padding(horizontal = 4.dp, vertical = 4.dp),
                 horizontalArrangement = Arrangement.SpaceEvenly,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 TherapistTab.values().forEach { tab ->
                     val isSelected = currentTab == tab
+                    val tabBgColor by animateColorAsState(
+                        targetValue = if (isSelected) SelforaPrimary.copy(alpha = 0.14f) else Color.Transparent,
+                        animationSpec = tween(250)
+                    )
+                    val iconScale by animateFloatAsState(
+                        targetValue = if (isSelected) 1.1f else 1.0f,
+                        animationSpec = tween(200)
+                    )
 
                     Column(
                         modifier = Modifier
                             .weight(1f)
-                            .clip(RoundedCornerShape(20.dp))
-                            .background(
-                                if (isSelected) SelforaPrimary.copy(alpha = 0.12f) else Color.Transparent
-                            )
+                            .clip(RoundedCornerShape(18.dp))
+                            .background(tabBgColor)
                             .clickable(
                                 interactionSource = remember { MutableInteractionSource() },
                                 indication = null
                             ) { onTabSelected(tab) }
-                            .padding(vertical = 6.dp, horizontal = 2.dp),
+                            .padding(vertical = 4.dp, horizontal = 2.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Box(contentAlignment = Alignment.Center) {
                             if (isSelected) {
                                 Surface(
-                                    modifier = Modifier.size(34.dp),
+                                    modifier = Modifier.size(30.dp),
                                     shape = CircleShape,
                                     color = SelforaPrimary
                                 ) {}
@@ -381,10 +397,12 @@ fun GlassNavigationBar(
                                 imageVector = tab.icon,
                                 contentDescription = tab.title,
                                 tint = if (isSelected) Color.White else SelforaTextSecondary,
-                                modifier = Modifier.size(19.dp)
+                                modifier = Modifier
+                                    .size(18.dp)
+                                    .scale(iconScale)
                             )
                         }
-                        Spacer(modifier = Modifier.height(3.dp))
+                        Spacer(modifier = Modifier.height(2.dp))
                         Text(
                             text = tab.title,
                             fontSize = 10.sp,

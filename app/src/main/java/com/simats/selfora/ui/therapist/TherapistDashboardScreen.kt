@@ -56,7 +56,7 @@ fun TherapistDashboardScreen(
                 title = {
                     Column(modifier = Modifier.fillMaxWidth()) {
                         Text(
-                            text = "Good Morning, ${summary.therapistName} 👋",
+                            text = "${getTimeBasedGreeting()}, ${summary.therapistName} 👋",
                             fontSize = 15.sp,
                             fontWeight = FontWeight.Bold,
                             color = SelforaTextPrimary,
@@ -92,21 +92,6 @@ fun TherapistDashboardScreen(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = SelforaSurface)
-            )
-        },
-        bottomBar = {
-            GlassNavigationBar(
-                currentTab = currentTab,
-                onTabSelected = { tab ->
-                    currentTab = tab
-                    when (tab) {
-                        TherapistTab.DASHBOARD -> {}
-                        TherapistTab.CHILDREN -> onNavigateToChildren()
-                        TherapistTab.ASSESSMENTS -> onNavigateToAssessment()
-                        TherapistTab.PROGRESS -> onNavigateToProgress()
-                        TherapistTab.MESSAGES -> onNavigateToMessages()
-                    }
-                }
             )
         },
         containerColor = SelforaBackground
@@ -192,7 +177,7 @@ fun TherapistDashboardScreen(
             // Large Quick Action Glass Buttons
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 QuickActionLargeGlassButton(
-                    title = "+ Add Child",
+                    title = "Add Child",
                     subtitle = "Single workflow to create child & link caregiver with generated temp password",
                     icon = Icons.Default.PersonAdd,
                     gradient = listOf(SelforaPrimary, Color(0xFF1D4ED8)),
@@ -200,7 +185,7 @@ fun TherapistDashboardScreen(
                 )
 
                 QuickActionLargeGlassButton(
-                    title = "+ Add Caregiver",
+                    title = "Add Caregiver",
                     subtitle = "Register parent/guardian and generate secure credentials",
                     icon = Icons.Default.GroupAdd,
                     gradient = listOf(SelforaSecondary, Color(0xFF6D28D9)),
@@ -208,7 +193,7 @@ fun TherapistDashboardScreen(
                 )
 
                 QuickActionLargeGlassButton(
-                    title = "+ New Assessment",
+                    title = "New Assessment",
                     subtitle = "Evaluate ADL baseline (Dressing, Eating, Shoes) and prompt levels",
                     icon = Icons.Default.Assignment,
                     gradient = listOf(SelforaSuccess, Color(0xFF059669)),
@@ -216,7 +201,7 @@ fun TherapistDashboardScreen(
                 )
 
                 QuickActionLargeGlassButton(
-                    title = "+ Home Programme",
+                    title = "Home Programme",
                     subtitle = "Create & assign structured ADL home practice to caregivers",
                     icon = Icons.Default.HomeWork,
                     gradient = listOf(SelforaWarning, Color(0xFFD97706)),
@@ -224,7 +209,7 @@ fun TherapistDashboardScreen(
                 )
             }
 
-            Spacer(modifier = Modifier.height(30.dp))
+            Spacer(modifier = Modifier.height(110.dp))
         }
     }
 }

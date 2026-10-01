@@ -134,6 +134,8 @@ fun CaregiverProfileScreen(
                 Spacer(modifier = Modifier.width(8.dp))
                 Text("Logout Caregiver Account", fontWeight = FontWeight.Bold, color = Color.White)
             }
+
+            Spacer(modifier = Modifier.height(110.dp))
         }
     }
 }

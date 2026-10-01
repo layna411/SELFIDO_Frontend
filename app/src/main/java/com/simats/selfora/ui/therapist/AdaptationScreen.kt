@@ -174,6 +174,8 @@ fun AdaptationScreen(
                     Text("CONFIRM & SAVE ADAPTATION PLAN", fontWeight = FontWeight.Bold)
                 }
             }
+
+            Spacer(modifier = Modifier.height(110.dp))
         }
     }
 }

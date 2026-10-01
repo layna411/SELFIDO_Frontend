@@ -270,7 +270,7 @@ fun AssessmentScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(30.dp))
+            Spacer(modifier = Modifier.height(110.dp))
         }
     }
 }

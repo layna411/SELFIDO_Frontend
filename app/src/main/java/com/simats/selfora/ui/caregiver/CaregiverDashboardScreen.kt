@@ -21,6 +21,7 @@ import androidx.compose.ui.unit.sp
 import com.simats.selfora.data.api.ApiClient
 import com.simats.selfora.data.model.HomeProgramResponse
 import com.simats.selfora.data.model.LinkedChildInfo
+import com.simats.selfora.ui.components.glass.getTimeBasedGreeting
 import com.simats.selfora.ui.theme.*
 import kotlinx.coroutines.launch
 
@@ -85,7 +86,7 @@ fun CaregiverDashboardScreen(
                     ) {
                         Column {
                             Text(
-                                "Good Morning 👋",
+                                "${getTimeBasedGreeting()} 👋",
                                 fontSize = 14.sp,
                                 fontWeight = FontWeight.Medium,
                                 color = SelforaTextSecondary
@@ -226,7 +227,7 @@ fun CaregiverDashboardScreen(
         ) {
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 90.dp),
+                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 110.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 // Section Header
@@ -328,13 +329,6 @@ fun CaregiverDashboardScreen(
                     }
                 }
             }
-
-            // Floating Navigation Overlay (NO extra rectangular background layer)
-            CaregiverBottomNavigation(
-                currentRoute = "caregiver_dashboard",
-                onTabSelected = onNavigateToTab,
-                modifier = Modifier.align(Alignment.BottomCenter)
-            )
         }
     }
 }

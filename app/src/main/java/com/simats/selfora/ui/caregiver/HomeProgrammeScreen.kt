@@ -85,7 +85,7 @@ fun HomeProgrammeScreen(
         ) {
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 90.dp),
+                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 110.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 item {
@@ -137,13 +137,6 @@ fun HomeProgrammeScreen(
                     }
                 }
             }
-
-            // Floating Navigation Overlay
-            CaregiverBottomNavigation(
-                currentRoute = "home_programme",
-                onTabSelected = onNavigateToTab,
-                modifier = Modifier.align(Alignment.BottomCenter)
-            )
         }
     }
 }

@@ -169,6 +169,8 @@ fun HomeProgramCreateScreen(
                     Text("ASSIGN TO CAREGIVER", fontWeight = FontWeight.Bold)
                 }
             }
+
+            Spacer(modifier = Modifier.height(110.dp))
         }
     }
 }

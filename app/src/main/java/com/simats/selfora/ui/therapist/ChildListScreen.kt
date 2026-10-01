@@ -2,6 +2,8 @@ package com.simats.selfora.ui.therapist
 
 import androidx.compose.animation.*
 import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -114,7 +116,7 @@ fun ChildListScreen(
                 value = searchQuery,
                 onValueChange = { searchQuery = it },
                 label = "",
-                placeholder = "🔍 Search child by name...",
+                placeholder = "Search child by name...",
                 leadingIcon = Icons.Default.Search,
                 trailingIcon = if (searchQuery.isNotEmpty()) {
                     { IconButton(onClick = { searchQuery = "" }) { Icon(Icons.Default.Clear, contentDescription = "Clear") } }
@@ -123,17 +125,18 @@ fun ChildListScreen(
 
             Spacer(modifier = Modifier.height(14.dp))
 
-            // Filters
+            // Horizontally Scrollable Filters
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState()),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 filterOptions.forEach { filter ->
                     GlassChip(
                         text = filter,
                         selected = selectedFilter == filter,
-                        onClick = { selectedFilter = filter },
-                        modifier = Modifier.weight(1f)
+                        onClick = { selectedFilter = filter }
                     )
                 }
             }
@@ -151,7 +154,7 @@ fun ChildListScreen(
             } else {
                 LazyColumn(
                     verticalArrangement = Arrangement.spacedBy(14.dp),
-                    contentPadding = PaddingValues(bottom = 24.dp)
+                    contentPadding = PaddingValues(bottom = 110.dp)
                 ) {
                     items(childrenList) { child ->
                         GlassChildCard(child = child, onViewChild = { onChildSelected(child.id) })
@@ -177,28 +180,53 @@ fun GlassChildCard(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                modifier = Modifier.weight(1f),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 Surface(
                     shape = RoundedCornerShape(16.dp),
                     color = SelforaBlueLight,
-                    modifier = Modifier.size(46.dp)
+                    modifier = Modifier.size(44.dp)
                 ) {
                     Box(contentAlignment = Alignment.Center) {
-                        Text("👦", fontSize = 24.sp)
+                        Text("👦", fontSize = 22.sp)
                     }
                 }
-                Spacer(modifier = Modifier.width(12.dp))
-                Column {
-                    Text(child.name, fontWeight = FontWeight.Bold, fontSize = 17.sp, color = SelforaTextPrimary)
-                    Text("Age: ${child.age} • Caregiver: ${child.caregiverName} (${child.caregiverRelationship})", fontSize = 12.sp, color = SelforaTextSecondary)
+                Spacer(modifier = Modifier.width(10.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = child.name,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 16.sp,
+                        color = SelforaTextPrimary,
+                        maxLines = 1,
+                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                    )
+                    Text(
+                        text = "Age: ${child.age} • Caregiver: ${child.caregiverName} (${child.caregiverRelationship})",
+                        fontSize = 11.sp,
+                        color = SelforaTextSecondary,
+                        maxLines = 1,
+                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                    )
                 }
             }
             if (child.hasPendingAssessment) {
+                Spacer(modifier = Modifier.width(6.dp))
                 Surface(
                     shape = RoundedCornerShape(12.dp),
                     color = SelforaWarning.copy(alpha = 0.15f)
                 ) {
-                    Text("Pending Assmt", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = SelforaWarning, modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp))
+                    Text(
+                        text = "Pending Assmt",
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = SelforaWarning,
+                        maxLines = 1,
+                        softWrap = false,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                    )
                 }
             }
         }

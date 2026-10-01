@@ -283,6 +283,8 @@ fun ChildProfileScreen(
                     }
                 }
             }
+
+            Spacer(modifier = Modifier.height(110.dp))
         }
     }
 
