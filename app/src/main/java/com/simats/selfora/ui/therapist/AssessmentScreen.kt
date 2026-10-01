@@ -92,11 +92,6 @@ fun AssessmentScreen(
                         Text("Child ID: #$childId • $selectedActivity", fontSize = 12.sp, color = SelforaTextSecondary)
                     }
                 },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = SelforaTextPrimary)
-                    }
-                },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = SelforaSurface)
             )
         },

@@ -123,11 +123,6 @@ fun HomePracticeScreen(
                     }
                 },
                 modifier = Modifier.statusBarsPadding(),
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = SelforaTextPrimary)
-                    }
-                },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = SelforaSurface)
             )
         }
@@ -416,8 +411,6 @@ fun HomePracticeScreen(
                                 .height(50.dp),
                             shape = RoundedCornerShape(12.dp)
                         ) {
-                            Icon(Icons.Default.ArrowBack, contentDescription = null)
-                            Spacer(modifier = Modifier.width(6.dp))
                             Text(if (currentStepIndex == 0) "Exit" else "Previous", fontWeight = FontWeight.Bold)
                         }
 
@@ -486,12 +479,6 @@ fun HomePracticeScreen(
                                 if (currentStepIndex == steps.size - 1) "Finish Session" else "Next Step",
                                 fontWeight = FontWeight.Bold,
                                 color = Color.White
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Icon(
-                                if (currentStepIndex == steps.size - 1) Icons.Default.CheckCircle else Icons.Default.ArrowForward,
-                                contentDescription = null,
-                                tint = Color.White
                             )
                         }
                     }

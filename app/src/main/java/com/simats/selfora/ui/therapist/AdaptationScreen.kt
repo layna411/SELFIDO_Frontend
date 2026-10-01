@@ -2,6 +2,7 @@ package com.simats.selfora.ui.therapist
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
@@ -41,11 +42,6 @@ fun AdaptationScreen(
         topBar = {
             TopAppBar(
                 title = { Text("Clinical Adaptive Plan", fontWeight = FontWeight.Bold, color = SelforaTextPrimary) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = SelforaTextPrimary)
-                    }
-                },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = SelforaSurface,
                     titleContentColor = SelforaTextPrimary,
@@ -87,7 +83,9 @@ fun AdaptationScreen(
                                 }
                             }
 
-                            Icon(Icons.Default.ArrowForward, contentDescription = null, tint = SelforaBluePrimary)
+                            Surface(shape = CircleShape, color = SelforaBluePrimary.copy(alpha = 0.12f)) {
+                                Text("TO", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = SelforaBluePrimary, modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp))
+                            }
 
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                 Text("Target Prompt", fontSize = 11.sp, color = SelforaTextMuted)

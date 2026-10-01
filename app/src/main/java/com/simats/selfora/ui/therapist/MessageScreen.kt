@@ -101,14 +101,10 @@ fun MessageScreen(
                     }
                 },
                 navigationIcon = {
-                    IconButton(onClick = {
-                        if (selectedCaregiver != null) {
-                            selectedCaregiver = null
-                        } else {
-                            onBack()
+                    if (selectedCaregiver != null) {
+                        TextButton(onClick = { selectedCaregiver = null }) {
+                            Text("Chats", color = SelforaPrimary, fontWeight = FontWeight.Bold)
                         }
-                    }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = SelforaTextPrimary)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = SelforaSurface)

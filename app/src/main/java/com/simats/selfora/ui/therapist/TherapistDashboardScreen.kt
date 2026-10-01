@@ -309,7 +309,6 @@ fun QuickActionLargeGlassButton(
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(subtitle, fontSize = 12.sp, color = SelforaTextSecondary)
             }
-            Icon(Icons.Default.ChevronRight, contentDescription = null, tint = SelforaTextSecondary)
         }
     }
 }

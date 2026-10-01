@@ -149,7 +149,6 @@ fun CaregiverProgressScreen(
                                 Spacer(modifier = Modifier.width(12.dp))
                                 Text("View Detailed Practice History", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = SelforaTextPrimary)
                             }
-                            Icon(Icons.Default.ArrowForward, contentDescription = null, tint = SelforaPrimary)
                         }
                     }
                 }

@@ -44,11 +44,6 @@ fun CaregiverHistoryScreen(
             TopAppBar(
                 title = { Text("Practice History", fontWeight = FontWeight.Bold, color = SelforaTextPrimary) },
                 modifier = Modifier.statusBarsPadding(),
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = SelforaTextPrimary)
-                    }
-                },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = SelforaSurface)
             )
         }

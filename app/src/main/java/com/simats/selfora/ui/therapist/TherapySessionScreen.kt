@@ -77,11 +77,6 @@ fun TherapySessionScreen(
         topBar = {
             TopAppBar(
                 title = { Text("Therapy Session (Live)", fontWeight = FontWeight.Bold, color = SelforaTextPrimary) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = SelforaTextPrimary)
-                    }
-                },
                 actions = {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,

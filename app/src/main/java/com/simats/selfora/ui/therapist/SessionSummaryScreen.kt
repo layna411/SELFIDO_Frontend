@@ -80,11 +80,6 @@ fun SessionSummaryScreen(
         topBar = {
             TopAppBar(
                 title = { Text("Session Summary", fontWeight = FontWeight.Bold, color = SelforaTextPrimary) },
-                navigationIcon = {
-                    IconButton(onClick = onBackToDashboard) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = SelforaTextPrimary)
-                    }
-                },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = SelforaSurface,
                     titleContentColor = SelforaTextPrimary,

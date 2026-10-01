@@ -40,11 +40,6 @@ fun HomeProgramCreateScreen(
         topBar = {
             TopAppBar(
                 title = { Text("Assign Home Programme", fontWeight = FontWeight.Bold, color = SelforaTextPrimary) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = SelforaTextPrimary)
-                    }
-                },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = SelforaSurface,
                     titleContentColor = SelforaTextPrimary,

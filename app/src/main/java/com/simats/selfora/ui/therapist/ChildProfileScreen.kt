@@ -59,11 +59,6 @@ fun ChildProfileScreen(
         topBar = {
             TopAppBar(
                 title = { Text("Child Profile", fontWeight = FontWeight.Bold, fontSize = 20.sp, color = SelforaTextPrimary) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = SelforaTextPrimary)
-                    }
-                },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = SelforaSurface)
             )
         },

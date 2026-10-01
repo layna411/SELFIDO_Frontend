@@ -136,13 +136,13 @@ fun SelforaNavHost(
 
             // Therapist Navigation
             composable(NavRoutes.TherapistDashboard.route) {
-                TherapistDashboardScreen(
+                TherapistMainSwipeableScreen(
                     onNavigateToAddChildWorkflow = { navController.navigate(NavRoutes.AddChildWorkflow.route) },
-                    onNavigateToChildren = { navController.navigate(NavRoutes.ChildList.route) },
-                    onNavigateToAssessment = { navController.navigate(NavRoutes.Assessment.createRoute(1L)) },
-                    onNavigateToHomePrograms = { navController.navigate(NavRoutes.HomeProgramCreate.createRoute(1L)) },
-                    onNavigateToProgress = { navController.navigate(NavRoutes.Progress.createRoute(1L)) },
-                    onNavigateToMessages = { navController.navigate(NavRoutes.Messages.createRoute(1L)) },
+                    onNavigateToChildProfile = { id -> navController.navigate(NavRoutes.ChildProfile.createRoute(id)) },
+                    onNavigateToAssessment = { id -> navController.navigate(NavRoutes.Assessment.createRoute(id)) },
+                    onNavigateToHomePrograms = { id -> navController.navigate(NavRoutes.HomeProgramCreate.createRoute(id)) },
+                    onNavigateToProgress = { id -> navController.navigate(NavRoutes.Progress.createRoute(id)) },
+                    onNavigateToMessages = { id -> navController.navigate(NavRoutes.Messages.createRoute(id)) },
                     onNavigateToNotifications = { navController.navigate(NavRoutes.CaregiverNotifications.route) },
                     onLogout = {
                         SessionManager.clearSession()
@@ -285,11 +285,10 @@ fun SelforaNavHost(
 
             // Caregiver Navigation
             composable(NavRoutes.CaregiverDashboard.route) {
-                CaregiverDashboardScreen(
+                CaregiverMainSwipeableScreen(
                     onStartPractice = { progId, _ -> navController.navigate(NavRoutes.HomePractice.createRoute(progId)) },
-                    onNavigateToTab = { route -> navController.navigate(route) },
                     onNavigateToNotifications = { navController.navigate(NavRoutes.CaregiverNotifications.route) },
-                    onNavigateToProfile = { navController.navigate(NavRoutes.CaregiverProfile.route) },
+                    onViewDetailedHistory = { navController.navigate(NavRoutes.CaregiverHistory.route) },
                     onLogout = {
                         SessionManager.clearSession()
                         navController.navigate(NavRoutes.Login.route) { popUpTo(0) }
@@ -402,7 +401,7 @@ fun SelforaNavHost(
         }
 
         when {
-            isTherapistRoute -> {
+            isTherapistRoute && currentRoute != NavRoutes.TherapistDashboard.route -> {
                 GlassNavigationBar(
                     currentTab = activeTherapistTab,
                     onTabSelected = { tab ->
@@ -426,7 +425,7 @@ fun SelforaNavHost(
                         .navigationBarsPadding()
                 )
             }
-            isCaregiverRoute -> {
+            isCaregiverRoute && currentRoute != NavRoutes.CaregiverDashboard.route -> {
                 CaregiverBottomNavigation(
                     currentRoute = currentRoute ?: "",
                     onTabSelected = { targetRoute ->

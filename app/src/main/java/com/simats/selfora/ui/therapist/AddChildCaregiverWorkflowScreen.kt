@@ -70,13 +70,6 @@ fun AddChildCaregiverWorkflowScreen(
                         Text("Step $step of 3", fontSize = 12.sp, color = SelforaTextSecondary)
                     }
                 },
-                navigationIcon = {
-                    IconButton(onClick = {
-                        if (step > 1) step-- else onBack()
-                    }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = SelforaTextPrimary)
-                    }
-                },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = SelforaSurface)
             )
         },

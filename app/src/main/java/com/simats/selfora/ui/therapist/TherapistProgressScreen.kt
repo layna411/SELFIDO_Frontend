@@ -54,11 +54,6 @@ fun TherapistProgressScreen(
                         Text("Selected: ${selectedChild.name}", fontSize = 12.sp, color = SelforaPrimary, fontWeight = FontWeight.SemiBold)
                     }
                 },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = SelforaTextPrimary)
-                    }
-                },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = SelforaSurface)
             )
         },

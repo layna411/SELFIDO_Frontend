@@ -88,11 +88,6 @@ fun ChildListScreen(
         topBar = {
             TopAppBar(
                 title = { Text("Children", fontWeight = FontWeight.Bold, fontSize = 20.sp, color = SelforaTextPrimary) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = SelforaTextPrimary)
-                    }
-                },
                 actions = {
                     IconButton(onClick = onAddChildClick) {
                         Icon(Icons.Default.Add, contentDescription = "Add Child", tint = SelforaPrimary)

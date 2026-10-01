@@ -63,11 +63,6 @@ fun CaregiverNotificationsScreen(
             TopAppBar(
                 title = { Text("Notifications", fontWeight = FontWeight.Bold, color = SelforaTextPrimary) },
                 modifier = Modifier.statusBarsPadding(),
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = SelforaTextPrimary)
-                    }
-                },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = SelforaSurface)
             )
         }
