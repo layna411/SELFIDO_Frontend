@@ -126,32 +126,19 @@ fun SelforaNavHost(
             }
 
             composable(NavRoutes.Welcome.route) {
-                SelfidoWelcomeScreen(
-                    onNavigateToTherapistLogin = { navController.navigate(NavRoutes.TherapistLogin.route) },
-                    onNavigateToCaregiverLogin = { navController.navigate(NavRoutes.CaregiverLogin.route) },
-                    onNavigateToSuperAdminLogin = { navController.navigate(NavRoutes.SuperAdminLogin.route) }
-                )
+                LoginScreen(onLoginSuccess = handleLoginSuccess)
             }
 
             composable(NavRoutes.TherapistLogin.route) {
-                TherapistLoginScreen(
-                    onLoginSuccess = handleLoginSuccess,
-                    onBack = { navController.popBackStack() }
-                )
+                LoginScreen(onLoginSuccess = handleLoginSuccess)
             }
 
             composable(NavRoutes.CaregiverLogin.route) {
-                CaregiverLoginScreen(
-                    onLoginSuccess = handleLoginSuccess,
-                    onBack = { navController.popBackStack() }
-                )
+                LoginScreen(onLoginSuccess = handleLoginSuccess)
             }
 
             composable(NavRoutes.SuperAdminLogin.route) {
-                SuperAdminLoginScreen(
-                    onLoginSuccess = handleLoginSuccess,
-                    onBack = { navController.popBackStack() }
-                )
+                LoginScreen(onLoginSuccess = handleLoginSuccess)
             }
 
             // Super Admin Navigation
