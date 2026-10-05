@@ -9,6 +9,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -25,7 +26,8 @@ import com.simats.selfora.ui.theme.*
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CaregiverMessagesScreen(
-    onNavigateToTab: (String) -> Unit
+    onNavigateToTab: (String) -> Unit = {},
+    onBack: () -> Unit = {}
 ) {
     var messages by remember {
         mutableStateOf(
@@ -58,24 +60,31 @@ fun CaregiverMessagesScreen(
                 shadowElevation = 2.dp,
                 modifier = Modifier.statusBarsPadding()
             ) {
-                Column(
+                Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 12.dp)
+                        .padding(horizontal = 8.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
-                        "Therapist Chat",
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 20.sp,
-                        color = SelforaTextPrimary
-                    )
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Text(
-                        "Dr. Sarah Jenkins (Occupational Therapist)",
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = SelforaPrimary
-                    )
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = SelforaPrimary)
+                    }
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            "Therapist Chat",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 18.sp,
+                            color = SelforaTextPrimary
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            "Dr. Sarah Jenkins (Occupational Therapist)",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = SelforaPrimary
+                        )
+                    }
                 }
             }
         }
@@ -89,7 +98,6 @@ fun CaregiverMessagesScreen(
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(bottom = if (!isKeyboardVisible) 96.dp else 0.dp)
                     .imePadding()
             ) {
                 LazyColumn(
@@ -150,15 +158,16 @@ fun CaregiverMessagesScreen(
                     }
                 }
 
-                // Input bar sitting directly on top of keyboard (or above floating bottom bar if keyboard closed)
+                // Input bar sitting directly at bottom (or above keyboard when open)
                 Surface(
-                    color = Color.Transparent,
-                    shadowElevation = 0.dp,
+                    color = SelforaSurface,
+                    shadowElevation = 4.dp,
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
+                            .navigationBarsPadding()
                             .padding(horizontal = 12.dp, vertical = 8.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {

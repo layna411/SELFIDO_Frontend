@@ -20,38 +20,42 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.simats.selfora.data.api.ApiClient
 import com.simats.selfora.data.model.ChildSummaryItem
+import com.simats.selfora.data.model.ProgressSummaryResponse
 import com.simats.selfora.ui.components.glass.*
 import com.simats.selfora.ui.theme.*
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TherapistProgressScreen(
     childId: Long = 1L,
-    onBack: () -> Unit
+    onNavigateToAnalyzeAndAdapt: (Long) -> Unit = {},
+    onNavigateToPromptFading: (Long) -> Unit = {},
+    onBack: () -> Unit = {}
 ) {
-    // List of children available for progress selection
     val availableChildren = remember {
         listOf(
-            ChildSummaryItem(1L, "Arjun Kumar", 8, "Priya Kumar", "Mother", 72, 65, 80, true, true),
-            ChildSummaryItem(2L, "Ananya Reddy", 6, "Suresh Reddy", "Father", 85, 90, 78, false, true),
-            ChildSummaryItem(3L, "Kavya Patel", 7, "Meera Patel", "Mother", 45, 50, 60, true, false),
-            ChildSummaryItem(4L, "Rohan Sharma", 9, "Sunita Sharma", "Mother", 92, 88, 95, false, true)
+            ChildSummaryItem(id = 1L, name = "Arjun Kumar", age = 8, gender = "BOY", caregiverName = "Priya Kumar", caregiverRelationship = "Mother", dressingPercentage = 78, eatingPercentage = 65, shoesPercentage = 80, hasPendingAssessment = true, hasActiveHomeProgram = true),
+            ChildSummaryItem(id = 2L, name = "Ananya Reddy", age = 6, gender = "GIRL", caregiverName = "Suresh Reddy", caregiverRelationship = "Father", dressingPercentage = 85, eatingPercentage = 90, shoesPercentage = 78, hasPendingAssessment = false, hasActiveHomeProgram = true),
+            ChildSummaryItem(id = 3L, name = "Kavya Patel", age = 7, gender = "GIRL", caregiverName = "Meera Patel", caregiverRelationship = "Mother", dressingPercentage = 45, eatingPercentage = 50, shoesPercentage = 60, hasPendingAssessment = true, hasActiveHomeProgram = false),
+            ChildSummaryItem(id = 4L, name = "Rohan Sharma", age = 9, gender = "BOY", caregiverName = "Sunita Sharma", caregiverRelationship = "Mother", dressingPercentage = 92, eatingPercentage = 88, shoesPercentage = 95, hasPendingAssessment = false, hasActiveHomeProgram = true)
         )
     }
 
     var selectedChild by remember {
         mutableStateOf(availableChildren.find { it.id == childId } ?: availableChildren.first())
     }
-    var selectedTab by remember { mutableStateOf("Prompt Fading") }
+    var selectedTab by remember { mutableStateOf("Longitudinal Trends") }
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {
                     Column {
-                        Text("Therapist Progress & Analytics", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = SelforaTextPrimary)
-                        Text("Selected: ${selectedChild.name}", fontSize = 12.sp, color = SelforaPrimary, fontWeight = FontWeight.SemiBold)
+                        Text("Longitudinal Progress Monitoring", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = SelforaTextPrimary)
+                        Text("Selected Child: ${selectedChild.name}", fontSize = 12.sp, color = SelforaPrimary, fontWeight = FontWeight.SemiBold)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = SelforaSurface)
@@ -64,19 +68,18 @@ fun TherapistProgressScreen(
                 .fillMaxSize()
                 .padding(padding)
                 .verticalScroll(rememberScrollState())
-                .padding(16.dp)
+                .padding(horizontal = 20.dp, vertical = 16.dp)
         ) {
-            // STEP 1: SELECT CHILD NAME FIRST
+            // STEP 1: CHILD SELECTOR BAR
             GlassCard(modifier = Modifier.fillMaxWidth()) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Default.PersonSearch, contentDescription = null, tint = SelforaPrimary, modifier = Modifier.size(20.dp))
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("SELECT CHILD TO VIEW PROGRESS", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = SelforaPrimary)
+                    Text("SELECT CHILD TO MONITOR PROGRESS", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = SelforaPrimary)
                 }
 
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(10.dp))
 
-                // Child Selection Chips
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -91,23 +94,14 @@ fun TherapistProgressScreen(
                                 .background(if (isSelected) SelforaPrimary else Color.White)
                                 .border(1.dp, if (isSelected) Color.White else SelforaBorder, RoundedCornerShape(18.dp))
                                 .clickable { selectedChild = child }
-                                .padding(horizontal = 14.dp, vertical = 10.dp)
+                                .padding(horizontal = 14.dp, vertical = 8.dp)
                         ) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(if (child.name.contains("Ananya") || child.name.contains("Kavya")) "👧" else "👦", fontSize = 16.sp)
+                                Text(if (child.gender == "GIRL") "👧" else "👦", fontSize = 16.sp)
                                 Spacer(modifier = Modifier.width(6.dp))
                                 Column {
-                                    Text(
-                                        text = child.name,
-                                        fontSize = 13.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = if (isSelected) Color.White else SelforaTextPrimary
-                                    )
-                                    Text(
-                                        text = "Caregiver: ${child.caregiverName}",
-                                        fontSize = 10.sp,
-                                        color = if (isSelected) Color.White.copy(alpha = 0.85f) else SelforaTextSecondary
-                                    )
+                                    Text(child.name, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = if (isSelected) Color.White else SelforaTextPrimary)
+                                    Text("Caregiver: ${child.caregiverName}", fontSize = 10.sp, color = if (isSelected) Color.White.copy(alpha = 0.85f) else SelforaTextSecondary)
                                 }
                             }
                         }
@@ -115,158 +109,217 @@ fun TherapistProgressScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(18.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
-            // STEP 2: DISPLAY DETAILS FOR SELECTED CHILD ONLY
-            Text(
-                text = "PROGRESS DETAILS — ${selectedChild.name.uppercase()}",
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Bold,
-                color = SelforaPrimary,
-                letterSpacing = 1.sp
-            )
-            Spacer(modifier = Modifier.height(10.dp))
-
-            // Overall Independence Breakdown Card
-            GlassCard(modifier = Modifier.fillMaxWidth()) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column {
-                        Text(selectedChild.name, fontSize = 17.sp, fontWeight = FontWeight.Bold, color = SelforaTextPrimary)
-                        Text("Caregiver: ${selectedChild.caregiverName} (${selectedChild.caregiverRelationship})", fontSize = 12.sp, color = SelforaTextSecondary)
-                    }
-                    Surface(shape = CircleShape, color = SelforaBlueLight, modifier = Modifier.size(40.dp)) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Text(if (selectedChild.name.contains("Ananya") || selectedChild.name.contains("Kavya")) "👧" else "👦", fontSize = 20.sp)
-                        }
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(14.dp))
-                HorizontalDivider(color = SelforaBorder.copy(alpha = 0.5f))
-                Spacer(modifier = Modifier.height(14.dp))
-
-                Text("INDEPENDENCE BREAKDOWN (DRESSING)", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = SelforaPrimary)
-                Spacer(modifier = Modifier.height(12.dp))
-
-                val indepPct = selectedChild.dressingPercentage / 100f
-                val promptPct = (100 - selectedChild.dressingPercentage - 10) / 100f
-
-                ProgressCategoryBar("Independent (L0)", indepPct, PromptLevel0Independent, "${selectedChild.dressingPercentage}%")
-                Spacer(modifier = Modifier.height(10.dp))
-                ProgressCategoryBar("Prompt Required (L1-L6)", promptPct.coerceAtLeast(0.1f), PromptLevel2Gesture, "${(promptPct * 100).toInt()}%")
-                Spacer(modifier = Modifier.height(10.dp))
-                ProgressCategoryBar("Unable / Refused", 0.10f, PromptLevelUnable, "10%")
-            }
-
-            Spacer(modifier = Modifier.height(18.dp))
-
-            // Sub-tabs: Prompt Fading Timeline vs Caregiver Practice Review
+            // Quick Navigation Shortcuts to Stage 5 Modules
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                GlassChip(
-                    text = "Prompt Fading Timeline",
-                    selected = selectedTab == "Prompt Fading",
-                    onClick = { selectedTab = "Prompt Fading" },
+                GlassButton(
+                    text = "Analyze & Adapt Dashboard",
+                    onClick = { onNavigateToAnalyzeAndAdapt(selectedChild.id) },
+                    icon = Icons.Default.Analytics,
                     modifier = Modifier.weight(1f)
                 )
-                GlassChip(
-                    text = "Caregiver Home Practice",
-                    selected = selectedTab == "Home Practice",
-                    onClick = { selectedTab = "Home Practice" },
+                GlassOutlinedButton(
+                    text = "Prompt Fading Hub",
+                    onClick = { onNavigateToPromptFading(selectedChild.id) },
+                    icon = Icons.Default.TrendingDown,
                     modifier = Modifier.weight(1f)
                 )
             }
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            if (selectedTab == "Prompt Fading") {
-                // Section 13 Prompt Fading Timeline across multiple sessions
-                GlassCard(modifier = Modifier.fillMaxWidth()) {
-                    Text("STEP-LEVEL PROMPT FADING TIMELINE", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = SelforaPrimary)
-                    Text("Historical prompt reduction for ${selectedChild.name} over recent clinical sessions", fontSize = 12.sp, color = SelforaTextSecondary)
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    PromptFadingStepItem(
-                        stepNumber = 7,
-                        stepTitle = "Put head through neck opening",
-                        history = listOf(
-                            FadingSessionRecord("Session 1 (Sep 10)", "Full Physical", PromptLevel6FullPhysical, "Needed full hand-over-hand guidance"),
-                            FadingSessionRecord("Session 2 (Sep 15)", "Verbal", PromptLevel3Verbal, "Responded well to spoken cue"),
-                            FadingSessionRecord("Session 3 (Sep 20)", "Verbal", PromptLevel3Verbal, "Needed slight reminder"),
-                            FadingSessionRecord("Session 4 (Sep 25)", "Visual", PromptLevel1Visual, "Gazed at animation guide and initiated"),
-                            FadingSessionRecord("Session 5 (Sep 29)", "Independent", PromptLevel0Independent, "Completed independently without prompt")
-                        )
-                    )
-
-                    Spacer(modifier = Modifier.height(14.dp))
-                    HorizontalDivider(color = SelforaBorder.copy(alpha = 0.5f))
-                    Spacer(modifier = Modifier.height(14.dp))
-
-                    PromptFadingStepItem(
-                        stepNumber = 10,
-                        stepTitle = "Push right arm through sleeve",
-                        history = listOf(
-                            FadingSessionRecord("Session 1 (Sep 10)", "Partial Physical", PromptLevel5PartialPhysical, "Guided right elbow"),
-                            FadingSessionRecord("Session 3 (Sep 20)", "Gesture", PromptLevel2Gesture, "Pointed at sleeve hole"),
-                            FadingSessionRecord("Session 5 (Sep 29)", "Visual", PromptLevel1Visual, "Prompted by mirror view")
-                        )
+            // Sub-tabs: Longitudinal Trends vs Session Timeline vs Caregiver Practice
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                listOf("Longitudinal Trends", "Session Timeline", "Caregiver Practice").forEach { tab ->
+                    GlassChip(
+                        text = tab,
+                        selected = selectedTab == tab,
+                        onClick = { selectedTab = tab },
+                        modifier = Modifier.weight(1f)
                     )
                 }
-            } else {
-                // Section 16 Caregiver Home Practice Review
-                GlassCard(modifier = Modifier.fillMaxWidth()) {
-                    Text("CAREGIVER HOME PRACTICE REVIEW", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = SelforaPrimary)
-                    Text("Review practice logged at home by ${selectedChild.caregiverName} (${selectedChild.caregiverRelationship})", fontSize = 12.sp, color = SelforaTextSecondary)
-                    Spacer(modifier = Modifier.height(16.dp))
+            }
 
-                    Text("Activity: T-Shirt Dressing • Week 38", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = SelforaTextPrimary)
-                    Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
-                    // Days Grid
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        DayCheckCard("Mon", true)
-                        DayCheckCard("Tue", true)
-                        DayCheckCard("Wed", false)
-                        DayCheckCard("Thu", true)
-                        DayCheckCard("Fri", true)
-                        DayCheckCard("Sat", false)
-                        DayCheckCard("Sun", true)
+            when (selectedTab) {
+                // TAB 1: LONGITUDINAL TRENDS
+                "Longitudinal Trends" -> {
+                    // A. Independence Trend over time
+                    GlassCard(modifier = Modifier.fillMaxWidth()) {
+                        Text("OVERALL INDEPENDENCE TREND OVER TIME", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = SelforaPrimary)
+                        Text("Recorded independence percentage across consecutive clinical sessions", fontSize = 11.sp, color = SelforaTextSecondary)
+                        Spacer(modifier = Modifier.height(14.dp))
+
+                        // Visual Trend Line / Bars Representation
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(120.dp),
+                            horizontalArrangement = Arrangement.SpaceEvenly,
+                            verticalAlignment = Alignment.Bottom
+                        ) {
+                            listOf(
+                                "Sep 10" to 55,
+                                "Sep 15" to 62,
+                                "Sep 20" to 68,
+                                "Sep 25" to 70,
+                                "Sep 29" to 75,
+                                "Oct 02" to selectedChild.dressingPercentage
+                            ).forEach { (date, pct) ->
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Text("$pct%", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = SelforaPrimary)
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Box(
+                                        modifier = Modifier
+                                            .width(28.dp)
+                                            .height((pct * 0.9f).dp)
+                                            .background(SelforaPrimary, RoundedCornerShape(topStart = 6.dp, topEnd = 6.dp))
+                                    )
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Text(date, fontSize = 9.sp, color = SelforaTextSecondary)
+                                }
+                            }
+                        }
                     }
 
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(14.dp))
 
-                    // Caregiver Observation Box
-                    Surface(
-                        shape = RoundedCornerShape(16.dp),
-                        color = SelforaPurpleAccent.copy(alpha = 0.08f),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, SelforaSecondary.copy(alpha = 0.3f)),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Column(modifier = Modifier.padding(14.dp)) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(Icons.Default.FormatQuote, contentDescription = null, tint = SelforaSecondary)
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text("Caregiver Observation Note", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = SelforaSecondary)
+                    // B. Activity-Wise Progress (4 ADLs)
+                    GlassCard(modifier = Modifier.fillMaxWidth()) {
+                        Text("ACTIVITY-WISE INDEPENDENCE BREAKDOWN", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = SelforaPrimary)
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        ProgressCategoryBar("👕 Dressing (T-Shirt & Pants)", selectedChild.dressingPercentage / 100f, SelforaPrimary, "${selectedChild.dressingPercentage}%")
+                        Spacer(modifier = Modifier.height(10.dp))
+                        ProgressCategoryBar("🥄 Eating with Spoon", selectedChild.eatingPercentage / 100f, SelforaSecondary, "${selectedChild.eatingPercentage}%")
+                        Spacer(modifier = Modifier.height(10.dp))
+                        ProgressCategoryBar("🧼 Grooming & Washing", 0.60f, SelforaWarning, "60%")
+                        Spacer(modifier = Modifier.height(10.dp))
+                        ProgressCategoryBar("👟 Shoes & Socks", selectedChild.shoesPercentage / 100f, SelforaSuccess, "${selectedChild.shoesPercentage}%")
+                    }
+
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    // C. Assistance Distribution Chart
+                    GlassCard(modifier = Modifier.fillMaxWidth()) {
+                        Text("ASSISTANCE LEVEL DISTRIBUTION", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = SelforaPrimary)
+                        Text("Distribution across all assessed task steps", fontSize = 11.sp, color = SelforaTextSecondary)
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        ProgressCategoryBar("Level 0 – Independent", 0.40f, PromptLevel0Independent, "40%")
+                        Spacer(modifier = Modifier.height(8.dp))
+                        ProgressCategoryBar("Level 1 – Visual Prompt", 0.30f, PromptLevel1Visual, "30%")
+                        Spacer(modifier = Modifier.height(8.dp))
+                        ProgressCategoryBar("Level 2/3 – Gesture/Verbal", 0.20f, PromptLevel3Verbal, "20%")
+                        Spacer(modifier = Modifier.height(8.dp))
+                        ProgressCategoryBar("Level 5/6 – Physical Assistance", 0.10f, PromptLevel5PartialPhysical, "10%")
+                    }
+                }
+
+                // TAB 2: SESSION TIMELINE
+                "Session Timeline" -> {
+                    GlassCard(modifier = Modifier.fillMaxWidth()) {
+                        Text("LONGITUDINAL CLINICAL SESSION TIMELINE", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = SelforaPrimary)
+                        Text("Assessment dates, therapy sessions, adaptations, and prompt fading events", fontSize = 11.sp, color = SelforaTextSecondary)
+                        Spacer(modifier = Modifier.height(14.dp))
+
+                        listOf(
+                            TimelineEvent("Oct 02, 2026", "Therapy Session #6", "Dressing ADL", "78% Independence", "Prompt faded to Visual on Step 7", SelforaSuccess),
+                            TimelineEvent("Oct 01, 2026", "Approved Adaptation Plan", "Dressing ADL", "Adaptation Active", "Therapist approved visual prompt plan for right sleeve", SelforaSecondary),
+                            TimelineEvent("Sep 29, 2026", "Therapy Session #5", "Spoon Feeding", "70% Independence", "Verbal prompt recorded on scoop step", SelforaPrimary),
+                            TimelineEvent("Sep 25, 2026", "Therapy Session #4", "Velcro Shoes", "85% Independence", "Independent closure verified", SelforaSuccess),
+                            TimelineEvent("Sep 15, 2026", "Clinical Baseline Assessment", "All ADLs", "Evaluated Baseline", "Initial clinical baseline evaluation completed", SelforaWarning)
+                        ).forEach { item ->
+                            Surface(
+                                shape = RoundedCornerShape(12.dp),
+                                color = item.color.copy(alpha = 0.08f),
+                                border = androidx.compose.foundation.BorderStroke(1.dp, item.color.copy(alpha = 0.3f)),
+                                modifier = Modifier.fillMaxWidth().padding(bottom = 10.dp)
+                            ) {
+                                Column(modifier = Modifier.padding(12.dp)) {
+                                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                        Text(item.title, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = SelforaTextPrimary)
+                                        Text(item.date, fontSize = 10.sp, color = SelforaTextMuted)
+                                    }
+                                    Text("Activity: ${item.activity} • Score: ${item.score}", fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = item.color)
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Text(item.details, fontSize = 11.sp, color = SelforaTextSecondary)
+                                }
                             }
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(
-                                text = "\"${selectedChild.name} attempted step 7 independently on Monday! Needed a little help with the right sleeve on Thursday.\"",
-                                fontSize = 13.sp,
-                                color = SelforaTextPrimary,
-                                fontWeight = FontWeight.Medium
-                            )
                         }
+                    }
+                }
+
+                // TAB 3: CAREGIVER HOME PRACTICE TREND
+                "Caregiver Practice" -> {
+                    GlassCard(modifier = Modifier.fillMaxWidth()) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text("CAREGIVER HOME PRACTICE TREND", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = SelforaPrimary)
+                            Surface(shape = RoundedCornerShape(8.dp), color = SelforaSecondary.copy(alpha = 0.15f)) {
+                                Text("Caregiver Logged", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = SelforaSecondary, modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp))
+                            }
+                        }
+                        Text("Log of practices submitted at home by ${selectedChild.caregiverName}", fontSize = 11.sp, color = SelforaTextSecondary)
+                        Spacer(modifier = Modifier.height(14.dp))
+
+                        // Explicit Data Separation Safeguard Note
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = SelforaPurpleAccent.copy(alpha = 0.1f),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, SelforaSecondary.copy(alpha = 0.3f)),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column(modifier = Modifier.padding(10.dp)) {
+                                Text("🔒 CLINICAL DATA SEPARATION SAFEGUARD", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = SelforaSecondary)
+                                Text("Caregiver-reported home practice outcomes are displayed separately and are NEVER merged into the therapist's official clinical assessment score.", fontSize = 10.sp, color = SelforaTextPrimary)
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(14.dp))
+
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                            Column {
+                                Text("Total Practices Logged", fontSize = 11.sp, color = SelforaTextSecondary)
+                                Text("12 Sessions", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = SelforaTextPrimary)
+                            }
+                            Column {
+                                Text("Weekly Compliance", fontSize = 11.sp, color = SelforaTextSecondary)
+                                Text("85% (4x/wk)", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = SelforaSuccess)
+                            }
+                            Column {
+                                Text("Completed Activities", fontSize = 11.sp, color = SelforaTextSecondary)
+                                Text("4 ADLs", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = SelforaPrimary)
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(14.dp))
+                        Text("Caregiver Weekly Participation Grid (Week 38):", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = SelforaTextPrimary)
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                            DayCheckCard("Mon", true)
+                            DayCheckCard("Tue", true)
+                            DayCheckCard("Wed", false)
+                            DayCheckCard("Thu", true)
+                            DayCheckCard("Fri", true)
+                            DayCheckCard("Sat", false)
+                            DayCheckCard("Sun", true)
+                        }
+
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Text("Caregiver Outcome Notes:", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = SelforaTextPrimary)
+                        Text("\"Child practiced T-shirt dressing with visual prompts on Mon, Thu, Fri. Performed head insertion independently!\"", fontSize = 12.sp, color = SelforaTextSecondary, fontWeight = FontWeight.Medium)
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(110.dp))
+            Spacer(modifier = Modifier.height(150.dp))
         }
     }
 }
@@ -291,64 +344,6 @@ fun ProgressCategoryBar(label: String, percentage: Float, color: Color, percenta
     }
 }
 
-data class FadingSessionRecord(
-    val sessionName: String,
-    val promptName: String,
-    val promptColor: Color,
-    val note: String
-)
-
-@Composable
-fun PromptFadingStepItem(
-    stepNumber: Int,
-    stepTitle: String,
-    history: List<FadingSessionRecord>
-) {
-    Column {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Surface(shape = CircleShape, color = SelforaPrimary.copy(alpha = 0.15f), modifier = Modifier.size(28.dp)) {
-                Box(contentAlignment = Alignment.Center) {
-                    Text("$stepNumber", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = SelforaPrimary)
-                }
-            }
-            Spacer(modifier = Modifier.width(8.dp))
-            Text("Step $stepNumber: $stepTitle", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = SelforaTextPrimary)
-        }
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        // Vertical Timeline
-        Column(modifier = Modifier.padding(start = 14.dp)) {
-            history.forEachIndexed { index, rec ->
-                Row(verticalAlignment = Alignment.Top) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Surface(shape = CircleShape, color = rec.promptColor, modifier = Modifier.size(12.dp)) {}
-                        if (index < history.size - 1) {
-                            Box(
-                                modifier = Modifier
-                                    .width(2.dp)
-                                    .height(34.dp)
-                                    .background(SelforaBorder)
-                            )
-                        }
-                    }
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Column(modifier = Modifier.padding(bottom = 8.dp)) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(rec.sessionName, fontSize = 11.sp, color = SelforaTextSecondary)
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Surface(shape = RoundedCornerShape(8.dp), color = rec.promptColor.copy(alpha = 0.15f)) {
-                                Text(rec.promptName, fontSize = 11.sp, fontWeight = FontWeight.Bold, color = rec.promptColor, modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp))
-                            }
-                        }
-                        Text(rec.note, fontSize = 12.sp, color = SelforaTextPrimary)
-                    }
-                }
-            }
-        }
-    }
-}
-
 @Composable
 fun DayCheckCard(day: String, isCompleted: Boolean) {
     Surface(
@@ -366,3 +361,12 @@ fun DayCheckCard(day: String, isCompleted: Boolean) {
         }
     }
 }
+
+private data class TimelineEvent(
+    val date: String,
+    val title: String,
+    val activity: String,
+    val score: String,
+    val details: String,
+    val color: Color
+)

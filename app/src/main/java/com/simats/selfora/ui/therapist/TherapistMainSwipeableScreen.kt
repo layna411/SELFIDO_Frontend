@@ -44,6 +44,7 @@ fun TherapistMainSwipeableScreen(
                     onNavigateToChildren = {
                         coroutineScope.launch { pagerState.animateScrollToPage(1) }
                     },
+                    onNavigateToChildProfile = onNavigateToChildProfile,
                     onNavigateToAssessment = {
                         coroutineScope.launch { pagerState.animateScrollToPage(2) }
                     },
@@ -92,17 +93,19 @@ fun TherapistMainSwipeableScreen(
             }
         }
 
-        GlassNavigationBar(
-            currentTab = tabs[pagerState.currentPage],
-            onTabSelected = { selectedTab ->
-                val pageIndex = tabs.indexOf(selectedTab)
-                coroutineScope.launch {
-                    pagerState.animateScrollToPage(pageIndex)
-                }
-            },
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .navigationBarsPadding()
-        )
+        if (tabs[pagerState.currentPage] != TherapistTab.MESSAGES) {
+            GlassNavigationBar(
+                currentTab = tabs[pagerState.currentPage],
+                onTabSelected = { selectedTab ->
+                    val pageIndex = tabs.indexOf(selectedTab)
+                    coroutineScope.launch {
+                        pagerState.animateScrollToPage(pageIndex)
+                    }
+                },
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .navigationBarsPadding()
+            )
+        }
     }
 }

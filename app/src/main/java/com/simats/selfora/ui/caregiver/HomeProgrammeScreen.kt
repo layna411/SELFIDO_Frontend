@@ -20,6 +20,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.simats.selfora.data.api.ApiClient
 import com.simats.selfora.data.model.HomeProgramResponse
+import com.simats.selfora.data.repository.PracticeSessionStore
 import com.simats.selfora.ui.theme.*
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -30,6 +31,7 @@ fun HomeProgrammeScreen(
 ) {
     var homePrograms by remember { mutableStateOf<List<HomeProgramResponse>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
+    val practiceRecords by PracticeSessionStore.records.collectAsState()
 
     LaunchedEffect(Unit) {
         isLoading = true
@@ -85,7 +87,7 @@ fun HomeProgrammeScreen(
         ) {
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 110.dp),
+                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 150.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 item {
@@ -146,11 +148,21 @@ fun HomeProgrammeCard(
     program: HomeProgramResponse,
     onStartPractice: () -> Unit
 ) {
-    val (iconEmoji, totalSteps, completedCount) = when (program.activityId) {
-        13L -> Triple("🥣", 10, 0)
-        9L -> Triple("👟", 10, 0)
-        else -> Triple("👕", 18, 7)
+    val practiceRecords by PracticeSessionStore.records.collectAsState()
+    val recordForThisAct = practiceRecords.firstOrNull { it.activityId == program.activityId }
+
+    val iconEmoji = when (program.activityId) {
+        13L -> "🥣"
+        9L -> "👟"
+        else -> "👕"
     }
+    val totalSteps = when (program.activityId) {
+        13L -> 10
+        9L -> 10
+        else -> 18
+    }
+    val completedCount = recordForThisAct?.independentCount ?: if (program.activityId == 1L) 7 else 0
+    val isPracticedToday = PracticeSessionStore.isActivityPracticedToday(program.activityId)
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -198,14 +210,14 @@ fun HomeProgrammeCard(
 
                 Surface(
                     shape = RoundedCornerShape(10.dp),
-                    color = if (completedCount > 0) SelforaSuccess.copy(alpha = 0.15f) else SelforaWarning.copy(alpha = 0.15f)
+                    color = if (isPracticedToday) SelforaSuccess.copy(alpha = 0.15f) else if (completedCount > 0) SelforaPrimary.copy(alpha = 0.15f) else SelforaWarning.copy(alpha = 0.15f)
                 ) {
                     Text(
-                        if (completedCount > 0) "In Progress" else "Assigned",
+                        if (isPracticedToday) "Practiced Today! ✓" else if (completedCount > 0) "In Progress" else "Assigned",
                         modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
-                        color = if (completedCount > 0) SelforaSuccess else SelforaWarning
+                        color = if (isPracticedToday) SelforaSuccess else if (completedCount > 0) SelforaPrimary else SelforaWarning
                     )
                 }
             }

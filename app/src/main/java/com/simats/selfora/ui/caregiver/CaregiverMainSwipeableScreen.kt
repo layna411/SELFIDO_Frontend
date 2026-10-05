@@ -10,19 +10,25 @@ import androidx.compose.ui.Modifier
 import com.simats.selfora.ui.theme.SelforaBackground
 import kotlinx.coroutines.launch
 
+data class ActivePracticeSessionInfo(val programId: Long, val activityCode: String)
+
 @Composable
 fun CaregiverMainSwipeableScreen(
     initialRoute: String = "caregiver_dashboard",
-    onStartPractice: (Long, String) -> Unit,
+    onStartPractice: (Long, String) -> Unit = { _, _ -> },
+    onNavigateToMessages: () -> Unit = {},
     onNavigateToNotifications: () -> Unit,
     onViewDetailedHistory: () -> Unit,
+    onOpenChildMode: () -> Unit = {},
     onLogout: () -> Unit
 ) {
+    var activeSubScreen by remember { mutableStateOf<String?>(null) } // "messages", "practice", or null
+    var currentPracticeInfo by remember { mutableStateOf<ActivePracticeSessionInfo?>(null) }
+
     val tabs = listOf(
         CaregiverTab.Home,
         CaregiverTab.Programme,
         CaregiverTab.Progress,
-        CaregiverTab.Messages,
         CaregiverTab.Profile
     )
     val initialPageIndex = tabs.indexOfFirst { it.route == initialRoute }.coerceAtLeast(0)
@@ -31,74 +37,112 @@ fun CaregiverMainSwipeableScreen(
 
     val currentTabRoute = tabs[pagerState.currentPage].route
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(SelforaBackground)
-    ) {
-        HorizontalPager(
-            state = pagerState,
-            modifier = Modifier.fillMaxSize()
-        ) { page ->
-            when (tabs[page]) {
-                CaregiverTab.Home -> CaregiverDashboardScreen(
-                    onStartPractice = onStartPractice,
-                    onNavigateToTab = { targetRoute ->
-                        val idx = tabs.indexOfFirst { it.route == targetRoute }
-                        if (idx >= 0) coroutineScope.launch { pagerState.animateScrollToPage(idx) }
-                    },
-                    onNavigateToNotifications = onNavigateToNotifications,
-                    onNavigateToProfile = {
-                        coroutineScope.launch { pagerState.animateScrollToPage(4) }
-                    },
-                    onLogout = onLogout
-                )
-
-                CaregiverTab.Programme -> HomeProgrammeScreen(
-                    onStartPractice = onStartPractice,
-                    onNavigateToTab = { targetRoute ->
-                        val idx = tabs.indexOfFirst { it.route == targetRoute }
-                        if (idx >= 0) coroutineScope.launch { pagerState.animateScrollToPage(idx) }
-                    }
-                )
-
-                CaregiverTab.Progress -> CaregiverProgressScreen(
-                    onNavigateToHistory = onViewDetailedHistory,
-                    onNavigateToTab = { targetRoute ->
-                        val idx = tabs.indexOfFirst { it.route == targetRoute }
-                        if (idx >= 0) coroutineScope.launch { pagerState.animateScrollToPage(idx) }
-                    }
-                )
-
-                CaregiverTab.Messages -> CaregiverMessagesScreen(
-                    onNavigateToTab = { targetRoute ->
-                        val idx = tabs.indexOfFirst { it.route == targetRoute }
-                        if (idx >= 0) coroutineScope.launch { pagerState.animateScrollToPage(idx) }
-                    }
-                )
-
-                CaregiverTab.Profile -> CaregiverProfileScreen(
-                    onLogout = onLogout,
-                    onBack = {
-                        coroutineScope.launch { pagerState.animateScrollToPage(0) }
-                    }
-                )
-            }
-        }
-
-        CaregiverBottomNavigation(
-            currentRoute = currentTabRoute,
-            onTabSelected = { selectedRoute ->
-                val pageIndex = tabs.indexOfFirst { it.route == selectedRoute }
-                if (pageIndex >= 0) {
-                    coroutineScope.launch {
-                        pagerState.animateScrollToPage(pageIndex)
-                    }
-                }
-            },
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .navigationBarsPadding()
+    if (activeSubScreen == "messages") {
+        CaregiverMessagesScreen(
+            onNavigateToTab = { activeSubScreen = null },
+            onBack = { activeSubScreen = null }
         )
+    } else if (activeSubScreen == "practice" && currentPracticeInfo != null) {
+        HomePracticeScreen(
+            programId = currentPracticeInfo!!.programId,
+            activityCode = currentPracticeInfo!!.activityCode,
+            onPracticeCompleted = { activeSubScreen = null },
+            onBack = { activeSubScreen = null }
+        )
+    } else if (activeSubScreen == "history") {
+        CaregiverHistoryScreen(
+            onBack = { activeSubScreen = null }
+        )
+    } else {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(SelforaBackground)
+        ) {
+            HorizontalPager(
+                state = pagerState,
+                modifier = Modifier.fillMaxSize()
+            ) { page ->
+                when (tabs[page]) {
+                    CaregiverTab.Home -> CaregiverDashboardScreen(
+                        onStartPractice = { progId, actCode ->
+                            currentPracticeInfo = ActivePracticeSessionInfo(progId, actCode)
+                            activeSubScreen = "practice"
+                        },
+                        onNavigateToTab = { targetRoute ->
+                            if (targetRoute == "caregiver_messages") {
+                                activeSubScreen = "messages"
+                            } else {
+                                val idx = tabs.indexOfFirst { it.route == targetRoute }
+                                if (idx >= 0) coroutineScope.launch { pagerState.animateScrollToPage(idx) }
+                            }
+                        },
+                        onNavigateToMessages = {
+                            activeSubScreen = "messages"
+                        },
+                        onNavigateToNotifications = onNavigateToNotifications,
+                        onNavigateToProfile = {
+                            coroutineScope.launch { pagerState.animateScrollToPage(3) }
+                        },
+                        onOpenChildMode = onOpenChildMode,
+                        onLogout = onLogout
+                    )
+
+                    CaregiverTab.Programme -> HomeProgrammeScreen(
+                        onStartPractice = { progId, actCode ->
+                            currentPracticeInfo = ActivePracticeSessionInfo(progId, actCode)
+                            activeSubScreen = "practice"
+                        },
+                        onNavigateToTab = { targetRoute ->
+                            if (targetRoute == "caregiver_messages") {
+                                activeSubScreen = "messages"
+                            } else {
+                                val idx = tabs.indexOfFirst { it.route == targetRoute }
+                                if (idx >= 0) coroutineScope.launch { pagerState.animateScrollToPage(idx) }
+                            }
+                        }
+                    )
+
+                    CaregiverTab.Progress -> CaregiverProgressScreen(
+                        onNavigateToHistory = {
+                            activeSubScreen = "history"
+                            onViewDetailedHistory()
+                        },
+                        onNavigateToTab = { targetRoute ->
+                            if (targetRoute == "caregiver_messages") {
+                                activeSubScreen = "messages"
+                            } else {
+                                val idx = tabs.indexOfFirst { it.route == targetRoute }
+                                if (idx >= 0) coroutineScope.launch { pagerState.animateScrollToPage(idx) }
+                            }
+                        }
+                    )
+
+                    CaregiverTab.Profile -> CaregiverProfileScreen(
+                        onLogout = onLogout,
+                        onBack = {
+                            coroutineScope.launch { pagerState.animateScrollToPage(0) }
+                        }
+                    )
+
+                    else -> {}
+                }
+            }
+
+            CaregiverBottomNavigation(
+                currentRoute = currentTabRoute,
+                onTabSelected = { selectedRoute ->
+                    val pageIndex = tabs.indexOfFirst { it.route == selectedRoute }
+                    if (pageIndex >= 0) {
+                        coroutineScope.launch {
+                            pagerState.animateScrollToPage(pageIndex)
+                        }
+                    }
+                },
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .navigationBarsPadding()
+            )
+        }
     }
 }

@@ -19,14 +19,18 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.simats.selfora.data.model.CaregiverPracticeHistoryItem
+import com.simats.selfora.data.repository.PracticeSessionStore
 import com.simats.selfora.ui.theme.*
+import java.time.LocalDate
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CaregiverHistoryScreen(
     onBack: () -> Unit
 ) {
-    val historyItems = remember {
+    val storedRecords by PracticeSessionStore.records.collectAsState()
+
+    val baseHistoryItems = remember {
         listOf(
             CaregiverPracticeHistoryItem(101L, "👕 T-Shirt Dressing", "Today", 12, 18, 18, true),
             CaregiverPracticeHistoryItem(100L, "🥣 Eating with Spoon", "Yesterday", 8, 10, 10, true),
@@ -36,6 +40,24 @@ fun CaregiverHistoryScreen(
         )
     }
 
+    val historyItems = remember(storedRecords) {
+        val todayStr = LocalDate.now().toString()
+        val dynamicItems = storedRecords.map { rec ->
+            CaregiverPracticeHistoryItem(
+                sessionId = rec.sessionId,
+                activityTitle = rec.activityTitle,
+                dateDisplay = if (rec.practiceDate == todayStr) "Today" else rec.practiceDate,
+                durationMinutes = rec.durationMinutes,
+                totalSteps = rec.totalSteps,
+                completedSteps = rec.independentCount,
+                isFullyCompleted = rec.neededHelpCount == 0
+            )
+        }
+        val dynamicIds = dynamicItems.map { it.sessionId }.toSet()
+        val staticFiltered = baseHistoryItems.filterNot { it.sessionId in dynamicIds }
+        dynamicItems + staticFiltered
+    }
+
     var selectedItem by remember { mutableStateOf<CaregiverPracticeHistoryItem?>(null) }
 
     Scaffold(
@@ -43,6 +65,11 @@ fun CaregiverHistoryScreen(
         topBar = {
             TopAppBar(
                 title = { Text("Practice History", fontWeight = FontWeight.Bold, color = SelforaTextPrimary) },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = SelforaTextPrimary)
+                    }
+                },
                 modifier = Modifier.statusBarsPadding(),
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = SelforaSurface)
             )
@@ -55,9 +82,8 @@ fun CaregiverHistoryScreen(
                 .background(SelforaBackground)
         ) {
             LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(16.dp),
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 40.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 items(historyItems) { item ->
@@ -111,7 +137,7 @@ fun CaregiverHistoryScreen(
                             Text("Date: ${item.dateDisplay}")
                             Text("Duration: ${item.durationMinutes} minutes")
                             Text("Steps Practiced: ${item.totalSteps}")
-                            Text("Steps Completed: ${item.completedSteps}")
+                            Text("Steps Completed Independently: ${item.completedSteps}")
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
                                 "Outcome: ${if (item.isFullyCompleted) "Child completed all practice steps with guidance." else "Child attempted practice steps with parent assistance."}",

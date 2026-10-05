@@ -12,11 +12,25 @@ val SelforaSuccess = Color(0xFF10B981)        // Teal Green
 val SelforaWarning = Color(0xFFF59E0B)        // Amber
 val SelforaError = Color(0xFFEF4444)          // Red
 
-val SelforaBackground = Color(0xFFF8FAFC)     // Soft White
-val SelforaSurface = Color(0xFFFFFFFF)        // White
+val SelforaBackground = Color(0xFFF5F7FC)     // Soft Ice Gray / Blue
+val SelforaSurface = Color(0xFFFFFFFF)        // Pure White
 val SelforaTextPrimary = Color(0xFF172033)    // Dark Navy
 val SelforaTextSecondary = Color(0xFF64748B)  // Slate Gray
 val SelforaBorder = Color(0xFFE2E8F0)         // Light Slate
+
+// Glassmorphism System Color Tokens
+val GlassSurfaceLight = Color(0xFFFFFFFF).copy(alpha = 0.85f)
+val GlassSurfaceMedium = Color(0xFFFFFFFF).copy(alpha = 0.72f)
+val GlassSurfaceSubtle = Color(0xFFFFFFFF).copy(alpha = 0.50f)
+val GlassBorderLight = Color(0xFFFFFFFF).copy(alpha = 0.65f)
+val GlassBorderDark = Color(0xFFE2E8F0).copy(alpha = 0.80f)
+val GlassShadowAmbient = Color(0x0F172033)
+val GlassShadowSpot = Color(0x1A2563EB)
+
+// Role-Based Theme Accents
+val TherapistPrimaryGradient = listOf(Color(0xFF2563EB), Color(0xFF1D4ED8))
+val CaregiverPrimaryGradient = listOf(Color(0xFF7C3AED), Color(0xFF6D28D9))
+val ChildPrimaryGradient = listOf(Color(0xFF3B82F6), Color(0xFF8B5CF6))
 
 // Legacy Aliases for Component Backward-Compatibility
 val PrimaryBlue = SelforaPrimary

@@ -7,7 +7,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowForward
-import androidx.compose.material.icons.filled.Checkroom
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -16,19 +16,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.simats.selfora.data.api.ApiClient
+import com.simats.selfora.data.local.SessionManager
 import com.simats.selfora.data.model.TaskStepResponse
-import com.simats.selfora.ui.therapist.getSampleTShirtSteps
-import com.simats.selfora.ui.therapist.getSampleGirlFrockSteps
-import com.simats.selfora.ui.therapist.getSampleEatingSteps
-import com.simats.selfora.ui.therapist.getSampleShoesSteps
 import com.simats.selfora.ui.components.VisualStepGuidanceCard
 import com.simats.selfora.ui.theme.*
+import com.simats.selfora.ui.therapist.getSampleEatingSteps
+import com.simats.selfora.ui.therapist.getSampleGirlFrockSteps
+import com.simats.selfora.ui.therapist.getSampleShoesSteps
+import com.simats.selfora.ui.therapist.getSampleTShirtSteps
 import com.simats.selfora.utils.TtsManager
-import kotlinx.coroutines.launch
 
 @Composable
 fun ChildActivityStepScreen(
@@ -42,6 +41,7 @@ fun ChildActivityStepScreen(
 
     val context = LocalContext.current
     val ttsManager = remember { TtsManager(context) }
+    val gender = remember { SessionManager.getActiveChildGender().ifBlank { "BOY" } }
 
     DisposableEffect(Unit) {
         onDispose {
@@ -67,7 +67,7 @@ fun ChildActivityStepScreen(
         }
     }
 
-    // Auto-speak child instruction on step change
+    // Auto-speak instruction on step navigation
     LaunchedEffect(currentStepIndex, steps) {
         if (steps.isNotEmpty() && currentStepIndex < steps.size) {
             val instruction = steps[currentStepIndex].childInstruction
@@ -79,7 +79,9 @@ fun ChildActivityStepScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(ChildBlueCard)
-            .padding(24.dp)
+            .statusBarsPadding()
+            .navigationBarsPadding()
+            .padding(20.dp)
     ) {
         if (isLoading || steps.isEmpty()) {
             CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
@@ -91,7 +93,7 @@ fun ChildActivityStepScreen(
                 verticalArrangement = Arrangement.SpaceBetween,
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // Header Step Counter
+                // Header Bar (Back button & Step Counter)
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -114,23 +116,25 @@ fun ChildActivityStepScreen(
                         )
                     }
 
-                    Spacer(modifier = Modifier.width(48.dp))
+                    IconButton(onClick = { ttsManager.speak(step.childInstruction) }) {
+                        Icon(Icons.Default.VolumeUp, contentDescription = "Replay Audio", tint = SelforaPrimary)
+                    }
                 }
 
-                // Animated GIF Visual Step Guidance Card
+                // Visual Step Guidance Card
                 VisualStepGuidanceCard(
                     stepNumber = currentStepIndex + 1,
                     totalSteps = steps.size,
                     stepTitle = step.title,
                     childInstruction = step.childInstruction,
-                    gender = "BOY",
+                    gender = gender,
                     onSpeakInstruction = { ttsManager.speak(step.childInstruction) }
                 )
 
-                // Big Child Touch Action Buttons (Symmetrically Aligned)
+                // Navigation Touch Buttons
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     if (currentStepIndex > 0) {
@@ -138,14 +142,23 @@ fun ChildActivityStepScreen(
                             onClick = { currentStepIndex-- },
                             modifier = Modifier
                                 .weight(1f)
-                                .height(64.dp),
-                            shape = RoundedCornerShape(20.dp),
+                                .height(60.dp),
+                            shape = RoundedCornerShape(18.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = SelforaBlueDark)
                         ) {
                             Icon(Icons.Default.ArrowBack, contentDescription = null)
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text("Previous", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("Previous", fontWeight = FontWeight.Bold, fontSize = 15.sp)
                         }
+                    }
+
+                    IconButton(
+                        onClick = { ttsManager.speak(step.childInstruction) },
+                        modifier = Modifier
+                            .size(60.dp)
+                            .background(Color.White, CircleShape)
+                    ) {
+                        Icon(Icons.Default.Refresh, contentDescription = "Replay", tint = SelforaPrimary)
                     }
 
                     Button(
@@ -158,17 +171,17 @@ fun ChildActivityStepScreen(
                         },
                         modifier = Modifier
                             .weight(1f)
-                            .height(64.dp),
-                        shape = RoundedCornerShape(20.dp),
+                            .height(60.dp),
+                        shape = RoundedCornerShape(18.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = ChildGreenPlay)
                     ) {
                         Text(
                             if (currentStepIndex == steps.size - 1) "I DID IT! 🎉" else "NEXT STEP",
                             fontWeight = FontWeight.Bold,
-                            fontSize = 18.sp,
+                            fontSize = 17.sp,
                             color = Color.White
                         )
-                        Spacer(modifier = Modifier.width(8.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
                         Icon(Icons.Default.ArrowForward, contentDescription = null, tint = Color.White)
                     }
                 }

@@ -105,6 +105,10 @@ fun MessageScreen(
                         TextButton(onClick = { selectedCaregiver = null }) {
                             Text("Chats", color = SelforaPrimary, fontWeight = FontWeight.Bold)
                         }
+                    } else {
+                        IconButton(onClick = onBack) {
+                            Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = SelforaPrimary)
+                        }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = SelforaSurface)
@@ -139,7 +143,7 @@ fun MessageScreen(
 
                     LazyColumn(
                         verticalArrangement = Arrangement.spacedBy(10.dp),
-                        contentPadding = PaddingValues(bottom = 110.dp)
+                        contentPadding = PaddingValues(bottom = 150.dp)
                     ) {
                         items(filteredList) { contact ->
                             GlassCard(
@@ -244,7 +248,7 @@ fun MessageScreen(
                     Surface(
                         color = Color.White,
                         shadowElevation = 8.dp,
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth().navigationBarsPadding()
                     ) {
                         Row(
                             modifier = Modifier

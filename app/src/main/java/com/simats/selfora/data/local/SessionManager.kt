@@ -13,6 +13,13 @@ object SessionManager {
     private const val KEY_JWT_TOKEN = "jwt_token"
     private const val KEY_MUST_CHANGE_PASSWORD = "must_change_password"
 
+    // Child Context & Child Mode Keys
+    private const val KEY_ACTIVE_CHILD_ID = "active_child_id"
+    private const val KEY_ACTIVE_CHILD_NAME = "active_child_name"
+    private const val KEY_ACTIVE_CHILD_GENDER = "active_child_gender"
+    private const val KEY_IS_CHILD_MODE_ACTIVE = "is_child_mode_active"
+    private const val KEY_PARENT_ADULT_ROLE = "parent_adult_role"
+
     private lateinit var prefs: SharedPreferences
 
     fun init(context: Context) {
@@ -61,6 +68,10 @@ object SessionManager {
         return prefs.getString(KEY_USER_ROLE, "ROLE_THERAPIST") ?: "ROLE_THERAPIST"
     }
 
+    fun isSuperAdmin(): Boolean {
+        return getUserRole() == "ROLE_SUPER_ADMIN"
+    }
+
     fun getUserId(): Long {
         if (!::prefs.isInitialized) return 1L
         return prefs.getLong(KEY_USER_ID, 1L)
@@ -74,6 +85,62 @@ object SessionManager {
     fun getJwtToken(): String? {
         if (!::prefs.isInitialized) return null
         return prefs.getString(KEY_JWT_TOKEN, null)
+    }
+
+    // ==========================================
+    // Child Context & Child Mode Management
+    // ==========================================
+    fun saveActiveChildContext(childId: Long, childName: String, gender: String = "BOY") {
+        if (!::prefs.isInitialized) return
+        prefs.edit().apply {
+            putLong(KEY_ACTIVE_CHILD_ID, childId)
+            putString(KEY_ACTIVE_CHILD_NAME, childName)
+            putString(KEY_ACTIVE_CHILD_GENDER, gender)
+            apply()
+        }
+    }
+
+    fun getActiveChildId(): Long {
+        if (!::prefs.isInitialized) return 1L
+        return prefs.getLong(KEY_ACTIVE_CHILD_ID, 1L)
+    }
+
+    fun getActiveChildName(): String {
+        if (!::prefs.isInitialized) return "Aarav Sharma"
+        return prefs.getString(KEY_ACTIVE_CHILD_NAME, "Aarav Sharma") ?: "Aarav Sharma"
+    }
+
+    fun getActiveChildGender(): String {
+        if (!::prefs.isInitialized) return "BOY"
+        return prefs.getString(KEY_ACTIVE_CHILD_GENDER, "BOY") ?: "BOY"
+    }
+
+    fun enterChildMode(adultRole: String, childId: Long, childName: String, gender: String = "BOY") {
+        if (!::prefs.isInitialized) return
+        prefs.edit().apply {
+            putBoolean(KEY_IS_CHILD_MODE_ACTIVE, true)
+            putString(KEY_PARENT_ADULT_ROLE, adultRole)
+            putLong(KEY_ACTIVE_CHILD_ID, childId)
+            putString(KEY_ACTIVE_CHILD_NAME, childName)
+            putString(KEY_ACTIVE_CHILD_GENDER, gender)
+            apply()
+        }
+    }
+
+    fun exitChildMode(): String {
+        if (!::prefs.isInitialized) return "ROLE_THERAPIST"
+        val adultRole = prefs.getString(KEY_PARENT_ADULT_ROLE, getUserRole()) ?: getUserRole()
+        prefs.edit().apply {
+            putBoolean(KEY_IS_CHILD_MODE_ACTIVE, false)
+            remove(KEY_PARENT_ADULT_ROLE)
+            apply()
+        }
+        return adultRole
+    }
+
+    fun isChildModeActive(): Boolean {
+        if (!::prefs.isInitialized) return false
+        return prefs.getBoolean(KEY_IS_CHILD_MODE_ACTIVE, false)
     }
 
     fun clearSession() {

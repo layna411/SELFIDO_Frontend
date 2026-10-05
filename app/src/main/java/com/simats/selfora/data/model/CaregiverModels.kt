@@ -16,10 +16,11 @@ enum class CaregiverObservationOutcome(
     val colorHex: String,
     val promptLevelEquivalent: Int
 ) {
-    INDEPENDENT("Did independently", "Child completed without assistance", "🟢", "#10B981", 0),
-    LITTLE_HELP("Needed a little help", "Child needed slight visual or verbal cue", "🔵", "#2563EB", 2),
-    LOT_OF_HELP("Needed a lot of help", "Child needed physical guidance or demonstration", "🟠", "#F59E0B", 4),
-    COULD_NOT_COMPLETE("Could not complete", "Child was unable to complete the step today", "🔴", "#EF4444", 6)
+    INDEPENDENT("Completed Independently", "Child completed without any assistance", "🟢", "#10B981", 0),
+    LITTLE_HELP("Completed with a Little Help", "Child completed with a slight visual or verbal cue", "🔵", "#2563EB", 2),
+    LOT_HELP("Completed with a Lot of Help", "Child completed with physical guidance or demonstration", "🟠", "#F59E0B", 4),
+    COULD_NOT_COMPLETE("Could Not Complete", "Child was unable or refused to complete the step today", "🔴", "#EF4444", 6),
+    NOT_PRACTISED("Not Practised", "Step was skipped or not attempted during this session", "⚪", "#64748B", 0)
 }
 
 data class CaregiverNotificationItem(

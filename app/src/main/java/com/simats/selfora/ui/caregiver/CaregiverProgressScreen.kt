@@ -50,7 +50,7 @@ fun CaregiverProgressScreen(
         ) {
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 110.dp),
+                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 150.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 // Header streak card

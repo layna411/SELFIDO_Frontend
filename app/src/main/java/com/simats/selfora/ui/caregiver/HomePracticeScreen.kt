@@ -33,6 +33,8 @@ import com.simats.selfora.ui.theme.*
 import kotlinx.coroutines.launch
 import java.util.*
 
+import com.simats.selfora.data.repository.PracticeSessionStore
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomePracticeScreen(
@@ -56,7 +58,9 @@ fun HomePracticeScreen(
     var neededHelpCount by remember { mutableStateOf(0) }
     var totalPracticeTimeSeconds by remember { mutableStateOf(720) } // Default ~12 mins
 
-    // Observation Modal state per step
+    // Observation state per step
+    val stepOutcomes = remember { mutableStateMapOf<Int, CaregiverObservationOutcome>() }
+    val stepNotes = remember { mutableStateMapOf<Int, String>() }
     var selectedObservation by remember { mutableStateOf<CaregiverObservationOutcome?>(null) }
     var caregiverNote by remember { mutableStateOf("") }
     var showObservationSheet by remember { mutableStateOf(false) }
@@ -218,26 +222,15 @@ fun HomePracticeScreen(
                                     color = SelforaPrimary.copy(alpha = 0.08f)
                                 ) {
                                     Box(contentAlignment = Alignment.Center) {
-                                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                            Text(
-                                                when {
-                                                    currentStep.title.contains("Sleeve", true) -> "👕"
-                                                    currentStep.title.contains("Head", true) -> "🧒"
-                                                    currentStep.title.contains("Spoon", true) -> "🥣"
-                                                    currentStep.title.contains("Sock", true) -> "🧦"
-                                                    currentStep.title.contains("Shoe", true) -> "👟"
-                                                    else -> "🌟"
-                                                },
-                                                fontSize = 64.sp
-                                            )
-                                            Spacer(modifier = Modifier.height(8.dp))
-                                            Text(
-                                                "Step Animation / Guidance",
-                                                fontSize = 12.sp,
-                                                fontWeight = FontWeight.SemiBold,
-                                                color = SelforaPrimary
-                                            )
-                                        }
+                                        com.simats.selfora.ui.components.avatar.ChildAvatar(
+                                            avatarType = if (activityCode.contains("girl"))
+                                                com.simats.selfora.ui.components.avatar.ChildAvatarType.GIRL
+                                            else
+                                                com.simats.selfora.ui.components.avatar.ChildAvatarType.BOY,
+                                            avatarSize = 150.dp,
+                                            avatarPose = com.simats.selfora.ui.components.avatar.AvatarPose.WAVE,
+                                            backgroundStyle = com.simats.selfora.ui.components.avatar.AvatarBackgroundStyle.NONE
+                                        )
                                     }
                                 }
 
@@ -399,9 +392,13 @@ fun HomePracticeScreen(
                         OutlinedButton(
                             onClick = {
                                 if (currentStepIndex > 0) {
+                                    val currentObs = selectedObservation ?: CaregiverObservationOutcome.INDEPENDENT
+                                    stepOutcomes[currentStepIndex] = currentObs
+                                    stepNotes[currentStepIndex] = caregiverNote
+
                                     currentStepIndex--
-                                    selectedObservation = null
-                                    caregiverNote = ""
+                                    selectedObservation = stepOutcomes[currentStepIndex] ?: CaregiverObservationOutcome.INDEPENDENT
+                                    caregiverNote = stepNotes[currentStepIndex] ?: ""
                                 } else {
                                     onBack()
                                 }
@@ -418,13 +415,10 @@ fun HomePracticeScreen(
                             onClick = {
                                 scope.launch {
                                     val obs = selectedObservation ?: CaregiverObservationOutcome.INDEPENDENT
-                                    if (obs == CaregiverObservationOutcome.INDEPENDENT || obs == CaregiverObservationOutcome.LITTLE_HELP) {
-                                        independentCount++
-                                    } else {
-                                        neededHelpCount++
-                                    }
+                                    stepOutcomes[currentStepIndex] = obs
+                                    stepNotes[currentStepIndex] = caregiverNote
 
-                                    // Save offline local record
+                                    // Save offline local record per step
                                     try {
                                         val sId = activeSessionId ?: 1L
                                         val db = SelforaDatabase.getDatabase(context)
@@ -454,17 +448,75 @@ fun HomePracticeScreen(
                                                 environment = "HOME"
                                             )
                                         )
-                                    } catch (e: Exception) {}
-
-                                    selectedObservation = null
-                                    caregiverNote = ""
+                                    } catch (_: Exception) {}
 
                                     if (currentStepIndex < steps.size - 1) {
                                         currentStepIndex++
+                                        selectedObservation = stepOutcomes[currentStepIndex] ?: CaregiverObservationOutcome.INDEPENDENT
+                                        caregiverNote = stepNotes[currentStepIndex] ?: ""
                                     } else {
+                                        // Calculate total independent vs needed help across ALL steps
+                                        val totalIndep = steps.indices.count { idx ->
+                                            val o = stepOutcomes[idx] ?: CaregiverObservationOutcome.INDEPENDENT
+                                            o == CaregiverObservationOutcome.INDEPENDENT || o == CaregiverObservationOutcome.LITTLE_HELP
+                                        }
+                                        val totalHelp = steps.size - totalIndep
+                                        independentCount = totalIndep
+                                        neededHelpCount = totalHelp
+
+                                        val stepResultsList = steps.mapIndexed { idx, s ->
+                                            val o = stepOutcomes[idx] ?: CaregiverObservationOutcome.INDEPENDENT
+                                            val n = stepNotes[idx] ?: ""
+                                            StepResultItemDto(
+                                                stepId = s.id,
+                                                stepNumber = s.stepNumber,
+                                                stepTitle = s.title,
+                                                outcome = o.name,
+                                                observation = n
+                                            )
+                                        }
+
+                                        val actTitle = when (activityCode) {
+                                            "eating_spoon_activity" -> "Eating with Spoon"
+                                            "shoes_socks_activity" -> "Shoes & Socks"
+                                            "girl_frock_activity" -> "Girl Frock Dressing"
+                                            else -> "Boy T-Shirt Dressing"
+                                        }
+                                        val actId = when (activityCode) {
+                                            "eating_spoon_activity" -> 13L
+                                            "shoes_socks_activity" -> 9L
+                                            "girl_frock_activity" -> 2L
+                                            else -> 1L
+                                        }
+
+                                        // Store in PracticeSessionStore
+                                        PracticeSessionStore.addPracticeRecord(
+                                            programId = programId,
+                                            childId = 1L,
+                                            activityId = actId,
+                                            activityTitle = actTitle,
+                                            durationMinutes = totalPracticeTimeSeconds / 60,
+                                            caregiverNotes = caregiverNote.ifEmpty { "Child completed home practice session successfully!" },
+                                            totalSteps = steps.size,
+                                            independentCount = totalIndep,
+                                            neededHelpCount = totalHelp,
+                                            stepResults = stepResultsList
+                                        )
+
                                         try {
                                             ApiClient.apiService.completeSession(activeSessionId ?: 1L)
-                                        } catch (e: Exception) {}
+                                            val practiceReq = SubmitPracticeRequest(
+                                                homeProgramId = programId,
+                                                childId = 1L,
+                                                activityId = actId,
+                                                practiceDate = java.time.LocalDate.now().toString(),
+                                                durationMinutes = totalPracticeTimeSeconds / 60,
+                                                caregiverNotes = caregiverNote.ifEmpty { "Child completed home practice session successfully!" },
+                                                stepResults = stepResultsList
+                                            )
+                                            ApiClient.apiService.submitPractice(practiceReq)
+                                        } catch (_: Exception) {}
+
                                         isSessionComplete = true
                                     }
                                 }
@@ -482,6 +534,8 @@ fun HomePracticeScreen(
                             )
                         }
                     }
+
+                    Spacer(modifier = Modifier.navigationBarsPadding().height(24.dp))
                 }
             }
         }
