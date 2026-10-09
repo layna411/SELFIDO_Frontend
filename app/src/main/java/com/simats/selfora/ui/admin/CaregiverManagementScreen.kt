@@ -78,6 +78,7 @@ fun CaregiverManagementScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
+                .imePadding()
                 .padding(16.dp)
         ) {
             GlassTextField(

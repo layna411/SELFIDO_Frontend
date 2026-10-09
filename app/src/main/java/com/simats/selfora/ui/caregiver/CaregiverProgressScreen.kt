@@ -19,6 +19,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.simats.selfora.ui.components.progress.*
 import com.simats.selfora.ui.theme.*
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -53,78 +54,52 @@ fun CaregiverProgressScreen(
                 contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 150.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                // Header streak card
+                // Header Reward & Streak Card
                 item {
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(20.dp),
-                        colors = CardDefaults.cardColors(containerColor = SelforaSurface),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
-                    ) {
-                        Column(
-                            modifier = Modifier.padding(20.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            Icon(Icons.Default.EmojiEvents, contentDescription = null, tint = Color(0xFFF59E0B), modifier = Modifier.size(44.dp))
-                            Spacer(modifier = Modifier.height(6.dp))
-                            Text("8 Practice Sessions Completed!", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = SelforaTextPrimary)
-                            Text("Great job helping Aarav practice at home this week!", fontSize = 12.sp, color = SelforaTextSecondary)
-
-                            Spacer(modifier = Modifier.height(16.dp))
-
-                            // Mon-Fri practice session checklist
-                            Text("This Week's Activity Streak", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = SelforaTextPrimary)
-                            Spacer(modifier = Modifier.height(10.dp))
-
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                val days = listOf("Mon", "Tue", "Wed", "Thu", "Fri")
-                                val completed = listOf(true, true, false, true, true)
-
-                                days.forEachIndexed { idx, day ->
-                                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                        Surface(
-                                            shape = CircleShape,
-                                            color = if (completed[idx]) SelforaSuccess else SelforaBorder,
-                                            modifier = Modifier.size(36.dp)
-                                        ) {
-                                            Box(contentAlignment = Alignment.Center) {
-                                                if (completed[idx]) {
-                                                    Icon(Icons.Default.Check, contentDescription = null, tint = Color.White, modifier = Modifier.size(20.dp))
-                                                } else {
-                                                    Text("—", color = SelforaTextSecondary, fontWeight = FontWeight.Bold)
-                                                }
-                                            }
-                                        }
-                                        Spacer(modifier = Modifier.height(4.dp))
-                                        Text(day, fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = SelforaTextSecondary)
-                                    }
-                                }
-                            }
-                        }
-                    }
+                    ChildRewardProgress(
+                        starsEarned = 4,
+                        totalStars = 5,
+                        currentStreak = 5
+                    )
                 }
 
-                // Progress Breakdown Card
+                // Active Assigned Home Programme Completion
                 item {
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(20.dp),
-                        colors = CardDefaults.cardColors(containerColor = SelforaSurface),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
-                    ) {
-                        Column(modifier = Modifier.padding(20.dp)) {
-                            Text("This Week's Progress", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = SelforaTextPrimary)
-                            Spacer(modifier = Modifier.height(16.dp))
+                    Text("ACTIVE HOME PROGRAMMES", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = SelforaPrimary)
+                    Spacer(modifier = Modifier.height(6.dp))
+                    ProgrammeCompletionCard(
+                        title = "Upper Body Dressing - T-Shirt Practice",
+                        assignedDate = "Oct 01, 2026",
+                        completionPercentage = 80,
+                        caregiverStatusText = "8/10 Sessions Completed (4x/week)",
+                        isPendingReview = false,
+                        onClick = onNavigateToHistory
+                    )
+                }
 
-                            CaregiverProgressItem("👕 Dressing", 0.80f, "80%")
-                            Spacer(modifier = Modifier.height(12.dp))
-                            CaregiverProgressItem("🥣 Eating", 0.60f, "60%")
-                            Spacer(modifier = Modifier.height(12.dp))
-                            CaregiverProgressItem("👟 Shoes", 0.50f, "50%")
-                        }
+                // Longitudinal Home Practice Progress Trend
+                item {
+                    ProgressTrendChart(
+                        dataPoints = listOf(
+                            "Wk 1" to 50f,
+                            "Wk 2" to 62f,
+                            "Wk 3" to 70f,
+                            "Wk 4" to 80f
+                        ),
+                        title = "Home Practice Consistency Trend",
+                        subtitle = "Weekly completion rate of home tasks",
+                        lineColor = Color(0xFF10B981)
+                    )
+                }
+
+                // ADL Category Practice Progress Breakdown
+                item {
+                    Text("PRACTICE COMPLETION BY ADL CATEGORY", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = SelforaPrimary)
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        ADLProgressCard("Dressing", 80, sessionCount = 8, trendDelta = "+10%")
+                        ADLProgressCard("Eating", 60, sessionCount = 5, trendDelta = "+5%")
+                        ADLProgressCard("Shoes & Socks", 50, sessionCount = 4, trendDelta = "+8%")
                     }
                 }
 

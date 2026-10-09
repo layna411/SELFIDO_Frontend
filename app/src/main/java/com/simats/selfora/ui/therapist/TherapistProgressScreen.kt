@@ -24,6 +24,7 @@ import com.simats.selfora.data.api.ApiClient
 import com.simats.selfora.data.model.ChildSummaryItem
 import com.simats.selfora.data.model.ProgressSummaryResponse
 import com.simats.selfora.ui.components.glass.*
+import com.simats.selfora.ui.components.progress.*
 import com.simats.selfora.ui.theme.*
 import kotlinx.coroutines.launch
 
@@ -68,7 +69,7 @@ fun TherapistProgressScreen(
                 .fillMaxSize()
                 .padding(padding)
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 20.dp, vertical = 16.dp)
+                .padding(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 120.dp)
         ) {
             // STEP 1: CHILD SELECTOR BAR
             GlassCard(modifier = Modifier.fillMaxWidth()) {
@@ -146,76 +147,56 @@ fun TherapistProgressScreen(
             when (selectedTab) {
                 // TAB 1: LONGITUDINAL TRENDS
                 "Longitudinal Trends" -> {
-                    // A. Independence Trend over time
-                    GlassCard(modifier = Modifier.fillMaxWidth()) {
-                        Text("OVERALL INDEPENDENCE TREND OVER TIME", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = SelforaPrimary)
-                        Text("Recorded independence percentage across consecutive clinical sessions", fontSize = 11.sp, color = SelforaTextSecondary)
-                        Spacer(modifier = Modifier.height(14.dp))
-
-                        // Visual Trend Line / Bars Representation
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(120.dp),
-                            horizontalArrangement = Arrangement.SpaceEvenly,
-                            verticalAlignment = Alignment.Bottom
-                        ) {
-                            listOf(
-                                "Sep 10" to 55,
-                                "Sep 15" to 62,
-                                "Sep 20" to 68,
-                                "Sep 25" to 70,
-                                "Sep 29" to 75,
-                                "Oct 02" to selectedChild.dressingPercentage
-                            ).forEach { (date, pct) ->
-                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                    Text("$pct%", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = SelforaPrimary)
-                                    Spacer(modifier = Modifier.height(4.dp))
-                                    Box(
-                                        modifier = Modifier
-                                            .width(28.dp)
-                                            .height((pct * 0.9f).dp)
-                                            .background(SelforaPrimary, RoundedCornerShape(topStart = 6.dp, topEnd = 6.dp))
-                                    )
-                                    Spacer(modifier = Modifier.height(4.dp))
-                                    Text(date, fontSize = 9.sp, color = SelforaTextSecondary)
-                                }
-                            }
-                        }
-                    }
+                    // A. Independence Trend over time (Canvas Chart)
+                    ProgressTrendChart(
+                        dataPoints = listOf(
+                            "Sep 10" to 55f,
+                            "Sep 15" to 62f,
+                            "Sep 20" to 68f,
+                            "Sep 25" to 70f,
+                            "Sep 29" to 75f,
+                            "Oct 02" to selectedChild.dressingPercentage.toFloat()
+                        ),
+                        title = "Longitudinal Independence Trend",
+                        subtitle = "Clinical L0-L6 progression for ${selectedChild.name}"
+                    )
 
                     Spacer(modifier = Modifier.height(14.dp))
 
                     // B. Activity-Wise Progress (4 ADLs)
-                    GlassCard(modifier = Modifier.fillMaxWidth()) {
-                        Text("ACTIVITY-WISE INDEPENDENCE BREAKDOWN", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = SelforaPrimary)
-                        Spacer(modifier = Modifier.height(12.dp))
+                    Text("ADL CATEGORY PROGRESS BREAKDOWN", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = SelforaPrimary)
+                    Spacer(modifier = Modifier.height(8.dp))
 
-                        ProgressCategoryBar("👕 Dressing (T-Shirt & Pants)", selectedChild.dressingPercentage / 100f, SelforaPrimary, "${selectedChild.dressingPercentage}%")
-                        Spacer(modifier = Modifier.height(10.dp))
-                        ProgressCategoryBar("🥄 Eating with Spoon", selectedChild.eatingPercentage / 100f, SelforaSecondary, "${selectedChild.eatingPercentage}%")
-                        Spacer(modifier = Modifier.height(10.dp))
-                        ProgressCategoryBar("🧼 Grooming & Washing", 0.60f, SelforaWarning, "60%")
-                        Spacer(modifier = Modifier.height(10.dp))
-                        ProgressCategoryBar("👟 Shoes & Socks", selectedChild.shoesPercentage / 100f, SelforaSuccess, "${selectedChild.shoesPercentage}%")
+                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        ADLProgressCard("Dressing", selectedChild.dressingPercentage, sessionCount = 14, trendDelta = "+12%")
+                        ADLProgressCard("Eating", selectedChild.eatingPercentage, sessionCount = 10, trendDelta = "+8%")
+                        ADLProgressCard("Grooming", 60, sessionCount = 6, trendDelta = "+5%")
+                        ADLProgressCard("Shoes & Socks", selectedChild.shoesPercentage, sessionCount = 12, trendDelta = "+15%")
                     }
 
                     Spacer(modifier = Modifier.height(14.dp))
 
-                    // C. Assistance Distribution Chart
+                    // C. Assistance Distribution & Clinical Hierarchy
                     GlassCard(modifier = Modifier.fillMaxWidth()) {
-                        Text("ASSISTANCE LEVEL DISTRIBUTION", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = SelforaPrimary)
-                        Text("Distribution across all assessed task steps", fontSize = 11.sp, color = SelforaTextSecondary)
-                        Spacer(modifier = Modifier.height(12.dp))
+                        Text("CLINICAL ASSISTANCE HIERARCHY EVALUATION", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = SelforaPrimary)
+                        Text("Evaluated prompt levels across active ADL goals", fontSize = 11.sp, color = SelforaTextSecondary)
+                        Spacer(modifier = Modifier.height(14.dp))
 
-                        ProgressCategoryBar("Level 0 – Independent", 0.40f, PromptLevel0Independent, "40%")
-                        Spacer(modifier = Modifier.height(8.dp))
-                        ProgressCategoryBar("Level 1 – Visual Prompt", 0.30f, PromptLevel1Visual, "30%")
-                        Spacer(modifier = Modifier.height(8.dp))
-                        ProgressCategoryBar("Level 2/3 – Gesture/Verbal", 0.20f, PromptLevel3Verbal, "20%")
-                        Spacer(modifier = Modifier.height(8.dp))
-                        ProgressCategoryBar("Level 5/6 – Physical Assistance", 0.10f, PromptLevel5PartialPhysical, "10%")
+                        SessionProgressIndicator(promptLevelCode = "L1", promptLevelName = "Level 1 – Visual Prompt (Current Primary Level)")
+
+                        Spacer(modifier = Modifier.height(14.dp))
+                        ProgressLegend(type = "PROMPT_LEVELS")
                     }
+
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    // D. Key Milestones
+                    MilestoneCard(
+                        title = "Independent T-Shirt Donning",
+                        description = "Child achieved 3 consecutive L0 Independent trials on upper body dressing",
+                        achievedDate = "Oct 01, 2026",
+                        isAchieved = true
+                    )
                 }
 
                 // TAB 2: SESSION TIMELINE

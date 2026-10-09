@@ -131,38 +131,14 @@ fun ChildActivityCompletionScreen(
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            // Earned Rewards Glass Card
-            GlassCard(
-                modifier = Modifier.fillMaxWidth(),
-                cornerRadius = 24.dp,
-                backgroundColor = Color.White.copy(alpha = 0.95f),
-                elevation = 8.dp
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.Center,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    repeat(5) {
-                        Icon(
-                            imageVector = Icons.Default.Star,
-                            contentDescription = "Star",
-                            tint = ChildYellowStar,
-                            modifier = Modifier.size(36.dp)
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                    }
-                }
-                Spacer(modifier = Modifier.height(10.dp))
-                Text(
-                    text = "+5 Stars Earned! 🌟",
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 18.sp,
-                    color = SelforaSecondary,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
+            Spacer(modifier = Modifier.height(20.dp))
+
+            // Earned Rewards Child Progress Component
+            com.simats.selfora.ui.components.progress.ChildRewardProgress(
+                starsEarned = 5,
+                totalStars = 5,
+                currentStreak = 4
+            )
 
             Spacer(modifier = Modifier.height(36.dp))
 

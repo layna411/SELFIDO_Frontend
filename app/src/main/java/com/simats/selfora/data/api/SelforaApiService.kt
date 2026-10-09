@@ -187,14 +187,29 @@ interface SelforaApiService {
     @GET("api/admin/therapists")
     suspend fun getAllTherapists(): Response<List<TherapistItem>>
 
+    @GET("api/admin/therapists/{id}")
+    suspend fun getTherapistById(@Path("id") id: Long): Response<TherapistItem>
+
     @POST("api/admin/therapists")
     suspend fun createTherapist(@Body request: CreateTherapistRequest): Response<TherapistItem>
+
+    @PUT("api/admin/therapists/{id}")
+    suspend fun updateTherapist(
+        @Path("id") id: Long,
+        @Body request: UpdateTherapistRequest
+    ): Response<TherapistItem>
 
     @PUT("api/admin/therapists/{id}/status")
     suspend fun updateTherapistStatus(
         @Path("id") id: Long,
         @Query("active") active: Boolean
     ): Response<TherapistItem>
+
+    @POST("api/admin/therapists/{id}/reset-password")
+    suspend fun resetTherapistPassword(
+        @Path("id") id: Long,
+        @Query("newPassword") newPassword: String? = null
+    ): Response<Unit>
 
     @GET("api/admin/audit-logs")
     suspend fun getAuditLogs(): Response<List<AuditLogItem>>

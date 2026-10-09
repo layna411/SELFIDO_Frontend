@@ -510,6 +510,11 @@ fun GlassScheduleCard(
     session: ScheduledSessionItem,
     onSelectChild: () -> Unit
 ) {
+    val safeChildName = session.childName ?: "Child"
+    val safeTime = session.scheduledTime ?: "Today"
+    val safeActivity = session.adlActivity ?: "ADL Activity"
+    val safeStatus = session.status ?: "SCHEDULED"
+
     GlassCard(
         modifier = Modifier.fillMaxWidth(),
         elevation = 4.dp,
@@ -521,23 +526,23 @@ fun GlassScheduleCard(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(modifier = Modifier.weight(1f)) {
-                Text(session.childName, fontSize = 15.sp, fontWeight = FontWeight.Bold, color = SelforaTextPrimary)
+                Text(safeChildName, fontSize = 15.sp, fontWeight = FontWeight.Bold, color = SelforaTextPrimary)
                 Spacer(modifier = Modifier.height(2.dp))
-                Text("🕒 ${session.scheduledTime} • ${session.adlActivity}", fontSize = 12.sp, color = SelforaTextSecondary)
+                Text("🕒 $safeTime • $safeActivity", fontSize = 12.sp, color = SelforaTextSecondary)
             }
             Surface(
                 shape = RoundedCornerShape(10.dp),
-                color = when (session.status) {
+                color = when (safeStatus) {
                     "COMPLETED" -> SelforaSuccess.copy(alpha = 0.15f)
                     "IN_PROGRESS" -> SelforaPrimary.copy(alpha = 0.15f)
                     else -> SelforaWarning.copy(alpha = 0.15f)
                 }
             ) {
                 Text(
-                    text = session.status,
+                    text = safeStatus,
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Bold,
-                    color = when (session.status) {
+                    color = when (safeStatus) {
                         "COMPLETED" -> SelforaSuccess
                         "IN_PROGRESS" -> SelforaPrimary
                         else -> SelforaWarning
@@ -554,6 +559,11 @@ fun GlassPendingReviewCard(
     review: PendingReviewItem,
     onReview: () -> Unit
 ) {
+    val safeChildName = review.childName ?: "Child"
+    val safeCaregiver = review.caregiverName ?: "Caregiver"
+    val safeActivity = review.activityName ?: "Home Practice"
+    val safeDate = review.submittedDate ?: "Today"
+
     GlassCard(
         modifier = Modifier.fillMaxWidth(),
         elevation = 4.dp,
@@ -565,9 +575,9 @@ fun GlassPendingReviewCard(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(modifier = Modifier.weight(1f)) {
-                Text(review.childName, fontSize = 15.sp, fontWeight = FontWeight.Bold, color = SelforaTextPrimary)
-                Text("Caregiver: ${review.caregiverName} • Activity: ${review.activityName}", fontSize = 12.sp, color = SelforaTextSecondary)
-                Text("Submitted: ${review.submittedDate}", fontSize = 11.sp, color = SelforaPrimary)
+                Text(safeChildName, fontSize = 15.sp, fontWeight = FontWeight.Bold, color = SelforaTextPrimary)
+                Text("Caregiver: $safeCaregiver • Activity: $safeActivity", fontSize = 12.sp, color = SelforaTextSecondary)
+                Text("Submitted: $safeDate", fontSize = 11.sp, color = SelforaPrimary)
             }
             GlassOutlinedButton(
                 text = "Review",

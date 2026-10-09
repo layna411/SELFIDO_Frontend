@@ -119,7 +119,7 @@ fun GlassCard(
 // ============================================================================
 @Composable
 fun GlassButton(
-    text: String,
+    text: String?,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     icon: ImageVector? = null,
@@ -128,6 +128,7 @@ fun GlassButton(
     enabled: Boolean = true,
     cornerRadius: Dp = 24.dp
 ) {
+    val safeText = text ?: ""
     var isPressed by remember { mutableStateOf(false) }
     val scale by animateFloatAsState(
         targetValue = if (isPressed && enabled) 0.96f else 1.0f,
@@ -192,7 +193,7 @@ fun GlassButton(
                     Spacer(modifier = Modifier.width(8.dp))
                 }
                 Text(
-                    text = text,
+                    text = safeText,
                     fontWeight = FontWeight.Bold,
                     fontSize = 15.sp,
                     color = contentColor
@@ -204,13 +205,14 @@ fun GlassButton(
 
 @Composable
 fun GlassOutlinedButton(
-    text: String,
+    text: String?,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     icon: ImageVector? = null,
     accentColor: Color = SelforaPrimary,
     cornerRadius: Dp = 24.dp
 ) {
+    val safeText = text ?: ""
     var isPressed by remember { mutableStateOf(false) }
     val scale by animateFloatAsState(
         targetValue = if (isPressed) 0.96f else 1.0f,
@@ -258,7 +260,7 @@ fun GlassOutlinedButton(
                 Spacer(modifier = Modifier.width(6.dp))
             }
             Text(
-                text = text,
+                text = safeText,
                 fontWeight = FontWeight.SemiBold,
                 fontSize = 14.sp,
                 color = accentColor
@@ -335,7 +337,7 @@ fun GlassIconButton(
 // ============================================================================
 @Composable
 fun GlassTopBar(
-    title: String,
+    title: String?,
     modifier: Modifier = Modifier,
     subtitle: String? = null,
     onBackClick: (() -> Unit)? = null,
@@ -343,6 +345,7 @@ fun GlassTopBar(
     backgroundColor: Color = Color.White.copy(alpha = 0.88f),
     accentColor: Color = SelforaPrimary
 ) {
+    val safeTitle = title ?: ""
     Surface(
         modifier = modifier
             .fillMaxWidth()
@@ -386,14 +389,14 @@ fun GlassTopBar(
 
                 Column {
                     Text(
-                        text = title,
+                        text = safeTitle,
                         fontSize = 19.sp,
                         fontWeight = FontWeight.Bold,
                         color = SelforaTextPrimary,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
-                    if (subtitle != null) {
+                    if (!subtitle.isNullOrEmpty()) {
                         Text(
                             text = subtitle,
                             fontSize = 12.sp,

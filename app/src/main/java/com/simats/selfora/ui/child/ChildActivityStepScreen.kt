@@ -93,7 +93,7 @@ fun ChildActivityStepScreen(
                 verticalArrangement = Arrangement.SpaceBetween,
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // Header Bar (Back button & Step Counter)
+                // Header Bar (Back button, ActivityStepProgress & Audio)
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -103,16 +103,10 @@ fun ChildActivityStepScreen(
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = SelforaBlueDark)
                     }
 
-                    Surface(
-                        shape = RoundedCornerShape(16.dp),
-                        color = Color.White
-                    ) {
-                        Text(
-                            "Step ${currentStepIndex + 1} of ${steps.size}",
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 16.sp,
-                            color = SelforaBlueDark
+                    Box(modifier = Modifier.weight(1f).padding(horizontal = 12.dp)) {
+                        com.simats.selfora.ui.components.progress.ActivityStepProgress(
+                            currentStep = currentStepIndex + 1,
+                            totalSteps = steps.size
                         )
                     }
 

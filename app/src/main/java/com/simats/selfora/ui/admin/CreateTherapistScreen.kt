@@ -70,6 +70,7 @@ fun CreateTherapistScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
+                .imePadding()
                 .verticalScroll(scrollState)
                 .padding(20.dp),
             horizontalAlignment = Alignment.CenterHorizontally
@@ -187,33 +188,48 @@ fun CreateTherapistScreen(
                     Spacer(modifier = Modifier.height(24.dp))
 
                     Button(
+                        enabled = !isLoading,
                         onClick = {
-                            if (fullName.isBlank() || email.isBlank() || username.isBlank()) {
-                                Toast.makeText(context, "Please fill in all required fields", Toast.LENGTH_SHORT).show()
+                            if (fullName.isBlank() || email.isBlank() || username.isBlank() || password.isBlank()) {
+                                Toast.makeText(context, "Please fill in all required fields (*)", Toast.LENGTH_SHORT).show()
+                                return@Button
+                            }
+
+                            if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email.trim()).matches()) {
+                                Toast.makeText(context, "Please enter a valid email address", Toast.LENGTH_SHORT).show()
                                 return@Button
                             }
 
                             isLoading = true
                             scope.launch {
                                 try {
-                                    ApiClient.apiService.createTherapist(
+                                    val response = ApiClient.apiService.createTherapist(
                                         CreateTherapistRequest(
-                                            fullName = fullName,
-                                            email = email,
-                                            phone = phone,
-                                            username = username,
+                                            fullName = fullName.trim(),
+                                            email = email.trim(),
+                                            phone = phone.trim(),
+                                            username = username.trim(),
                                             password = password,
-                                            designation = designation,
-                                            specialization = specialization,
-                                            qualification = qualification,
-                                            experience = experience
+                                            designation = designation.trim(),
+                                            specialization = specialization.trim(),
+                                            qualification = qualification.trim(),
+                                            experience = experience.trim()
                                         )
                                     )
-                                    Toast.makeText(context, "Therapist created successfully!", Toast.LENGTH_SHORT).show()
-                                    onTherapistCreated()
+                                    if (response.isSuccessful && response.body() != null) {
+                                        Toast.makeText(context, "Therapist created successfully!", Toast.LENGTH_SHORT).show()
+                                        onTherapistCreated()
+                                    } else {
+                                        val errStr = response.errorBody()?.string() ?: ""
+                                        val msg = if (errStr.contains("already taken") || errStr.contains("already registered")) {
+                                            "Username or email is already registered."
+                                        } else {
+                                            "Failed to create therapist (${response.code()})"
+                                        }
+                                        Toast.makeText(context, msg, Toast.LENGTH_LONG).show()
+                                    }
                                 } catch (e: Exception) {
-                                    Toast.makeText(context, "Therapist created successfully!", Toast.LENGTH_SHORT).show()
-                                    onTherapistCreated()
+                                    Toast.makeText(context, "Network Error: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
                                 } finally {
                                     isLoading = false
                                 }

@@ -27,6 +27,8 @@ import com.simats.selfora.data.model.TherapistItem
 import com.simats.selfora.ui.components.glass.GlassTextField
 import kotlinx.coroutines.launch
 
+enum class StatusFilter { ALL, ACTIVE, INACTIVE }
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TherapistManagementScreen(
@@ -35,8 +37,14 @@ fun TherapistManagementScreen(
     onBack: () -> Unit
 ) {
     var searchQuery by remember { mutableStateOf("") }
+    var selectedFilter by remember { mutableStateOf(StatusFilter.ALL) }
     var therapists by remember { mutableStateOf<List<TherapistItem>>(emptyList()) }
     var isLoading by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+
+    // Status Confirmation Dialog State
+    var statusDialogTherapist by remember { mutableStateOf<TherapistItem?>(null) }
+    var statusDialogNewState by remember { mutableStateOf(false) }
 
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -45,36 +53,44 @@ fun TherapistManagementScreen(
     val textPrimary = Color(0xFF0F172A)
     val textSecondary = Color(0xFF64748B)
 
-    // Demo Initial List if backend offline
-    val defaultList = remember {
-        listOf(
-            TherapistItem(1L, "Dr. Sarah Jenkins (OT)", "sarah.jenkins@selfora.org", "+91 9876543210", "Lead Occupational Therapist", "Pediatric ADL & Fine Motor", "MOT (Pediatrics)", "8 Years", true, 12),
-            TherapistItem(2L, "Dr. Rajesh Kumar (OT)", "rajesh.kumar@selfora.org", "+91 9876543214", "Senior Pediatric Therapist", "Sensory Integration & Dressing", "BOT, MOT", "6 Years", true, 9),
-            TherapistItem(3L, "Dr. Anita Roy (OT)", "anita.roy@selfora.org", "+91 9876543218", "Occupational Therapist", "Child Development & Grooming", "BOT", "4 Years", true, 7),
-            TherapistItem(4L, "Dr. Vikram Seth (OT)", "vikram.seth@selfora.org", "+91 9876543222", "Clinical OT Specialist", "Feeding & Oral Motor Skills", "MOT", "5 Years", false, 0)
-        )
-    }
-
-    LaunchedEffect(Unit) {
+    fun fetchTherapists() {
         isLoading = true
-        try {
-            val response = ApiClient.apiService.getAllTherapists()
-            if (response.isSuccessful && !response.body().isNullOrEmpty()) {
-                therapists = response.body()!!
-            } else {
-                therapists = defaultList
+        errorMessage = null
+        scope.launch {
+            try {
+                val response = ApiClient.apiService.getAllTherapists()
+                if (response.isSuccessful && response.body() != null) {
+                    therapists = response.body()!!
+                } else {
+                    errorMessage = "Failed to load therapists: HTTP ${response.code()}"
+                }
+            } catch (e: Exception) {
+                errorMessage = "Network error: ${e.localizedMessage ?: "Unable to connect"}"
+            } finally {
+                isLoading = false
             }
-        } catch (e: Exception) {
-            therapists = defaultList
-        } finally {
-            isLoading = false
         }
     }
 
-    val filteredList = therapists.filter {
-        it.fullName.contains(searchQuery, ignoreCase = true) ||
-                it.email.contains(searchQuery, ignoreCase = true) ||
-                it.specialization.contains(searchQuery, ignoreCase = true)
+    LaunchedEffect(Unit) {
+        fetchTherapists()
+    }
+
+    val filteredList = therapists.filter { t ->
+        val matchesSearch = searchQuery.isBlank() ||
+                t.fullName.contains(searchQuery, ignoreCase = true) ||
+                t.email.contains(searchQuery, ignoreCase = true) ||
+                t.username.contains(searchQuery, ignoreCase = true) ||
+                t.specialization.contains(searchQuery, ignoreCase = true) ||
+                t.id.toString() == searchQuery.trim()
+
+        val matchesFilter = when (selectedFilter) {
+            StatusFilter.ALL -> true
+            StatusFilter.ACTIVE -> t.isActive
+            StatusFilter.INACTIVE -> !t.isActive
+        }
+
+        matchesSearch && matchesFilter
     }
 
     Scaffold(
@@ -89,6 +105,9 @@ fun TherapistManagementScreen(
                     }
                 },
                 actions = {
+                    IconButton(onClick = { fetchTherapists() }) {
+                        Icon(Icons.Default.Refresh, contentDescription = "Refresh", tint = blueAccent)
+                    }
                     IconButton(onClick = onNavigateToCreateTherapist) {
                         Icon(Icons.Default.PersonAdd, contentDescription = "Add Therapist", tint = blueAccent)
                     }
@@ -111,6 +130,7 @@ fun TherapistManagementScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
+                .imePadding()
                 .padding(16.dp)
         ) {
             // Search Field
@@ -118,45 +138,124 @@ fun TherapistManagementScreen(
                 value = searchQuery,
                 onValueChange = { searchQuery = it },
                 label = "Search Therapists",
-                placeholder = "Search by name, email, or specialization...",
+                placeholder = "Search by name, email, username, specialization or ID...",
                 leadingIcon = Icons.Default.Search,
                 modifier = Modifier.fillMaxWidth()
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Filter Chips
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                FilterChip(
+                    selected = selectedFilter == StatusFilter.ALL,
+                    onClick = { selectedFilter = StatusFilter.ALL },
+                    label = { Text("All (${therapists.size})", fontSize = 12.sp) }
+                )
+                FilterChip(
+                    selected = selectedFilter == StatusFilter.ACTIVE,
+                    onClick = { selectedFilter = StatusFilter.ACTIVE },
+                    label = { Text("Active (${therapists.count { it.isActive }})", fontSize = 12.sp) }
+                )
+                FilterChip(
+                    selected = selectedFilter == StatusFilter.INACTIVE,
+                    onClick = { selectedFilter = StatusFilter.INACTIVE },
+                    label = { Text("Inactive (${therapists.count { !it.isActive }})", fontSize = 12.sp) }
+                )
+            }
+
+            Spacer(modifier = Modifier.height(14.dp))
 
             if (isLoading) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator(color = blueAccent)
                 }
+            } else if (errorMessage != null) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Icon(Icons.Default.ErrorOutline, contentDescription = null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(48.dp))
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(errorMessage!!, color = textSecondary, fontSize = 14.sp)
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Button(
+                            onClick = { fetchTherapists() },
+                            colors = ButtonDefaults.buttonColors(containerColor = blueAccent)
+                        ) {
+                            Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("Retry")
+                        }
+                    }
+                }
             } else if (filteredList.isEmpty()) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("No therapists found.", color = textSecondary)
+                    Text("No therapist records found.", color = textSecondary, fontSize = 14.sp)
                 }
             } else {
                 LazyColumn(
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    items(filteredList) { therapist ->
+                    items(filteredList, key = { it.id }) { therapist ->
                         TherapistCard(
                             therapist = therapist,
                             onClick = { onNavigateToTherapistDetails(therapist.id) },
                             onToggleStatus = { newStatus ->
-                                scope.launch {
-                                    try {
-                                        ApiClient.apiService.updateTherapistStatus(therapist.id, newStatus)
-                                    } catch (e: Exception) {}
-                                    therapists = therapists.map {
-                                        if (it.id == therapist.id) it.copy(isActive = newStatus) else it
-                                    }
-                                    Toast.makeText(context, "Therapist status updated", Toast.LENGTH_SHORT).show()
-                                }
+                                statusDialogTherapist = therapist
+                                statusDialogNewState = newStatus
                             }
                         )
                     }
                 }
             }
         }
+    }
+
+    // Confirmation Dialog for Account Status Toggle
+    if (statusDialogTherapist != null) {
+        val target = statusDialogTherapist!!
+        val actionText = if (statusDialogNewState) "activate" else "deactivate"
+        AlertDialog(
+            onDismissRequest = { statusDialogTherapist = null },
+            title = { Text("Confirm Account ${if (statusDialogNewState) "Activation" else "Deactivation"}", fontWeight = FontWeight.Bold) },
+            text = {
+                Text("Are you sure you want to $actionText the therapist account for '${target.fullName}'? ${if (!statusDialogNewState) "Deactivated therapists will not be able to log in to the system." else ""}")
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        val therapistId = target.id
+                        val newState = statusDialogNewState
+                        statusDialogTherapist = null
+                        scope.launch {
+                            try {
+                                val resp = ApiClient.apiService.updateTherapistStatus(therapistId, newState)
+                                if (resp.isSuccessful) {
+                                    therapists = therapists.map {
+                                        if (it.id == therapistId) it.copy(isActive = newState) else it
+                                    }
+                                    Toast.makeText(context, "Therapist status updated to ${if (newState) "Active" else "Inactive"}", Toast.LENGTH_SHORT).show()
+                                } else {
+                                    Toast.makeText(context, "Failed: ${resp.message()}", Toast.LENGTH_LONG).show()
+                                }
+                            } catch (e: Exception) {
+                                Toast.makeText(context, "Error: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
+                            }
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = if (statusDialogNewState) blueAccent else MaterialTheme.colorScheme.error)
+                ) {
+                    Text(if (statusDialogNewState) "Activate" else "Deactivate")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { statusDialogTherapist = null }) {
+                    Text("Cancel")
+                }
+            }
+        )
     }
 }
 
@@ -185,17 +284,23 @@ private fun TherapistCard(
                     modifier = Modifier
                         .size(48.dp)
                         .clip(CircleShape)
-                        .background(blueAccent.copy(alpha = 0.12f)),
+                        .background(if (therapist.isActive) blueAccent.copy(alpha = 0.12f) else Color(0xFFCBD5E1)),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(Icons.Default.MedicalServices, contentDescription = null, tint = blueAccent, modifier = Modifier.size(24.dp))
+                    Icon(
+                        Icons.Default.MedicalServices,
+                        contentDescription = null,
+                        tint = if (therapist.isActive) blueAccent else Color(0xFF64748B),
+                        modifier = Modifier.size(24.dp)
+                    )
                 }
 
                 Spacer(modifier = Modifier.width(12.dp))
 
                 Column(modifier = Modifier.weight(1f)) {
                     Text(therapist.fullName, fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color(0xFF0F172A))
-                    Text(therapist.designation, fontSize = 12.sp, color = Color(0xFF64748B))
+                    Text(therapist.designation.ifBlank { "Occupational Specialist" }, fontSize = 12.sp, color = Color(0xFF64748B))
+                    Text("ID: #${therapist.id} • ${therapist.email}", fontSize = 11.sp, color = Color(0xFF94A3B8))
                 }
 
                 // Active / Inactive Badge & Switch
@@ -218,12 +323,12 @@ private fun TherapistCard(
             ) {
                 Column {
                     Text("Specialization", fontSize = 10.sp, color = Color(0xFF94A3B8))
-                    Text(therapist.specialization, fontSize = 12.sp, fontWeight = FontWeight.Medium, color = Color(0xFF334155))
+                    Text(therapist.specialization.ifBlank { "Pediatrics" }, fontSize = 12.sp, fontWeight = FontWeight.Medium, color = Color(0xFF334155))
                 }
 
                 Column(horizontalAlignment = Alignment.End) {
                     Text("Assigned Children", fontSize = 10.sp, color = Color(0xFF94A3B8))
-                    Text("${therapist.assignedChildrenCount} Active Children", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = blueAccent)
+                    Text("${therapist.assignedChildrenCount} Children", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = blueAccent)
                 }
             }
         }

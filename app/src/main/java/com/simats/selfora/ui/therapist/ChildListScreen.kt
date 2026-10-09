@@ -198,8 +198,14 @@ fun GlassChildCard(
     child: ChildSummaryItem,
     onViewChild: () -> Unit
 ) {
-    val isGirl = child.gender.uppercase().contains("GIRL") || child.gender.uppercase().contains("FEMALE")
+    val safeGender = (child.gender ?: "BOY").uppercase()
+    val isGirl = safeGender.contains("GIRL") || safeGender.contains("FEMALE")
     val avatarEmoji = if (isGirl) "👧" else "👦"
+    val safeName = child.name ?: "Unnamed Child"
+    val safeCaregiver = child.caregiverName ?: "Unlinked"
+    val safeRel = child.caregiverRelationship ?: "Caregiver"
+    val safeStatus = child.programmeStatus ?: "ACTIVE"
+    val safeLastSession = child.lastSessionDate ?: "No recent session"
 
     GlassCard(
         modifier = Modifier.fillMaxWidth(),
@@ -216,15 +222,15 @@ fun GlassChildCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 ChildAvatarImage(
-                    avatarId = child.avatarUrl,
-                    gender = child.gender,
+                    avatarId = child.avatarUrl ?: "ic_avatar_default",
+                    gender = safeGender,
                     size = 50.dp
                 )
                 Spacer(modifier = Modifier.width(12.dp))
                 Column(modifier = Modifier.weight(1f)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
-                            text = child.name,
+                            text = safeName,
                             fontWeight = FontWeight.Bold,
                             fontSize = 16.sp,
                             color = SelforaTextPrimary,
@@ -248,13 +254,13 @@ fun GlassChildCard(
                         }
                     }
                     Text(
-                        text = "ID: #${child.id} • ${child.age} yrs • ${child.gender}",
+                        text = "ID: #${child.id} • ${child.age} yrs • $safeGender",
                         fontSize = 12.sp,
                         color = SelforaPrimary,
                         fontWeight = FontWeight.SemiBold
                     )
                     Text(
-                        text = "Caregiver: ${child.caregiverName} (${child.caregiverRelationship})",
+                        text = "Caregiver: $safeCaregiver ($safeRel)",
                         fontSize = 11.sp,
                         color = SelforaTextSecondary,
                         maxLines = 1,
@@ -265,21 +271,21 @@ fun GlassChildCard(
 
             Surface(
                 shape = RoundedCornerShape(12.dp),
-                color = when (child.programmeStatus) {
+                color = when (safeStatus) {
                     "PENDING_ASSESSMENT" -> SelforaWarning.copy(alpha = 0.15f)
                     "COMPLETED" -> SelforaSuccess.copy(alpha = 0.15f)
                     else -> SelforaPrimary.copy(alpha = 0.15f)
                 }
             ) {
                 Text(
-                    text = when (child.programmeStatus) {
+                    text = when (safeStatus) {
                         "PENDING_ASSESSMENT" -> "Assmt Pending"
                         "COMPLETED" -> "Completed"
                         else -> "Active Goal"
                     },
                     fontSize = 10.sp,
                     fontWeight = FontWeight.Bold,
-                    color = when (child.programmeStatus) {
+                    color = when (safeStatus) {
                         "PENDING_ASSESSMENT" -> SelforaWarning
                         "COMPLETED" -> SelforaSuccess
                         else -> SelforaPrimary
@@ -308,7 +314,7 @@ fun GlassChildCard(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text("Assigned Goals: ${child.assignedGoalsCount} • Last Session: ${child.lastSessionDate}", fontSize = 11.sp, color = SelforaTextSecondary)
+            Text("Assigned Goals: ${child.assignedGoalsCount} • Last Session: $safeLastSession", fontSize = 11.sp, color = SelforaTextSecondary)
             Text("Overall: ${child.overallProgressPercentage}%", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = SelforaPrimary)
         }
 
@@ -324,19 +330,20 @@ fun GlassChildCard(
 
 @Composable
 fun ChildMetricProgress(
-    title: String,
+    title: String?,
     percentage: Int,
     color: Color,
     modifier: Modifier = Modifier
 ) {
+    val safeTitle = title ?: "Progress"
     Column(modifier = modifier) {
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text(title, fontSize = 11.sp, color = SelforaTextSecondary)
+            Text(safeTitle, fontSize = 11.sp, color = SelforaTextSecondary)
             Text("$percentage%", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = color)
         }
         Spacer(modifier = Modifier.height(4.dp))
         LinearProgressIndicator(
-            progress = percentage / 100f,
+            progress = (percentage / 100f).coerceIn(0f, 1f),
             color = color,
             trackColor = color.copy(alpha = 0.15f),
             modifier = Modifier

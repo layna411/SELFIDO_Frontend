@@ -74,6 +74,7 @@ fun LoginScreen(
     }
 
     fun performLogin() {
+        if (isLoading) return
         keyboardController?.hide()
         val cleanUsername = username.trim()
         val cleanPassword = password.trim()
