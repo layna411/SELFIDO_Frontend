@@ -22,19 +22,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.simats.selfora.R
+import com.simats.selfora.data.api.ApiClient
+import com.simats.selfora.data.model.AdminChildItem
 import com.simats.selfora.ui.components.glass.GlassTextField
+import kotlinx.coroutines.launch
 
-data class AdminChildItem(
-    val id: Long,
-    val name: String,
-    val age: Int,
-    val gender: String,
-    val assignedTherapist: String,
-    val caregiverName: String,
-    val activeActivity: String,
-    val promptLevel: String,
-    val independencePercentage: Int
-)
+enum class ChildStatusFilter { ALL, ACTIVE, INACTIVE }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -43,19 +36,53 @@ fun ChildManagementScreen(
     onBack: () -> Unit
 ) {
     var searchQuery by remember { mutableStateOf("") }
+    var selectedFilter by remember { mutableStateOf(ChildStatusFilter.ALL) }
+    var children by remember { mutableStateOf<List<AdminChildItem>>(emptyList()) }
+    var isLoading by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
 
-    val children = remember {
-        listOf(
-            AdminChildItem(1L, "Aarav Sharma", 6, "MALE", "Dr. Sarah Jenkins (OT)", "Priya Sharma (Parent)", "Dressing - Upper Body", "INDEPENDENT (L0)", 85),
-            AdminChildItem(2L, "Ananya Roy", 7, "FEMALE", "Dr. Rajesh Kumar (OT)", "Meera Roy (Parent)", "Eating & Utensil Use", "VERBAL (L3)", 68),
-            AdminChildItem(3L, "Kavya Patel", 6, "FEMALE", "Dr. Sarah Jenkins (OT)", "Rohan Patel (Parent)", "Grooming & Hygiene", "GESTURE (L2)", 74),
-            AdminChildItem(4L, "Rohan Verma", 8, "MALE", "Dr. Anita Roy (OT)", "Sunita Verma (Parent)", "Shoes & Socks Fastening", "MODEL (L4)", 52)
-        )
+    val scope = rememberCoroutineScope()
+    val blueAccent = Color(0xFF2563EB)
+    val textSecondary = Color(0xFF64748B)
+
+    fun fetchChildren() {
+        isLoading = true
+        errorMessage = null
+        scope.launch {
+            try {
+                val response = ApiClient.apiService.getAllAdminChildren()
+                if (response.isSuccessful && response.body() != null) {
+                    children = response.body()!!
+                } else {
+                    errorMessage = "Failed to load children: HTTP ${response.code()}"
+                }
+            } catch (e: Exception) {
+                errorMessage = "Network error: ${e.localizedMessage ?: "Unable to connect"}"
+            } finally {
+                isLoading = false
+            }
+        }
     }
 
-    val filteredList = children.filter {
-        it.name.contains(searchQuery, ignoreCase = true) ||
-                it.assignedTherapist.contains(searchQuery, ignoreCase = true)
+    LaunchedEffect(Unit) {
+        fetchChildren()
+    }
+
+    val filteredList = children.filter { c ->
+        val matchesSearch = searchQuery.isBlank() ||
+                c.fullName.contains(searchQuery, ignoreCase = true) ||
+                c.assignedTherapistName.contains(searchQuery, ignoreCase = true) ||
+                c.linkedCaregiverName.contains(searchQuery, ignoreCase = true) ||
+                c.activeAdlCategory.contains(searchQuery, ignoreCase = true) ||
+                c.id.toString() == searchQuery.trim()
+
+        val matchesFilter = when (selectedFilter) {
+            ChildStatusFilter.ALL -> true
+            ChildStatusFilter.ACTIVE -> c.isActive
+            ChildStatusFilter.INACTIVE -> !c.isActive
+        }
+
+        matchesSearch && matchesFilter
     }
 
     Scaffold(
@@ -67,6 +94,11 @@ fun ChildManagementScreen(
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back")
                     }
                 },
+                actions = {
+                    IconButton(onClick = { fetchChildren() }) {
+                        Icon(Icons.Default.Refresh, contentDescription = "Refresh", tint = blueAccent)
+                    }
+                },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
             )
         },
@@ -76,25 +108,77 @@ fun ChildManagementScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
+                .imePadding()
                 .padding(16.dp)
         ) {
             GlassTextField(
                 value = searchQuery,
                 onValueChange = { searchQuery = it },
                 label = "Search Children",
-                placeholder = "Search by name or therapist...",
+                placeholder = "Search by name, therapist, caregiver, or ID...",
                 leadingIcon = Icons.Default.Search,
                 modifier = Modifier.fillMaxWidth()
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
-            LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                items(filteredList) { child ->
-                    AdminChildCard(
-                        child = child,
-                        onClick = { onNavigateToChildDetails(child.id) }
-                    )
+            // Filter Chips
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                FilterChip(
+                    selected = selectedFilter == ChildStatusFilter.ALL,
+                    onClick = { selectedFilter = ChildStatusFilter.ALL },
+                    label = { Text("All (${children.size})", fontSize = 12.sp) }
+                )
+                FilterChip(
+                    selected = selectedFilter == ChildStatusFilter.ACTIVE,
+                    onClick = { selectedFilter = ChildStatusFilter.ACTIVE },
+                    label = { Text("Active (${children.count { it.isActive }})", fontSize = 12.sp) }
+                )
+                FilterChip(
+                    selected = selectedFilter == ChildStatusFilter.INACTIVE,
+                    onClick = { selectedFilter = ChildStatusFilter.INACTIVE },
+                    label = { Text("Inactive (${children.count { !it.isActive }})", fontSize = 12.sp) }
+                )
+            }
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            if (isLoading) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(color = blueAccent)
+                }
+            } else if (errorMessage != null) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Icon(Icons.Default.ErrorOutline, contentDescription = null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(48.dp))
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(errorMessage!!, color = textSecondary, fontSize = 14.sp)
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Button(
+                            onClick = { fetchChildren() },
+                            colors = ButtonDefaults.buttonColors(containerColor = blueAccent)
+                        ) {
+                            Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("Retry")
+                        }
+                    }
+                }
+            } else if (filteredList.isEmpty()) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("No child records found.", color = textSecondary, fontSize = 14.sp)
+                }
+            } else {
+                LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    items(filteredList, key = { it.id }) { child ->
+                        AdminChildCard(
+                            child = child,
+                            onClick = { onNavigateToChildDetails(child.id) }
+                        )
+                    }
                 }
             }
         }
@@ -106,7 +190,7 @@ private fun AdminChildCard(
     child: AdminChildItem,
     onClick: () -> Unit
 ) {
-    val isBoy = child.gender == "MALE"
+    val isBoy = child.gender.equals("MALE", ignoreCase = true)
     val avatarDrawable = if (isBoy) R.drawable.boy_avatar else R.drawable.girl_avatar
     val accentColor = if (isBoy) Color(0xFF2563EB) else Color(0xFF7C3AED)
 
@@ -124,7 +208,7 @@ private fun AdminChildCard(
         ) {
             Image(
                 painter = painterResource(id = avatarDrawable),
-                contentDescription = child.name,
+                contentDescription = child.fullName,
                 modifier = Modifier
                     .size(54.dp)
                     .clip(CircleShape)
@@ -133,18 +217,28 @@ private fun AdminChildCard(
             Spacer(modifier = Modifier.width(14.dp))
 
             Column(modifier = Modifier.weight(1f)) {
-                Text(child.name, fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color(0xFF0F172A))
-                Text("Age ${child.age} • ${child.gender}", fontSize = 11.sp, color = Color(0xFF64748B))
+                Text(child.fullName.ifBlank { "Child #${child.id}" }, fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color(0xFF0F172A))
+                Text("ID #${child.id} • Age ${child.age} • ${child.gender}", fontSize = 11.sp, color = Color(0xFF64748B))
 
                 Spacer(modifier = Modifier.height(4.dp))
 
-                Text("Therapist: ${child.assignedTherapist}", fontSize = 11.sp, fontWeight = FontWeight.Medium, color = accentColor)
-                Text("Caregiver: ${child.caregiverName}", fontSize = 11.sp, color = Color(0xFF64748B))
+                Text("Therapist: ${child.assignedTherapistName}", fontSize = 11.sp, fontWeight = FontWeight.Medium, color = accentColor)
+                Text("Caregiver: ${child.linkedCaregiverName}", fontSize = 11.sp, color = Color(0xFF64748B))
             }
 
             Column(horizontalAlignment = Alignment.End) {
-                Text("${child.independencePercentage}%", fontSize = 18.sp, fontWeight = FontWeight.ExtraBold, color = accentColor)
-                Text("Independence", fontSize = 10.sp, color = Color(0xFF94A3B8))
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = if (child.isActive) accentColor.copy(alpha = 0.1f) else Color(0xFFF1F5F9)
+                ) {
+                    Text(
+                        text = if (child.isActive) "Active" else "Inactive",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = if (child.isActive) accentColor else Color(0xFF94A3B8),
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                    )
+                }
             }
         }
     }

@@ -111,6 +111,30 @@ fun getSampleShoesSteps(): List<TaskStepResponse> {
     }
 }
 
+fun getSampleToothBrushingSteps(): List<TaskStepResponse> {
+    val toothBrushingSteps = listOf(
+        Pair("Pick up toothbrush", "Pick up your toothbrush by the handle."),
+        Pair("Apply toothpaste", "Squeeze a pea-sized amount of toothpaste onto the bristles."),
+        Pair("Brush your teeth", "Move the toothbrush all around your teeth gently."),
+        Pair("Brush tongue", "Gently brush the surface of your tongue."),
+        Pair("Rinse mouth", "Take a sip of water, swish, and spit it into the sink."),
+        Pair("Rinse toothbrush", "Rinse the toothbrush bristles under clean running water."),
+        Pair("Wipe mouth", "Wipe your mouth with a clean towel.")
+    )
+    return toothBrushingSteps.mapIndexed { index, (title, instruction) ->
+        TaskStepResponse(
+            id = (300 + index + 1).toLong(),
+            activityId = 4L,
+            stepNumber = index + 1,
+            title = title,
+            instructionText = instruction,
+            childInstruction = instruction,
+            audioPromptUrl = null,
+            media = emptyList()
+        )
+    }
+}
+
 @Composable
 fun PromptHierarchyBar(
     selectedLevel: Int,

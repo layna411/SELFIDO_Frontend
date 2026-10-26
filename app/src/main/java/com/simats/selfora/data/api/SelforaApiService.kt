@@ -26,6 +26,16 @@ interface SelforaApiService {
         @Query("search") search: String? = null
     ): Response<List<ChildSummaryItem>>
 
+    @GET("api/therapist/caregivers")
+    suspend fun getTherapistCaregivers(): Response<List<TherapistCaregiverSummaryItem>>
+
+    @POST("api/therapist/children/{childId}/link-caregiver")
+    suspend fun linkCaregiverToChild(
+        @Path("childId") childId: Long,
+        @Query("caregiverId") caregiverId: Long,
+        @Query("relationship") relationship: String = "Parent"
+    ): Response<Unit>
+
     @POST("api/therapist/caregivers/{caregiverId}/reset-password")
     suspend fun resetCaregiverPassword(@Path("caregiverId") caregiverId: Long): Response<ResetPasswordResultResponse>
 
@@ -114,6 +124,9 @@ interface SelforaApiService {
     suspend fun getPromptFadingHistoryForChild(@Path("childId") childId: Long): Response<List<PromptFadingHistoryItemResponse>>
 
     // Home Programs & Caregiver Practice
+    @GET("api/caregiver/dashboard-summary")
+    suspend fun getCaregiverDashboardSummary(): Response<CaregiverDashboardSummaryResponse>
+
     @POST("api/home-programs")
     suspend fun createHomeProgram(@Body request: CreateHomeProgramRequest): Response<HomeProgramResponse>
 
@@ -213,6 +226,40 @@ interface SelforaApiService {
 
     @GET("api/admin/audit-logs")
     suspend fun getAuditLogs(): Response<List<AuditLogItem>>
+
+    @GET("api/admin/children")
+    suspend fun getAllAdminChildren(): Response<List<AdminChildItem>>
+
+    @GET("api/admin/children/{id}")
+    suspend fun getAdminChildDetails(@Path("id") id: Long): Response<AdminChildDetailProfile>
+
+    // Super Admin Caregiver Endpoints
+    @GET("api/admin/caregivers")
+    suspend fun getAllCaregivers(): Response<List<CaregiverItem>>
+
+    @GET("api/admin/caregivers/{id}")
+    suspend fun getCaregiverById(@Path("id") id: Long): Response<CaregiverItem>
+
+    @POST("api/admin/caregivers")
+    suspend fun createCaregiver(@Body request: CreateCaregiverRequest): Response<CaregiverItem>
+
+    @PUT("api/admin/caregivers/{id}")
+    suspend fun updateCaregiver(
+        @Path("id") id: Long,
+        @Body request: UpdateCaregiverRequest
+    ): Response<CaregiverItem>
+
+    @PUT("api/admin/caregivers/{id}/status")
+    suspend fun updateCaregiverStatus(
+        @Path("id") id: Long,
+        @Query("active") active: Boolean
+    ): Response<CaregiverItem>
+
+    @POST("api/admin/caregivers/{id}/reset-password")
+    suspend fun resetCaregiverPasswordBody(
+        @Path("id") id: Long,
+        @Body request: ResetPasswordRequest
+    ): Response<Unit>
 }
 
 

@@ -21,6 +21,9 @@ sealed class NavRoutes(val route: String) {
         fun createRoute(childId: Long) = "admin_child_details/$childId"
     }
     object CaregiverManagement : NavRoutes("caregiver_management")
+    object CaregiverDetails : NavRoutes("caregiver_details/{caregiverId}") {
+        fun createRoute(caregiverId: Long) = "caregiver_details/$caregiverId"
+    }
     object ClinicalOverview : NavRoutes("clinical_overview")
     object AdminHomeProgramme : NavRoutes("admin_home_programme")
     object AdminReports : NavRoutes("admin_reports")

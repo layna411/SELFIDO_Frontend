@@ -27,8 +27,9 @@ fun CaregiverMainSwipeableScreen(
 
     val tabs = listOf(
         CaregiverTab.Home,
-        CaregiverTab.Programme,
-        CaregiverTab.Progress,
+        CaregiverTab.History,
+        CaregiverTab.Messages,
+        CaregiverTab.Resources,
         CaregiverTab.Profile
     )
     val initialPageIndex = tabs.indexOfFirst { it.route == initialRoute }.coerceAtLeast(0)
@@ -71,50 +72,46 @@ fun CaregiverMainSwipeableScreen(
                         },
                         onNavigateToTab = { targetRoute ->
                             if (targetRoute == "caregiver_messages") {
-                                activeSubScreen = "messages"
+                                coroutineScope.launch { pagerState.animateScrollToPage(2) }
+                            } else if (targetRoute == "caregiver_history") {
+                                coroutineScope.launch { pagerState.animateScrollToPage(1) }
+                            } else if (targetRoute == "caregiver_resources") {
+                                coroutineScope.launch { pagerState.animateScrollToPage(3) }
                             } else {
                                 val idx = tabs.indexOfFirst { it.route == targetRoute }
                                 if (idx >= 0) coroutineScope.launch { pagerState.animateScrollToPage(idx) }
                             }
                         },
                         onNavigateToMessages = {
-                            activeSubScreen = "messages"
+                            coroutineScope.launch { pagerState.animateScrollToPage(2) }
                         },
                         onNavigateToNotifications = onNavigateToNotifications,
                         onNavigateToProfile = {
-                            coroutineScope.launch { pagerState.animateScrollToPage(3) }
+                            coroutineScope.launch { pagerState.animateScrollToPage(4) }
                         },
                         onOpenChildMode = onOpenChildMode,
                         onLogout = onLogout
                     )
 
-                    CaregiverTab.Programme -> HomeProgrammeScreen(
-                        onStartPractice = { progId, actCode ->
-                            currentPracticeInfo = ActivePracticeSessionInfo(progId, actCode)
-                            activeSubScreen = "practice"
-                        },
-                        onNavigateToTab = { targetRoute ->
-                            if (targetRoute == "caregiver_messages") {
-                                activeSubScreen = "messages"
-                            } else {
-                                val idx = tabs.indexOfFirst { it.route == targetRoute }
-                                if (idx >= 0) coroutineScope.launch { pagerState.animateScrollToPage(idx) }
-                            }
+                    CaregiverTab.History -> CaregiverHistoryScreen(
+                        onBack = {
+                            coroutineScope.launch { pagerState.animateScrollToPage(0) }
                         }
                     )
 
-                    CaregiverTab.Progress -> CaregiverProgressScreen(
-                        onNavigateToHistory = {
-                            activeSubScreen = "history"
-                            onViewDetailedHistory()
-                        },
+                    CaregiverTab.Messages -> CaregiverMessagesScreen(
                         onNavigateToTab = { targetRoute ->
-                            if (targetRoute == "caregiver_messages") {
-                                activeSubScreen = "messages"
-                            } else {
-                                val idx = tabs.indexOfFirst { it.route == targetRoute }
-                                if (idx >= 0) coroutineScope.launch { pagerState.animateScrollToPage(idx) }
-                            }
+                            val idx = tabs.indexOfFirst { it.route == targetRoute }
+                            if (idx >= 0) coroutineScope.launch { pagerState.animateScrollToPage(idx) }
+                        },
+                        onBack = {
+                            coroutineScope.launch { pagerState.animateScrollToPage(0) }
+                        }
+                    )
+
+                    CaregiverTab.Resources -> CaregiverResourcesScreen(
+                        onBack = {
+                            coroutineScope.launch { pagerState.animateScrollToPage(0) }
                         }
                     )
 

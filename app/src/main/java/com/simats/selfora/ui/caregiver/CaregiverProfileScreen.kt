@@ -1,6 +1,8 @@
 package com.simats.selfora.ui.caregiver
 
+import android.widget.Toast
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -14,29 +16,30 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.simats.selfora.ui.components.glass.*
 import com.simats.selfora.ui.theme.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CaregiverProfileScreen(
     onLogout: () -> Unit,
-    onBack: () -> Unit
+    onBack: () -> Unit = {}
 ) {
-    var soundEnabled by remember { mutableStateOf(true) }
-    var ttsEnabled by remember { mutableStateOf(true) }
-    var autoPlayGuidance by remember { mutableStateOf(true) }
-    var notificationsEnabled by remember { mutableStateOf(true) }
+    val context = LocalContext.current
+    var selectedChildName by remember { mutableStateOf("Rohan S.") }
 
     Scaffold(
         containerColor = SelforaBackground,
         topBar = {
-            TopAppBar(
-                title = { Text("Profile & Settings", fontWeight = FontWeight.Bold, color = SelforaTextPrimary) },
-                modifier = Modifier.statusBarsPadding(),
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = SelforaSurface)
+            GlassTopBar(
+                title = "Profile",
+                subtitle = "Caregiver & Family Account",
+                onBackClick = onBack,
+                accentColor = SelforaPrimary
             )
         }
     ) { padding ->
@@ -44,112 +47,179 @@ fun CaregiverProfileScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .background(SelforaBackground)
-                .padding(16.dp)
-                .verticalScroll(rememberScrollState()),
+                .verticalScroll(rememberScrollState())
+                .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Profile Info Card
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(containerColor = SelforaSurface),
-                elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
-            ) {
-                Column(
-                    modifier = Modifier.padding(20.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
+            // Profile Header Card (Image 2 Screen 12)
+            GlassCard(modifier = Modifier.fillMaxWidth()) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
                     Surface(
                         shape = CircleShape,
                         color = SelforaPrimary.copy(alpha = 0.12f),
-                        modifier = Modifier.size(72.dp)
+                        modifier = Modifier.size(60.dp)
                     ) {
                         Box(contentAlignment = Alignment.Center) {
-                            Icon(Icons.Default.Person, contentDescription = null, tint = SelforaPrimary, modifier = Modifier.size(40.dp))
+                            Text("👩", fontSize = 32.sp)
                         }
                     }
+                    Spacer(modifier = Modifier.width(14.dp))
+                    Column {
+                        Text("Meena", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = SelforaTextPrimary)
+                        Text("Caregiver", fontSize = 13.sp, color = SelforaTextSecondary, fontWeight = FontWeight.Medium)
+                    }
+                }
+            }
 
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Text("Sunita Sharma", fontWeight = FontWeight.Bold, fontSize = 20.sp, color = SelforaTextPrimary)
-                    Text("Caregiver / Parent", fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = SelforaPrimary)
-                    Text("sunita.sharma@example.com • +91 98765 43210", fontSize = 11.sp, color = SelforaTextSecondary)
+            // My Children Card & Child Switch (Image 2 Screen 12)
+            GlassCard(modifier = Modifier.fillMaxWidth()) {
+                Text("My Children", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = SelforaTextPrimary)
+                Spacer(modifier = Modifier.height(12.dp))
 
-                    Spacer(modifier = Modifier.height(16.dp))
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    ChildSelectRow(
+                        name = "Rohan S.",
+                        ageAndDiagnosis = "Age 7 • ASD",
+                        isSelected = selectedChildName == "Rohan S.",
+                        onClick = { selectedChildName = "Rohan S." }
+                    )
 
-                    Surface(
-                        shape = RoundedCornerShape(12.dp),
-                        color = SelforaBackground,
-                        modifier = Modifier.fillMaxWidth()
+                    ChildSelectRow(
+                        name = "Aarav M.",
+                        ageAndDiagnosis = "Age 6 • ASD",
+                        isSelected = selectedChildName == "Aarav M.",
+                        onClick = { selectedChildName = "Aarav M." }
+                    )
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { Toast.makeText(context, "Add another child", Toast.LENGTH_SHORT).show() }
+                            .padding(vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Column(modifier = Modifier.padding(12.dp)) {
-                            Text("LINKED CHILDREN:", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = SelforaTextSecondary)
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text("👦 Aarav Sharma (Boy, 6 yrs)", fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = SelforaTextPrimary)
-                            Text("👧 Ananya Sharma (Girl, 5 yrs)", fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = SelforaTextPrimary)
-                        }
+                        Icon(Icons.Default.Add, contentDescription = null, tint = SelforaPrimary, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("+ Add Another Child", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = SelforaPrimary)
                     }
                 }
             }
 
-            // Settings Card
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(containerColor = SelforaSurface),
-                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text("Practice Settings", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = SelforaTextPrimary)
-                    Spacer(modifier = Modifier.height(12.dp))
+            // Settings & Actions Menu Card (Image 2 Screen 12)
+            GlassCard(modifier = Modifier.fillMaxWidth()) {
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    ProfileMenuOptionRow(
+                        icon = Icons.Default.Settings,
+                        label = "Account Settings",
+                        onClick = {}
+                    )
+                    Divider(color = SelforaBorder.copy(alpha = 0.4f))
 
-                    SettingSwitchRow("Sound Effects", "Play audio cues during ADL practice", soundEnabled) { soundEnabled = it }
-                    Divider(color = SelforaBorder, modifier = Modifier.padding(vertical = 8.dp))
+                    ProfileMenuOptionRow(
+                        icon = Icons.Default.Notifications,
+                        label = "Notification Settings",
+                        onClick = {}
+                    )
+                    Divider(color = SelforaBorder.copy(alpha = 0.4f))
 
-                    SettingSwitchRow("Text-to-Speech Guidance", "Read step guidance aloud for child", ttsEnabled) { ttsEnabled = it }
-                    Divider(color = SelforaBorder, modifier = Modifier.padding(vertical = 8.dp))
+                    ProfileMenuOptionRow(
+                        icon = Icons.Default.HelpOutline,
+                        label = "Help & Support",
+                        onClick = {}
+                    )
+                    Divider(color = SelforaBorder.copy(alpha = 0.4f))
 
-                    SettingSwitchRow("Auto-play Guidance", "Automatically play spoken audio on step change", autoPlayGuidance) { autoPlayGuidance = it }
-                    Divider(color = SelforaBorder, modifier = Modifier.padding(vertical = 8.dp))
-
-                    SettingSwitchRow("Notifications", "Receive reminders and therapist updates", notificationsEnabled) { notificationsEnabled = it }
+                    ProfileMenuOptionRow(
+                        icon = Icons.Default.ExitToApp,
+                        label = "Logout",
+                        labelColor = SelforaError,
+                        onClick = onLogout
+                    )
                 }
             }
 
-            // Logout Button
-            Button(
-                onClick = onLogout,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(50.dp),
-                shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
-            ) {
-                Icon(Icons.Default.ExitToApp, contentDescription = null, tint = Color.White)
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Logout Caregiver Account", fontWeight = FontWeight.Bold, color = Color.White)
-            }
-
-            Spacer(modifier = Modifier.height(150.dp))
+            Spacer(modifier = Modifier.height(110.dp))
         }
     }
 }
 
 @Composable
-fun SettingSwitchRow(title: String, subtitle: String, checked: Boolean, onCheckedChange: (Boolean) -> Unit) {
+fun ChildSelectRow(
+    name: String,
+    ageAndDiagnosis: String,
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
+    Surface(
+        shape = RoundedCornerShape(12.dp),
+        color = if (isSelected) SelforaPrimary.copy(alpha = 0.08f) else Color.White,
+        border = androidx.compose.foundation.BorderStroke(
+            1.dp,
+            if (isSelected) SelforaPrimary else SelforaBorder.copy(alpha = 0.5f)
+        ),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 14.dp, vertical = 10.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Surface(
+                    shape = CircleShape,
+                    color = SelforaBgLight,
+                    modifier = Modifier.size(36.dp)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Text("👦", fontSize = 18.sp)
+                    }
+                }
+                Spacer(modifier = Modifier.width(12.dp))
+                Column {
+                    Text(name, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = SelforaTextPrimary)
+                    Text(ageAndDiagnosis, fontSize = 12.sp, color = SelforaTextSecondary)
+                }
+            }
+
+            if (isSelected) {
+                Surface(
+                    shape = CircleShape,
+                    color = SelforaSuccess,
+                    modifier = Modifier.size(22.dp)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(Icons.Default.Check, contentDescription = null, tint = Color.White, modifier = Modifier.size(14.dp))
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun ProfileMenuOptionRow(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    label: String,
+    labelColor: Color = SelforaTextPrimary,
+    onClick: () -> Unit
+) {
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(vertical = 10.dp, horizontal = 4.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(title, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = SelforaTextPrimary)
-            Text(subtitle, fontSize = 11.sp, color = SelforaTextSecondary)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(icon, contentDescription = null, tint = labelColor, modifier = Modifier.size(20.dp))
+            Spacer(modifier = Modifier.width(12.dp))
+            Text(label, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = labelColor)
         }
-        Switch(
-            checked = checked,
-            onCheckedChange = onCheckedChange,
-            colors = SwitchDefaults.colors(checkedThumbColor = Color.White, checkedTrackColor = SelforaPrimary)
-        )
+        Icon(Icons.Default.ChevronRight, contentDescription = null, tint = SelforaTextSecondary, modifier = Modifier.size(18.dp))
     }
 }

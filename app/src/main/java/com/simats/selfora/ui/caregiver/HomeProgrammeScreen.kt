@@ -22,6 +22,7 @@ import com.simats.selfora.data.api.ApiClient
 import com.simats.selfora.data.model.HomeProgramResponse
 import com.simats.selfora.data.repository.PracticeSessionStore
 import com.simats.selfora.ui.theme.*
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -31,22 +32,31 @@ fun HomeProgrammeScreen(
 ) {
     var homePrograms by remember { mutableStateOf<List<HomeProgramResponse>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
     val practiceRecords by PracticeSessionStore.records.collectAsState()
+    val scope = rememberCoroutineScope()
+
+    fun loadPrograms() {
+        isLoading = true
+        errorMessage = null
+        scope.launch {
+            try {
+                val res = ApiClient.apiService.getTodayHomePrograms()
+                if (res.isSuccessful && res.body() != null) {
+                    homePrograms = res.body()!!
+                } else {
+                    errorMessage = "Failed to load home programmes (${res.code()})"
+                }
+            } catch (e: Exception) {
+                errorMessage = "Network error: ${e.localizedMessage ?: "Unable to connect"}"
+            } finally {
+                isLoading = false
+            }
+        }
+    }
 
     LaunchedEffect(Unit) {
-        isLoading = true
-        try {
-            val res = ApiClient.apiService.getTodayHomePrograms()
-            if (res.isSuccessful && !res.body().isNullOrEmpty()) {
-                homePrograms = res.body()!!
-            } else {
-                homePrograms = getSampleHomeProgramsForChild("BOY")
-            }
-        } catch (e: Exception) {
-            homePrograms = getSampleHomeProgramsForChild("BOY")
-        } finally {
-            isLoading = false
-        }
+        loadPrograms()
     }
 
     Scaffold(
@@ -70,7 +80,7 @@ fun HomeProgrammeScreen(
                     )
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
-                        "Assigned by: Dr. Sarah Jenkins (Therapist)",
+                        "Assigned Activities & Practice Guidance",
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Medium,
                         color = SelforaPrimary
@@ -97,7 +107,7 @@ fun HomeProgrammeScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            "This Week's Programme",
+                            "Assigned Programmes",
                             fontWeight = FontWeight.Bold,
                             fontSize = 17.sp,
                             color = SelforaTextPrimary
@@ -107,7 +117,7 @@ fun HomeProgrammeScreen(
                             color = SelforaPrimary.copy(alpha = 0.12f)
                         ) {
                             Text(
-                                "${homePrograms.size} Activities",
+                                "${homePrograms.size} Active",
                                 modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.Bold,
@@ -121,6 +131,63 @@ fun HomeProgrammeScreen(
                     item {
                         Box(modifier = Modifier.fillMaxWidth().height(150.dp), contentAlignment = Alignment.Center) {
                             CircularProgressIndicator(color = SelforaPrimary)
+                        }
+                    }
+                } else if (errorMessage != null) {
+                    item {
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(16.dp),
+                            colors = CardDefaults.cardColors(containerColor = SelforaSurface)
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(20.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Text("⚠️", fontSize = 36.sp)
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text(
+                                    errorMessage!!,
+                                    fontSize = 14.sp,
+                                    color = SelforaTextSecondary,
+                                    fontWeight = FontWeight.Medium
+                                )
+                                Spacer(modifier = Modifier.height(12.dp))
+                                Button(
+                                    onClick = { loadPrograms() },
+                                    colors = ButtonDefaults.buttonColors(containerColor = SelforaPrimary)
+                                ) {
+                                    Text("Retry", color = Color.White)
+                                }
+                            }
+                        }
+                    }
+                } else if (homePrograms.isEmpty()) {
+                    item {
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(16.dp),
+                            colors = CardDefaults.cardColors(containerColor = SelforaSurface)
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(24.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Text("📋", fontSize = 42.sp)
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text(
+                                    "No Home Programmes Assigned",
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 16.sp,
+                                    color = SelforaTextPrimary
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    "Your therapist has not assigned any home practice programmes yet.",
+                                    fontSize = 12.sp,
+                                    color = SelforaTextSecondary
+                                )
+                            }
                         }
                     }
                 } else {

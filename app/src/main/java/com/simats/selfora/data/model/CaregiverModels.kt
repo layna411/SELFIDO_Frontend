@@ -41,3 +41,13 @@ data class CaregiverPracticeHistoryItem(
     val completedSteps: Int,
     val isFullyCompleted: Boolean
 )
+
+data class CaregiverDashboardSummaryResponse(
+    val caregiverName: String = "",
+    val caregiverEmail: String = "",
+    val linkedChildren: List<LinkedChildInfo> = emptyList(),
+    val totalCompletedPractices: Int = 0,
+    val activeProgramsCount: Int = 0,
+    val todayHomePrograms: List<HomeProgramResponse> = emptyList(),
+    val recentPracticeHistory: List<CaregiverPracticeSessionResponse> = emptyList()
+)

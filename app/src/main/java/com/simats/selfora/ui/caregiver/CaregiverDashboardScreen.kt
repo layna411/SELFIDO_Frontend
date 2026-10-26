@@ -38,86 +38,52 @@ fun CaregiverDashboardScreen(
     onOpenChildMode: () -> Unit = {},
     onLogout: () -> Unit
 ) {
-    var linkedChildren by remember {
-        mutableStateOf(
-            listOf(
-                LinkedChildInfo(1L, "Aarav Sharma", "BOY", 6, "Dr. Sarah Jenkins"),
-                LinkedChildInfo(2L, "Ananya Sharma", "GIRL", 5, "Dr. Sarah Jenkins")
-            )
-        )
-    }
-    var selectedChild by remember { mutableStateOf(linkedChildren.first()) }
+    var linkedChildren by remember { mutableStateOf<List<LinkedChildInfo>>(emptyList()) }
+    var selectedChild by remember { mutableStateOf<LinkedChildInfo?>(null) }
     var childDropdownExpanded by remember { mutableStateOf(false) }
 
     var homePrograms by remember { mutableStateOf<List<HomeProgramResponse>>(emptyList()) }
-    var isLoading by remember { mutableStateOf(true) }
+    var isLoading by remember { mutableStateOf(false) }
 
     val scope = rememberCoroutineScope()
 
-    LaunchedEffect(selectedChild) {
+    fun loadDashboardData() {
         isLoading = true
-        try {
-            val res = ApiClient.apiService.getTodayHomePrograms()
-            if (res.isSuccessful && !res.body().isNullOrEmpty()) {
-                homePrograms = res.body()!!
-            } else {
-                homePrograms = getSampleHomeProgramsForChild(selectedChild.gender)
+        scope.launch {
+            try {
+                val response = ApiClient.apiService.getCaregiverDashboardSummary()
+                if (response.isSuccessful && response.body() != null) {
+                    val summary = response.body()!!
+                    linkedChildren = summary.linkedChildren
+                    if (linkedChildren.isNotEmpty()) {
+                        selectedChild = linkedChildren.first()
+                    }
+                }
+            } catch (_: Exception) {
+            } finally {
+                isLoading = false
             }
-        } catch (e: Exception) {
-            homePrograms = getSampleHomeProgramsForChild(selectedChild.gender)
-        } finally {
-            isLoading = false
         }
+    }
+
+    LaunchedEffect(Unit) {
+        loadDashboardData()
     }
 
     Scaffold(
         containerColor = SelforaBackground,
         topBar = {
             GlassTopBar(
-                title = "${getTimeBasedGreeting()} 👋",
-                subtitle = "Caregiver / Parent Portal",
-                accentColor = SelforaSecondary,
+                title = "Caregiver Home",
+                subtitle = "Home Practice & Guidance",
+                accentColor = SelforaPrimary,
                 actions = {
                     GlassIconButton(
                         icon = Icons.Default.Notifications,
                         onClick = onNavigateToNotifications,
-                        tint = SelforaSecondary,
+                        tint = SelforaPrimary,
                         size = 40.dp,
                         iconSize = 20.dp
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    GlassIconButton(
-                        icon = Icons.Default.Person,
-                        onClick = onNavigateToProfile,
-                        tint = SelforaSecondary,
-                        size = 40.dp,
-                        iconSize = 20.dp
-                    )
-                }
-            )
-        },
-        floatingActionButton = {
-            ExtendedFloatingActionButton(
-                onClick = onNavigateToMessages,
-                containerColor = SelforaPrimary,
-                contentColor = Color.White,
-                shape = RoundedCornerShape(24.dp),
-                elevation = FloatingActionButtonDefaults.elevation(defaultElevation = 6.dp),
-                modifier = Modifier.padding(bottom = 90.dp),
-                icon = {
-                    Icon(
-                        imageVector = Icons.Default.Chat,
-                        contentDescription = "Message Doctor",
-                        tint = Color.White,
-                        modifier = Modifier.size(20.dp)
-                    )
-                },
-                text = {
-                    Text(
-                        text = "Message Doctor",
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 13.sp,
-                        color = Color.White
                     )
                 }
             )
@@ -131,201 +97,154 @@ fun CaregiverDashboardScreen(
         ) {
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 150.dp),
+                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 120.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                // Child Selector Bar & Open Child Mode Launcher
-                item {
-                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                        GlassCard(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable { childDropdownExpanded = true },
-                            cornerRadius = 20.dp,
-                            backgroundColor = Color.White.copy(alpha = 0.90f),
-                            contentPadding = PaddingValues(horizontal = 14.dp, vertical = 10.dp)
-                        ) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    ChildAvatarImage(
-                                        avatarId = if (selectedChild.gender == "BOY") "aarav_boy" else "ananya_girl",
-                                        gender = selectedChild.gender,
-                                        size = 44.dp
-                                    )
-
-                                    Spacer(modifier = Modifier.width(10.dp))
-
-                                    Column {
-                                        Text(
-                                            "Selected Child",
-                                            fontSize = 10.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            color = SelforaTextSecondary
-                                        )
-                                        Text(
-                                            "${selectedChild.name} (${selectedChild.age} yrs)",
-                                            fontSize = 14.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            color = SelforaTextPrimary
-                                        )
-                                    }
-                                }
-
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Text(
-                                        "Switch",
-                                        fontSize = 12.sp,
-                                        fontWeight = FontWeight.SemiBold,
-                                        color = SelforaSecondary
-                                    )
-                                    Icon(
-                                        Icons.Default.ArrowDropDown,
-                                        contentDescription = "Dropdown",
-                                        tint = SelforaSecondary
-                                    )
-                                }
-
-                                DropdownMenu(
-                                    expanded = childDropdownExpanded,
-                                    onDismissRequest = { childDropdownExpanded = false }
-                                ) {
-                                    linkedChildren.forEach { child ->
-                                        DropdownMenuItem(
-                                            text = {
-                                                Text(
-                                                    "${child.name} (${if (child.gender == "BOY") "Boy" else "Girl"})",
-                                                    fontWeight = if (child.childId == selectedChild.childId) FontWeight.Bold else FontWeight.Normal
-                                                )
-                                            },
-                                            onClick = {
-                                                selectedChild = child
-                                                childDropdownExpanded = false
-                                            },
-                                            leadingIcon = {
-                                                Text(if (child.gender == "BOY") "👦" else "👧", fontSize = 16.sp)
-                                            }
-                                        )
-                                    }
-                                }
-                            }
-                        }
-
-                        GlassButton(
-                            text = "🎮 Open Child Mode for ${selectedChild.name}",
-                            onClick = {
-                                SessionManager.enterChildMode(
-                                    adultRole = "ROLE_CAREGIVER",
-                                    childId = selectedChild.childId,
-                                    childName = selectedChild.name,
-                                    gender = selectedChild.gender
-                                )
-                                onOpenChildMode()
-                            },
-                            icon = Icons.Default.SportsEsports,
-                            gradient = listOf(SelforaSecondary, Color(0xFF9333EA)),
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                    }
-                }
-
-                // Section Header
-                item {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            "Today's Practice",
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 18.sp,
-                            color = SelforaTextPrimary
-                        )
-                        Surface(
-                            shape = RoundedCornerShape(12.dp),
-                            color = SelforaSuccess.copy(alpha = 0.15f)
-                        ) {
-                            Text(
-                                "${homePrograms.size} Activities Assigned",
-                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = SelforaSuccess
-                            )
-                        }
-                    }
-                }
-
-                if (isLoading) {
-                    item {
-                        Box(modifier = Modifier.fillMaxWidth().height(150.dp), contentAlignment = Alignment.Center) {
-                            CircularProgressIndicator(color = SelforaSecondary)
-                        }
-                    }
-                } else {
-                    items(homePrograms) { program ->
-                        CaregiverActivityCard(
-                            program = program,
-                            onStartPractice = {
-                                val actCode = when (program.activityId) {
-                                    13L -> "eating_spoon_activity"
-                                    9L -> "shoes_socks_activity"
-                                    else -> if (selectedChild.gender == "GIRL") "girl_frock_activity" else "boy_tshirt_activity"
-                                }
-                                onStartPractice(program.id, actCode)
-                            }
-                        )
-                    }
-                }
-
-                // Therapist Instructions Card
+                // Greeting Hero Banner (Image 2 Screen 2)
                 item {
                     GlassCard(
                         modifier = Modifier.fillMaxWidth(),
-                        cornerRadius = 24.dp,
-                        backgroundColor = Color.White.copy(alpha = 0.90f),
-                        elevation = 6.dp
+                        cornerRadius = 22.dp,
+                        backgroundColor = Color.White.copy(alpha = 0.95f)
                     ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                Icons.Default.Chat,
-                                contentDescription = null,
-                                tint = SelforaSecondary,
-                                modifier = Modifier.size(20.dp)
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                "Therapist Instructions",
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 15.sp,
-                                color = SelforaTextPrimary
-                            )
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = "Hello, Meena!",
+                                    fontSize = 20.sp,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = SelforaTextPrimary
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = "You're doing a great job!",
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color = SelforaTextSecondary
+                                )
+                            }
+
+                            Surface(
+                                shape = CircleShape,
+                                color = SelforaPrimary.copy(alpha = 0.12f),
+                                modifier = Modifier.size(54.dp)
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Text("👩‍👦", fontSize = 28.sp)
+                                }
+                            }
                         }
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            "Assigned by: ${selectedChild.therapistName}",
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = SelforaTextSecondary
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Surface(
-                            shape = RoundedCornerShape(14.dp),
-                            color = SelforaSecondary.copy(alpha = 0.08f),
-                            modifier = Modifier.fillMaxWidth()
+                    }
+                }
+
+                // Today's Home Program Section (Image 2 Screen 2)
+                item {
+                    Column {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                "Practice dressing before school. Focus on allowing ${selectedChild.name} to attempt the steps independently. Offer gentle verbal guidance if stuck.",
-                                modifier = Modifier.padding(12.dp),
-                                fontSize = 13.sp,
-                                color = SelforaTextPrimary,
-                                lineHeight = 18.sp
+                                "Today's Home Program",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 16.sp,
+                                color = SelforaTextPrimary
+                            )
+                            Text(
+                                "12 May 2025",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = SelforaTextSecondary
                             )
                         }
+
+                        Spacer(modifier = Modifier.height(10.dp))
+
+                        // Tooth Brushing Primary Home Program Card
+                        GlassCard(
+                            modifier = Modifier.fillMaxWidth(),
+                            cornerRadius = 20.dp,
+                            backgroundColor = Color.White.copy(alpha = 0.95f),
+                            borderColor = SelforaPrimary.copy(alpha = 0.3f),
+                            elevation = 4.dp
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Surface(
+                                    shape = RoundedCornerShape(14.dp),
+                                    color = SelforaPrimary.copy(alpha = 0.12f),
+                                    modifier = Modifier.size(50.dp)
+                                ) {
+                                    Box(contentAlignment = Alignment.Center) {
+                                        Text("🪥", fontSize = 26.sp)
+                                    }
+                                }
+                                Spacer(modifier = Modifier.width(14.dp))
+                                Column {
+                                    Text(
+                                        "Tooth Brushing",
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 17.sp,
+                                        color = SelforaTextPrimary
+                                    )
+                                    Spacer(modifier = Modifier.height(2.dp))
+                                    Text(
+                                        "Brush all around teeth",
+                                        fontSize = 13.sp,
+                                        color = SelforaTextSecondary
+                                    )
+                                    Text(
+                                        "1 time at night",
+                                        fontSize = 12.sp,
+                                        color = SelforaPrimary,
+                                        fontWeight = FontWeight.SemiBold
+                                    )
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(16.dp))
+
+                            GlassButton(
+                                text = "Start Activity",
+                                icon = Icons.Default.PlayArrow,
+                                onClick = { onStartPractice(1L, "tooth_brushing_activity") },
+                                gradient = listOf(SelforaPrimary, Color(0xFF6D28D9)),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(46.dp)
+                            )
+                        }
+                    }
+                }
+
+                // Other Activities Section (Image 2 Screen 2)
+                item {
+                    Text(
+                        "Other Activities",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 16.sp,
+                        color = SelforaTextPrimary
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        OtherActivityItem(
+                            emoji = "👕",
+                            title = "Wearing T-Shirt",
+                            frequency = "2 times a day",
+                            onClick = { onStartPractice(2L, "boy_tshirt_activity") }
+                        )
+
+                        OtherActivityItem(
+                            emoji = "🥣",
+                            title = "Eating with Spoon",
+                            frequency = "During meals",
+                            onClick = { onStartPractice(3L, "eating_spoon_activity") }
+                        )
                     }
                 }
             }
@@ -334,145 +253,48 @@ fun CaregiverDashboardScreen(
 }
 
 @Composable
-fun CaregiverActivityCard(
-    program: HomeProgramResponse,
-    onStartPractice: () -> Unit
+fun OtherActivityItem(
+    emoji: String,
+    title: String,
+    frequency: String,
+    onClick: () -> Unit
 ) {
-    val (iconEmoji, totalSteps, completedSteps) = when (program.activityId) {
-        13L -> Triple("🥣", 10, 0)
-        9L -> Triple("👟", 10, 0)
-        else -> Triple("👕", 18, 7)
-    }
-
     GlassCard(
-        modifier = Modifier.fillMaxWidth(),
-        cornerRadius = 24.dp,
-        backgroundColor = Color.White.copy(alpha = 0.90f),
-        elevation = 6.dp,
-        onClick = onStartPractice
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
+        cornerRadius = 16.dp,
+        backgroundColor = Color.White.copy(alpha = 0.9f)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(iconEmoji, fontSize = 24.sp)
-                Spacer(modifier = Modifier.width(10.dp))
-                Text(
-                    program.activityTitle,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 17.sp,
-                    color = SelforaTextPrimary
-                )
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = SelforaBgLight,
+                    modifier = Modifier.size(44.dp)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Text(emoji, fontSize = 22.sp)
+                    }
+                }
+                Spacer(modifier = Modifier.width(12.dp))
+                Column {
+                    Text(title, fontWeight = FontWeight.Bold, fontSize = 15.sp, color = SelforaTextPrimary)
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(frequency, fontSize = 12.sp, color = SelforaTextSecondary)
+                }
             }
-        }
 
-        Spacer(modifier = Modifier.height(12.dp))
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                "$totalSteps Steps",
-                fontSize = 13.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = SelforaTextSecondary
-            )
-            Text(
-                "Progress: $completedSteps / $totalSteps",
-                fontSize = 13.sp,
-                fontWeight = FontWeight.Bold,
-                color = SelforaSecondary
+            Icon(
+                Icons.Default.ChevronRight,
+                contentDescription = null,
+                tint = SelforaTextSecondary,
+                modifier = Modifier.size(20.dp)
             )
         }
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        GlassProgressIndicator(
-            progress = if (totalSteps > 0) completedSteps.toFloat() / totalSteps else 0f,
-            height = 8.dp,
-            accentColor = SelforaSecondary,
-            progressGradient = listOf(SelforaSecondary, Color(0xFF9333EA))
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        GlassButton(
-            text = "Start Practice",
-            icon = Icons.Default.PlayArrow,
-            onClick = onStartPractice,
-            gradient = listOf(SelforaSecondary, Color(0xFF6D28D9)),
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(48.dp)
-        )
     }
-}
-
-fun getSampleHomeProgramsForChild(gender: String): List<HomeProgramResponse> {
-    val dressingTitle = if (gender == "GIRL") "Girl Frock Dressing" else "Boy T-Shirt Dressing"
-    val dressingId = if (gender == "GIRL") 2L else 1L
-
-    return listOf(
-        HomeProgramResponse(
-            id = 1L,
-            childId = 1L,
-            childName = "Aarav Sharma",
-            therapistId = 1L,
-            therapistName = "Dr. Sarah Jenkins",
-            activityId = dressingId,
-            activityTitle = dressingTitle,
-            frequencyPerWeek = 4,
-            targetDurationMinutes = 15,
-            targetPromptLevelId = 1,
-            targetPromptLevelName = "Visual Prompt",
-            goalStatement = "Improve independent dressing.",
-            caregiverInstructions = "Practice T-shirt dressing before school.",
-            startDate = "2026-09-28",
-            endDate = "2026-10-12",
-            isActive = true,
-            createdAt = "2026-09-28"
-        ),
-        HomeProgramResponse(
-            id = 2L,
-            childId = 1L,
-            childName = "Aarav Sharma",
-            therapistId = 1L,
-            therapistName = "Dr. Sarah Jenkins",
-            activityId = 13L,
-            activityTitle = "Eating with Spoon",
-            frequencyPerWeek = 3,
-            targetDurationMinutes = 10,
-            targetPromptLevelId = 1,
-            targetPromptLevelName = "Visual Prompt",
-            goalStatement = "Practice spoon holding.",
-            caregiverInstructions = "Encourage proper grip during lunch.",
-            startDate = "2026-09-28",
-            endDate = "2026-10-12",
-            isActive = true,
-            createdAt = "2026-09-28"
-        ),
-        HomeProgramResponse(
-            id = 3L,
-            childId = 1L,
-            childName = "Aarav Sharma",
-            therapistId = 1L,
-            therapistName = "Dr. Sarah Jenkins",
-            activityId = 9L,
-            activityTitle = "Shoes & Socks",
-            frequencyPerWeek = 3,
-            targetDurationMinutes = 10,
-            targetPromptLevelId = 1,
-            targetPromptLevelName = "Visual Prompt",
-            goalStatement = "Practice putting on socks and shoes.",
-            caregiverInstructions = "Assist with shoe positioning.",
-            startDate = "2026-09-28",
-            endDate = "2026-10-12",
-            isActive = true,
-            createdAt = "2026-09-28"
-        )
-    )
 }

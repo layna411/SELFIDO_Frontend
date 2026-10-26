@@ -42,53 +42,44 @@ fun ChildHomeScreen(
 
     var dashboardData by remember { mutableStateOf<ChildDashboardResponse?>(null) }
     var isLoading by remember { mutableStateOf(true) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
     var showExitDialog by remember { mutableStateOf(false) }
     var selectedCategory by remember { mutableStateOf("ALL") }
 
     val activeChildId = remember { SessionManager.getActiveChildId() }
 
-    LaunchedEffect(activeChildId) {
+    fun loadChildDashboard() {
+        if (activeChildId <= 0) {
+            errorMessage = "No active child selected."
+            isLoading = false
+            return
+        }
+
         isLoading = true
-        if (activeChildId > 0) {
+        errorMessage = null
+        dashboardData = null // Clear state when switching/reloading children
+
+        scope.launch {
             try {
                 val res = ApiClient.apiService.getChildModeDashboard(activeChildId)
                 if (res.isSuccessful && res.body() != null) {
                     dashboardData = res.body()
+                    dashboardData?.preferredName?.let { pName ->
+                        ttsManager.speak("Welcome back, $pName! Let's practise today!")
+                    }
+                } else {
+                    errorMessage = "Access denied or child not found (${res.code()})"
                 }
             } catch (e: Exception) {
-                // Ignore fallback to local mock dashboard below
+                errorMessage = "Network error: ${e.localizedMessage ?: "Unable to connect"}"
+            } finally {
+                isLoading = false
             }
         }
+    }
 
-        if (dashboardData == null) {
-            val name = SessionManager.getActiveChildName().ifBlank { "Aarav" }
-            val gender = SessionManager.getActiveChildGender().ifBlank { "BOY" }
-            dashboardData = ChildDashboardResponse(
-                childId = if (activeChildId > 0) activeChildId else 1L,
-                childName = name,
-                preferredName = name,
-                gender = gender,
-                assignedActivities = listOf(
-                    ChildActivitySummaryDto(1L, "Wear a T-Shirt", "Learn to wear your T-Shirt step-by-step", null, "Dressing", 8, 3, true, false, 5),
-                    ChildActivitySummaryDto(13L, "Eat with Spoon", "Hold spoon correctly and eat food", null, "Eating", 5, 5, true, true, 5)
-                ),
-                allActivities = listOf(
-                    ChildActivitySummaryDto(1L, "Wear a T-Shirt", "Learn to wear your T-Shirt step-by-step", null, "Dressing", 8, 3, true, false, 5),
-                    ChildActivitySummaryDto(2L, "Wear Frock / Dress", "Learn to wear frock step-by-step", null, "Dressing", 8, 0, false, false, 0),
-                    ChildActivitySummaryDto(13L, "Eat with Spoon", "Hold spoon correctly and eat food", null, "Eating", 5, 5, true, true, 5),
-                    ChildActivitySummaryDto(9L, "Wear Shoes & Socks", "Put on socks and fasten shoe straps", null, "Shoes & Socks", 6, 0, false, false, 0),
-                    ChildActivitySummaryDto(14L, "Brush Teeth", "Clean your teeth with toothpaste", null, "Grooming", 5, 0, false, false, 0),
-                    ChildActivitySummaryDto(15L, "Wash Hands", "Soap and rinse hands properly", null, "Grooming", 4, 0, false, false, 0)
-                ),
-                totalStars = 10,
-                completedCount = 1
-            )
-        }
-        isLoading = false
-
-        dashboardData?.preferredName?.let { pName ->
-            ttsManager.speak("Welcome back, $pName! Let's practise today!")
-        }
+    LaunchedEffect(activeChildId) {
+        loadChildDashboard()
     }
 
     DisposableEffect(Unit) {
@@ -105,20 +96,66 @@ fun ChildHomeScreen(
         )
     }
 
-    val isGirl = dashboardData?.gender?.uppercase()?.contains("GIRL") == true
-    val childName = dashboardData?.preferredName?.ifBlank { dashboardData?.childName } ?: "Aarav"
-    val primaryThemeColor = if (isGirl) SelforaSecondary else SelforaPrimary
+    if (isLoading) {
+        Box(
+            modifier = Modifier.fillMaxSize().background(SelforaBackground),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator(color = SelforaPrimary)
+        }
+    } else if (errorMessage != null) {
+        Box(
+            modifier = Modifier.fillMaxSize().background(SelforaBackground).padding(24.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            GlassCard(
+                modifier = Modifier.fillMaxWidth(),
+                cornerRadius = 20.dp,
+                backgroundColor = Color.White
+            ) {
+                Column(
+                    modifier = Modifier.padding(20.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text("🔒", fontSize = 42.sp)
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Text(
+                        "Unable to Load Child Mode",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 18.sp,
+                        color = SelforaTextPrimary
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text(
+                        errorMessage!!,
+                        fontSize = 13.sp,
+                        color = SelforaTextSecondary
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Button(
+                        onClick = { loadChildDashboard() },
+                        colors = ButtonDefaults.buttonColors(containerColor = SelforaPrimary)
+                    ) {
+                        Text("Retry", color = Color.White, fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+        }
+    } else {
+        val isGirl = dashboardData?.gender?.uppercase()?.contains("GIRL") == true
+        val childName = dashboardData?.preferredName?.ifBlank { dashboardData?.childName } ?: "Aarav"
+        val primaryThemeColor = if (isGirl) SelforaSecondary else SelforaPrimary
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(SelforaBackground)
-            .statusBarsPadding()
-            .navigationBarsPadding()
-            .verticalScroll(rememberScrollState())
-            .padding(20.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(SelforaBackground)
+                .statusBarsPadding()
+                .navigationBarsPadding()
+                .verticalScroll(rememberScrollState())
+                .padding(20.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
         // Header (Greeting, Avatar, Settings & Adult Exit)
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -241,6 +278,7 @@ fun ChildHomeScreen(
             Spacer(modifier = Modifier.height(12.dp))
         }
     }
+}
 }
 
 @Composable

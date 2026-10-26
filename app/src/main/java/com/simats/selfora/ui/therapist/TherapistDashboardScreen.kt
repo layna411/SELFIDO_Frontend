@@ -27,6 +27,7 @@ import com.simats.selfora.data.model.TherapistDashboardSummaryResponse
 import com.simats.selfora.ui.components.avatar.ChildAvatarImage
 import com.simats.selfora.ui.components.glass.*
 import com.simats.selfora.ui.theme.*
+import kotlinx.coroutines.launch
 
 @Composable
 fun TherapistDashboardScreen(
@@ -41,24 +42,54 @@ fun TherapistDashboardScreen(
     onLogout: () -> Unit
 ) {
     var summary by remember { mutableStateOf(TherapistDashboardSummaryResponse()) }
+    var isLoading by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
     var showProfileDialog by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
+
+    fun loadDashboardData() {
+        isLoading = true
+        errorMessage = null
+        scope.launch {
+            try {
+                val response = ApiClient.apiService.getTherapistDashboardSummary()
+                if (response.isSuccessful && response.body() != null) {
+                    summary = response.body()!!
+                } else {
+                    val code = response.code()
+                    if (code == 401 || code == 403) {
+                        onLogout()
+                        return@launch
+                    }
+                    errorMessage = "Failed to load clinical dashboard (HTTP $code)"
+                }
+            } catch (e: Exception) {
+                errorMessage = "Network error: ${e.localizedMessage}. Tap Refresh to try again."
+            } finally {
+                isLoading = false
+            }
+        }
+    }
 
     LaunchedEffect(Unit) {
-        try {
-            val response = ApiClient.apiService.getTherapistDashboardSummary()
-            if (response.isSuccessful && response.body() != null) {
-                summary = response.body()!!
-            }
-        } catch (_: Exception) {}
+        loadDashboardData()
     }
 
     Scaffold(
         topBar = {
             GlassTopBar(
                 title = "${getTimeBasedGreeting()} 👋",
-                subtitle = "${summary.therapistName} (${summary.designation})",
+                subtitle = "${summary.therapistName.ifBlank { "Therapist" }} (${summary.designation})",
                 accentColor = SelforaPrimary,
                 actions = {
+                    GlassIconButton(
+                        icon = Icons.Default.Refresh,
+                        onClick = { loadDashboardData() },
+                        tint = SelforaPrimary,
+                        size = 40.dp,
+                        iconSize = 20.dp
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
                     BadgedBox(
                         badge = { Badge { Text("3") } }
                     ) {
@@ -83,13 +114,46 @@ fun TherapistDashboardScreen(
         },
         containerColor = SelforaBackground
     ) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .verticalScroll(rememberScrollState())
-                .padding(16.dp)
-        ) {
+        if (isLoading && summary.therapistName.isBlank()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator(color = SelforaPrimary)
+            }
+        } else if (errorMessage != null && summary.therapistName.isBlank()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .padding(24.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                GlassCard(modifier = Modifier.fillMaxWidth()) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.padding(16.dp)
+                    ) {
+                        Icon(Icons.Default.ErrorOutline, contentDescription = null, tint = Color.Red, modifier = Modifier.size(48.dp))
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Text(errorMessage!!, color = SelforaTextSecondary, fontSize = 14.sp)
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Button(onClick = { loadDashboardData() }, colors = ButtonDefaults.buttonColors(containerColor = SelforaPrimary)) {
+                            Text("Retry")
+                        }
+                    }
+                }
+            }
+        } else {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .verticalScroll(rememberScrollState())
+                    .padding(16.dp)
+            ) {
             // Header Profile Glass Card
             GlassCard(
                 modifier = Modifier.fillMaxWidth(),
@@ -117,21 +181,21 @@ fun TherapistDashboardScreen(
             Spacer(modifier = Modifier.height(18.dp))
 
             Text(
-                text = "CLINICAL DASHBOARD METRICS",
-                fontSize = 11.sp,
+                text = "Today Overview",
+                fontSize = 13.sp,
                 fontWeight = FontWeight.Bold,
                 color = SelforaPrimary,
-                letterSpacing = 1.sp
+                letterSpacing = 0.5.sp
             )
             Spacer(modifier = Modifier.height(10.dp))
 
-            // 4 Live Statistics Glass Cards
+            // 4 Overview Cards in 2x2 grid
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 DashboardSummaryGlassCard(
-                    title = "Assigned Children",
+                    title = "Children",
                     count = "${summary.activeChildrenCount}",
                     subtitle = "Active Clinical Cases",
                     emoji = "👦",
@@ -140,13 +204,13 @@ fun TherapistDashboardScreen(
                     onClick = onNavigateToChildren
                 )
                 DashboardSummaryGlassCard(
-                    title = "Today's Sessions",
+                    title = "Sessions Today",
                     count = "${summary.todaySessionsCount}",
                     subtitle = "Scheduled Sessions",
                     emoji = "📅",
                     accentColor = SelforaSecondary,
                     modifier = Modifier.weight(1f),
-                    onClick = onNavigateToChildren
+                    onClick = onNavigateToAssessment
                 )
             }
 
@@ -157,18 +221,18 @@ fun TherapistDashboardScreen(
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 DashboardSummaryGlassCard(
-                    title = "Completed Sessions",
-                    count = "${summary.completedSessionsCount}",
-                    subtitle = "Sessions Recorded",
-                    emoji = "✅",
+                    title = "Home Programs",
+                    count = "${summary.activeHomeProgramsCount}",
+                    subtitle = "Assigned Programs",
+                    emoji = "🏠",
                     accentColor = SelforaSuccess,
                     modifier = Modifier.weight(1f),
-                    onClick = onNavigateToProgress
+                    onClick = onNavigateToHomePrograms
                 )
                 DashboardSummaryGlassCard(
                     title = "Pending Reviews",
                     count = "${summary.pendingReviewsCount}",
-                    subtitle = "Home Practice Logs",
+                    subtitle = "Caregiver Practice Logs",
                     emoji = "📋",
                     accentColor = SelforaWarning,
                     modifier = Modifier.weight(1f),
@@ -179,69 +243,55 @@ fun TherapistDashboardScreen(
             Spacer(modifier = Modifier.height(24.dp))
 
             Text(
-                text = "QUICK CLINICAL ACTIONS",
-                fontSize = 11.sp,
+                text = "Quick Actions",
+                fontSize = 13.sp,
                 fontWeight = FontWeight.Bold,
                 color = SelforaPrimary,
-                letterSpacing = 1.sp
+                letterSpacing = 0.5.sp
             )
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Quick Action Shortcuts Grid / List
+            // Quick Actions List with Chevron Right matching Prototype Flow
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                QuickActionLargeGlassButton(
-                    title = "Analyze & Adapt Dashboard",
-                    subtitle = "Clinical performance analysis, session comparisons & recommendations",
-                    icon = Icons.Default.Analytics,
-                    gradient = listOf(Color(0xFF2563EB), Color(0xFF1D4ED8)),
-                    onClick = onNavigateToProgress
-                )
-
-                QuickActionLargeGlassButton(
-                    title = "Prompt Fading Management",
-                    subtitle = "Therapist-controlled prompt fading plans & auditable history",
-                    icon = Icons.Default.TrendingDown,
-                    gradient = listOf(Color(0xFF7C3AED), Color(0xFF6D28D9)),
-                    onClick = onNavigateToProgress
-                )
-
-                QuickActionLargeGlassButton(
-                    title = "View Assigned Children",
-                    subtitle = "Access pediatric cases, clinical profiles & ADL goals",
-                    icon = Icons.Default.ChildCare,
-                    gradient = listOf(SelforaPrimary, Color(0xFF1D4ED8)),
+                QuickActionChevronCard(
+                    title = "My Children",
+                    icon = Icons.Default.People,
+                    iconTint = SelforaPrimary,
                     onClick = onNavigateToChildren
                 )
 
-                QuickActionLargeGlassButton(
-                    title = "Start New Assessment",
-                    subtitle = "Evaluate ADL baseline (Dressing, Eating, Shoes) & prompt levels",
-                    icon = Icons.Default.Assignment,
-                    gradient = listOf(SelforaSuccess, Color(0xFF059669)),
+                QuickActionChevronCard(
+                    title = "Today's Sessions",
+                    icon = Icons.Default.CalendarToday,
+                    iconTint = SelforaSecondary,
                     onClick = onNavigateToAssessment
                 )
 
-                QuickActionLargeGlassButton(
-                    title = "Review Home Practice",
-                    subtitle = "Evaluate caregiver practice logs & offer clinical guidance",
-                    icon = Icons.Default.HomeWork,
-                    gradient = listOf(SelforaWarning, Color(0xFFD97706)),
+                QuickActionChevronCard(
+                    title = "Assign Home Program",
+                    icon = Icons.Default.Assignment,
+                    iconTint = SelforaSuccess,
                     onClick = onNavigateToHomePrograms
                 )
 
-                QuickActionLargeGlassButton(
-                    title = "View Progress Reports",
-                    subtitle = "Analyze longitudinal prompt fading & ADL independence metrics",
-                    icon = Icons.Default.ShowChart,
-                    gradient = listOf(SelforaSecondary, Color(0xFF6D28D9)),
+                QuickActionChevronCard(
+                    title = "Reports",
+                    icon = Icons.Default.BarChart,
+                    iconTint = Color(0xFF0EA5E9),
                     onClick = onNavigateToProgress
                 )
 
-                QuickActionLargeGlassButton(
+                QuickActionChevronCard(
+                    title = "Analyze & Adapt Dashboard",
+                    icon = Icons.Default.Analytics,
+                    iconTint = Color(0xFF7C3AED),
+                    onClick = onNavigateToProgress
+                )
+
+                QuickActionChevronCard(
                     title = "Add Child & Caregiver",
-                    subtitle = "Single workflow to create child record & link caregiver",
                     icon = Icons.Default.PersonAdd,
-                    gradient = listOf(Color(0xFF0EA5E9), Color(0xFF0284C7)),
+                    iconTint = Color(0xFF2563EB),
                     onClick = onNavigateToAddChildWorkflow
                 )
             }
@@ -401,8 +451,9 @@ fun TherapistDashboardScreen(
 
             Spacer(modifier = Modifier.height(110.dp))
         }
+    }
 
-        if (showProfileDialog) {
+    if (showProfileDialog) {
             AlertDialog(
                 onDismissRequest = { showProfileDialog = false },
                 title = {
@@ -685,3 +736,42 @@ fun QuickActionLargeGlassButton(
         }
     }
 }
+
+@Composable
+fun QuickActionChevronCard(
+    title: String,
+    icon: ImageVector,
+    iconTint: Color = SelforaPrimary,
+    onClick: () -> Unit
+) {
+    Surface(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        color = Color.White.copy(alpha = 0.92f),
+        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0)),
+        shadowElevation = 2.dp
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Surface(
+                    shape = CircleShape,
+                    color = iconTint.copy(alpha = 0.12f),
+                    modifier = Modifier.size(36.dp)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(icon, contentDescription = null, tint = iconTint, modifier = Modifier.size(20.dp))
+                    }
+                }
+                Spacer(modifier = Modifier.width(14.dp))
+                Text(title, fontWeight = FontWeight.SemiBold, fontSize = 14.sp, color = SelforaTextPrimary)
+            }
+            Icon(Icons.Default.ChevronRight, contentDescription = null, tint = SelforaTextSecondary, modifier = Modifier.size(20.dp))
+        }
+    }
+}
+

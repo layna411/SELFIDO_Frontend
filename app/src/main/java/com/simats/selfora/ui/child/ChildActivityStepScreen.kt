@@ -28,6 +28,7 @@ import com.simats.selfora.ui.therapist.getSampleGirlFrockSteps
 import com.simats.selfora.ui.therapist.getSampleShoesSteps
 import com.simats.selfora.ui.therapist.getSampleTShirtSteps
 import com.simats.selfora.utils.TtsManager
+import kotlinx.coroutines.launch
 
 @Composable
 fun ChildActivityStepScreen(
@@ -38,6 +39,7 @@ fun ChildActivityStepScreen(
     var steps by remember { mutableStateOf<List<TaskStepResponse>>(emptyList()) }
     var currentStepIndex by remember { mutableStateOf(0) }
     var isLoading by remember { mutableStateOf(true) }
+    val scope = rememberCoroutineScope()
 
     val context = LocalContext.current
     val ttsManager = remember { TtsManager(context) }
@@ -157,6 +159,23 @@ fun ChildActivityStepScreen(
 
                     Button(
                         onClick = {
+                            val activeChildId = SessionManager.getActiveChildId()
+                            val isCompleted = currentStepIndex == steps.size - 1
+                            if (activeChildId > 0) {
+                                scope.launch {
+                                    try {
+                                        ApiClient.apiService.recordChildStepProgress(
+                                            com.simats.selfora.data.model.RecordStepProgressRequest(
+                                                childId = activeChildId,
+                                                activityId = activityId,
+                                                stepNumber = currentStepIndex + 1,
+                                                isActivityCompleted = isCompleted
+                                            )
+                                        )
+                                    } catch (_: Exception) {}
+                                }
+                            }
+
                             if (currentStepIndex < steps.size - 1) {
                                 currentStepIndex++
                             } else {

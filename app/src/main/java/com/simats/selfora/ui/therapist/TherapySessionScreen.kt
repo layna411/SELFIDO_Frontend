@@ -17,7 +17,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -31,42 +30,51 @@ import com.simats.selfora.ui.theme.*
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
+enum class TherapySessionStage {
+    SELECT_ACTIVITY,
+    STEP_VIEW,
+    RECORD_PERFORMANCE
+}
+
+data class ClinicActivityOption(
+    val id: Long,
+    val category: String,
+    val title: String,
+    val emoji: String,
+    val totalSteps: Int
+)
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TherapySessionScreen(
     childId: Long,
-    activityId: Long = 1L,
+    activityId: Long = 5L,
     onSessionCompleted: (sessionId: Long) -> Unit,
     onBack: () -> Unit
 ) {
+    var stage by remember { mutableStateOf(TherapySessionStage.SELECT_ACTIVITY) }
+    var selectedActivityId by remember { mutableStateOf(5L) } // Default Tooth Brushing (Image 1 Screen 5)
+    
+    val activityOptions = listOf(
+        ClinicActivityOption(5L, "Grooming", "Tooth Brushing", "🪥", 7),
+        ClinicActivityOption(1L, "Dressing", "Wearing T-Shirt", "👕", 7),
+        ClinicActivityOption(13L, "Eating", "Eating with Spoon", "🥣", 7)
+    )
+
     var activeSessionId by remember { mutableStateOf<Long?>(null) }
     var steps by remember { mutableStateOf<List<TaskStepResponse>>(emptyList()) }
-    var currentStepIndex by remember { mutableStateOf(0) }
+    var currentStepIndex by remember { mutableStateOf(2) } // Step 3 of 7 in prototype! (0-indexed = 2)
 
-    // Map storing step recordings (stepIndex -> StepAssessmentState)
     val stepRecordingsMap = remember { mutableStateMapOf<Int, StepAssessmentState>() }
-
     var secondsElapsed by remember { mutableStateOf(0) }
-    var isRecording by remember { mutableStateOf(false) }
-    var isLoading by remember { mutableStateOf(true) }
-    var showConfirmCompleteDialog by remember { mutableStateOf(false) }
+    var isLoading by remember { mutableStateOf(false) }
 
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
 
-    val promptHierarchy = listOf(
-        Pair(0, "Level 0: Independent"),
-        Pair(1, "Level 1: Visual Prompt"),
-        Pair(2, "Level 2: Gesture"),
-        Pair(3, "Level 3: Verbal Prompt"),
-        Pair(4, "Level 4: Model / Video"),
-        Pair(5, "Level 5: Partial Physical"),
-        Pair(6, "Level 6: Full Physical")
-    )
-
     // Live session timer
-    LaunchedEffect(activeSessionId) {
-        if (activeSessionId != null) {
+    LaunchedEffect(stage) {
+        if (stage != TherapySessionStage.SELECT_ACTIVITY) {
             while (true) {
                 delay(1000)
                 secondsElapsed++
@@ -74,70 +82,102 @@ fun TherapySessionScreen(
         }
     }
 
-    // Initialize live session and fetch activity steps
-    LaunchedEffect(Unit) {
+    fun loadStepsForActivity(actId: Long) {
         isLoading = true
-        try {
-            val stepsRes = ApiClient.apiService.getTaskSteps(activityId)
-            val loadedSteps = if (stepsRes.isSuccessful && !stepsRes.body().isNullOrEmpty()) stepsRes.body()!! else getSampleTShirtSteps()
-            steps = loadedSteps
+        scope.launch {
+            try {
+                val stepsRes = ApiClient.apiService.getTaskSteps(actId)
+                val loadedSteps = if (stepsRes.isSuccessful && !stepsRes.body().isNullOrEmpty()) {
+                    stepsRes.body()!!
+                } else if (actId == 5L) {
+                    getSampleToothBrushingSteps()
+                } else {
+                    getSampleTShirtSteps()
+                }
+                steps = loadedSteps
 
-            // Initialize step states
-            loadedSteps.forEachIndexed { idx, st ->
-                stepRecordingsMap[idx] = StepAssessmentState(
-                    stepId = st.id,
-                    stepNumber = st.stepNumber,
-                    title = st.title,
-                    instruction = st.instructionText ?: st.childInstruction ?: ""
-                )
-            }
+                loadedSteps.forEachIndexed { idx, st ->
+                    if (!stepRecordingsMap.containsKey(idx)) {
+                        stepRecordingsMap[idx] = StepAssessmentState(
+                            stepId = st.id,
+                            stepNumber = st.stepNumber,
+                            title = st.title,
+                            instruction = st.instructionText ?: st.childInstruction ?: ""
+                        )
+                    }
+                }
 
-            val sessionRes = ApiClient.apiService.startSession(
-                StartSessionRequest(childId = childId, activityId = activityId, sessionType = "CLINIC_THERAPY", environment = "CLINIC")
-            )
-            activeSessionId = if (sessionRes.isSuccessful && sessionRes.body() != null) sessionRes.body()!!.sessionId else 1L
-        } catch (e: Exception) {
-            val loadedSteps = getSampleTShirtSteps()
-            steps = loadedSteps
-            loadedSteps.forEachIndexed { idx, st ->
-                stepRecordingsMap[idx] = StepAssessmentState(
-                    stepId = st.id,
-                    stepNumber = st.stepNumber,
-                    title = st.title,
-                    instruction = st.instructionText ?: st.childInstruction ?: ""
+                // If starting with tooth brushing, default to step index 2 (Step 3 of 7) like prototype mockup
+                currentStepIndex = if (loadedSteps.size >= 3) 2 else 0
+
+                val sessionRes = ApiClient.apiService.startSession(
+                    StartSessionRequest(childId = childId, activityId = actId, sessionType = "CLINIC_THERAPY", environment = "CLINIC")
                 )
+                activeSessionId = if (sessionRes.isSuccessful && sessionRes.body() != null) sessionRes.body()!!.sessionId else 1L
+            } catch (e: Exception) {
+                val loadedSteps = if (actId == 5L) getSampleToothBrushingSteps() else getSampleTShirtSteps()
+                steps = loadedSteps
+                loadedSteps.forEachIndexed { idx, st ->
+                    stepRecordingsMap[idx] = StepAssessmentState(
+                        stepId = st.id,
+                        stepNumber = st.stepNumber,
+                        title = st.title,
+                        instruction = st.instructionText ?: st.childInstruction ?: ""
+                    )
+                }
+                currentStepIndex = if (loadedSteps.size >= 3) 2 else 0
+                activeSessionId = 1L
+            } finally {
+                isLoading = false
             }
-            activeSessionId = 1L
-        } finally {
-            isLoading = false
         }
     }
+
+    val selectedOption = activityOptions.firstOrNull { it.id == selectedActivityId } ?: activityOptions.first()
 
     Scaffold(
         topBar = {
             GlassTopBar(
-                title = "Live Therapy Session",
-                subtitle = "Child ID: #$childId • Duration: ${secondsElapsed / 60}:${String.format("%02d", secondsElapsed % 60)}",
-                onBackClick = onBack,
+                title = when (stage) {
+                    TherapySessionStage.SELECT_ACTIVITY -> "Start New Session"
+                    TherapySessionStage.STEP_VIEW -> selectedOption.title
+                    TherapySessionStage.RECORD_PERFORMANCE -> "Record Performance"
+                },
+                subtitle = when (stage) {
+                    TherapySessionStage.SELECT_ACTIVITY -> "Select Activity"
+                    TherapySessionStage.STEP_VIEW -> "Step ${currentStepIndex + 1} of ${steps.size}"
+                    TherapySessionStage.RECORD_PERFORMANCE -> "Step ${currentStepIndex + 1} of ${steps.size}: ${steps.getOrNull(currentStepIndex)?.title ?: ""}"
+                },
+                onBackClick = {
+                    when (stage) {
+                        TherapySessionStage.SELECT_ACTIVITY -> onBack()
+                        TherapySessionStage.STEP_VIEW -> {
+                            if (currentStepIndex > 0) currentStepIndex-- else stage = TherapySessionStage.SELECT_ACTIVITY
+                        }
+                        TherapySessionStage.RECORD_PERFORMANCE -> stage = TherapySessionStage.STEP_VIEW
+                    }
+                },
                 accentColor = SelforaPrimary,
                 actions = {
-                    Surface(
-                        shape = RoundedCornerShape(12.dp),
-                        color = SelforaWarning.copy(alpha = 0.15f),
-                        modifier = Modifier.padding(end = 8.dp)
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                    if (stage != TherapySessionStage.SELECT_ACTIVITY) {
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = SelforaWarning.copy(alpha = 0.15f),
+                            modifier = Modifier.padding(end = 8.dp)
                         ) {
-                            Icon(Icons.Default.Timer, contentDescription = null, tint = SelforaWarning, modifier = Modifier.size(16.dp))
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                "${secondsElapsed / 60}:${String.format("%02d", secondsElapsed % 60)}",
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 13.sp,
-                                color = SelforaWarning
-                            )
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                            ) {
+                                Icon(Icons.Default.Timer, contentDescription = null, tint = SelforaWarning, modifier = Modifier.size(16.dp))
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    "${secondsElapsed / 60}:${String.format("%02d", secondsElapsed % 60)}",
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 13.sp,
+                                    color = SelforaWarning
+                                )
+                            }
                         }
                     }
                 }
@@ -152,182 +192,382 @@ fun TherapySessionScreen(
                 .verticalScroll(rememberScrollState())
                 .padding(16.dp)
         ) {
-            if (isLoading || steps.isEmpty()) {
-                Box(modifier = Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(color = SelforaPrimary)
-                }
-            } else {
-                val currentStepObj = steps[currentStepIndex]
-                val currentRecording = stepRecordingsMap[currentStepIndex] ?: StepAssessmentState(
-                    stepId = currentStepObj.id,
-                    stepNumber = currentStepObj.stepNumber,
-                    title = currentStepObj.title,
-                    instruction = currentStepObj.instructionText ?: ""
-                )
-                val totalSteps = steps.size
-
-                // Session Progress Bar Header
-                GlassCard(modifier = Modifier.fillMaxWidth()) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text("Boy T-Shirt Dressing Session", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = SelforaTextPrimary)
-                        Surface(shape = RoundedCornerShape(12.dp), color = SelforaPrimary.copy(alpha = 0.15f)) {
-                            Text("Step ${currentStepObj.stepNumber} of $totalSteps", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = SelforaPrimary, modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp))
-                        }
-                    }
-                    Spacer(modifier = Modifier.height(10.dp))
-                    LinearProgressIndicator(
-                        progress = (currentStepIndex + 1) / totalSteps.toFloat(),
-                        color = SelforaPrimary,
-                        trackColor = SelforaPrimary.copy(alpha = 0.15f),
-                        modifier = Modifier.fillMaxWidth().height(8.dp).clip(RoundedCornerShape(4.dp))
+            when (stage) {
+                // ==========================================
+                // 1. SELECT ACTIVITY STAGE (Image 1 Screen 5)
+                // ==========================================
+                TherapySessionStage.SELECT_ACTIVITY -> {
+                    Text(
+                        text = "Select Activity",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = SelforaTextPrimary
                     )
-                }
+                    Spacer(modifier = Modifier.height(14.dp))
 
-                Spacer(modifier = Modifier.height(16.dp))
+                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        activityOptions.forEach { opt ->
+                            val isSelected = opt.id == selectedActivityId
 
-                // Visual Guidance Step Card
-                VisualStepGuidanceCard(
-                    stepNumber = currentStepObj.stepNumber,
-                    totalSteps = totalSteps,
-                    stepTitle = currentStepObj.title,
-                    childInstruction = currentStepObj.instructionText ?: currentStepObj.childInstruction ?: "",
-                    gender = "BOY",
-                    onSpeakInstruction = {}
-                )
-
-                Spacer(modifier = Modifier.height(18.dp))
-
-                // PROMPT HIERARCHY SELECTION MODULE (SECTION 4 & 5)
-                GlassCard(
-                    modifier = Modifier.fillMaxWidth(),
-                    backgroundColor = Color.White.copy(alpha = 0.95f),
-                    borderColor = SelforaPrimary.copy(alpha = 0.4f)
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.Psychology, contentDescription = null, tint = SelforaPrimary, modifier = Modifier.size(22.dp))
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("OBSERVED ASSISTANCE / PROMPT LEVEL", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = SelforaTextPrimary)
-                    }
-
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    // 7-Level Hierarchy Selection
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        promptHierarchy.forEach { (levelId, levelTitle) ->
-                            val isSelected = currentRecording.outcome == "COMPLETED" && currentRecording.promptLevelId == levelId
-                            val levelColor = getPromptHierarchyColor(levelTitle)
-
-                            Box(
+                            GlassCard(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .shadow(if (isSelected) 4.dp else 1.dp, shape = RoundedCornerShape(14.dp))
-                                    .clip(RoundedCornerShape(14.dp))
-                                    .background(if (isSelected) levelColor else Color.White)
-                                    .border(
-                                        width = if (isSelected) 2.dp else 1.dp,
-                                        color = if (isSelected) SelforaPrimary else levelColor.copy(alpha = 0.3f),
-                                        shape = RoundedCornerShape(14.dp)
-                                    )
-                                    .clickable {
-                                        currentRecording.promptLevelId = levelId
-                                        currentRecording.outcome = "COMPLETED"
-                                        stepRecordingsMap[currentStepIndex] = currentRecording
-                                    }
-                                    .padding(vertical = 12.dp, horizontal = 14.dp),
-                                contentAlignment = Alignment.CenterStart
+                                    .clickable { selectedActivityId = opt.id },
+                                backgroundColor = if (isSelected) SelforaPrimary.copy(alpha = 0.08f) else Color.White.copy(alpha = 0.85f),
+                                borderColor = if (isSelected) SelforaPrimary else SelforaBorder.copy(alpha = 0.5f),
+                                cornerRadius = 18.dp
                             ) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Surface(
+                                            shape = RoundedCornerShape(12.dp),
+                                            color = if (isSelected) SelforaPrimary.copy(alpha = 0.15f) else SelforaBgLight,
+                                            modifier = Modifier.size(48.dp)
+                                        ) {
+                                            Box(contentAlignment = Alignment.Center) {
+                                                Text(opt.emoji, fontSize = 24.sp)
+                                            }
+                                        }
+                                        Spacer(modifier = Modifier.width(14.dp))
+                                        Column {
+                                            Text(
+                                                text = "${opt.category} (${opt.title})",
+                                                fontSize = 15.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = SelforaTextPrimary
+                                            )
+                                            Spacer(modifier = Modifier.height(2.dp))
+                                            Text(
+                                                text = "${opt.totalSteps} structured ADL task steps",
+                                                fontSize = 12.sp,
+                                                color = SelforaTextSecondary
+                                            )
+                                        }
+                                    }
+
                                     RadioButton(
                                         selected = isSelected,
-                                        onClick = {
-                                            currentRecording.promptLevelId = levelId
-                                            currentRecording.outcome = "COMPLETED"
-                                            stepRecordingsMap[currentStepIndex] = currentRecording
-                                        },
-                                        colors = RadioButtonDefaults.colors(selectedColor = if (isSelected) Color.White else SelforaPrimary)
-                                    )
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    Text(
-                                        text = levelTitle,
-                                        fontSize = 14.sp,
-                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                        color = if (isSelected) Color.White else SelforaTextPrimary
+                                        onClick = { selectedActivityId = opt.id },
+                                        colors = RadioButtonDefaults.colors(selectedColor = SelforaPrimary)
                                     )
                                 }
                             }
                         }
+                    }
 
-                        // Separate Options: Unable & Not Assessed
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            val isUnableSelected = currentRecording.outcome == "UNABLE"
+                    Spacer(modifier = Modifier.height(40.dp))
+
+                    GlassButton(
+                        text = "Next",
+                        onClick = {
+                            loadStepsForActivity(selectedActivityId)
+                            stage = TherapySessionStage.STEP_VIEW
+                        },
+                        icon = Icons.Default.ArrowForward,
+                        gradient = listOf(SelforaPrimary, Color(0xFF6D28D9)),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(52.dp)
+                    )
+                }
+
+                // ==========================================
+                // 2. STEP VIEW STAGE (Image 1 Screen 6)
+                // ==========================================
+                TherapySessionStage.STEP_VIEW -> {
+                    if (isLoading || steps.isEmpty()) {
+                        Box(modifier = Modifier.fillMaxWidth().height(250.dp), contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator(color = SelforaPrimary)
+                        }
+                    } else {
+                        val currentStepObj = steps[currentStepIndex]
+
+                        Text(
+                            text = "Step ${currentStepIndex + 1} of ${steps.size}",
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = SelforaTextSecondary
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = currentStepObj.title,
+                            fontSize = 22.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = SelforaTextPrimary
+                        )
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        // Large Illustration / Guidance Card (Matching Tooth Brushing mockup)
+                        GlassCard(
+                            modifier = Modifier.fillMaxWidth(),
+                            cornerRadius = 24.dp
+                        ) {
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 12.dp)
+                            ) {
+                                Surface(
+                                    shape = CircleShape,
+                                    color = SelforaPrimary.copy(alpha = 0.12f),
+                                    modifier = Modifier.size(130.dp)
+                                ) {
+                                    Box(contentAlignment = Alignment.Center) {
+                                        Text(
+                                            when (selectedOption.id) {
+                                                5L -> "🪥"
+                                                13L -> "🥣"
+                                                else -> "👕"
+                                            },
+                                            fontSize = 64.sp
+                                        )
+                                    }
+                                }
+
+                                Spacer(modifier = Modifier.height(20.dp))
+
+                                Text(
+                                    text = currentStepObj.instructionText ?: currentStepObj.childInstruction ?: "Move the toothbrush all around your teeth.",
+                                    fontSize = 15.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color = SelforaTextPrimary,
+                                    modifier = Modifier.padding(horizontal = 16.dp),
+                                    lineHeight = 22.sp
+                                )
+
+                                Spacer(modifier = Modifier.height(24.dp))
+
+                                // 7-Step Dots Indicator
+                                Row(
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    steps.indices.forEach { idx ->
+                                        Box(
+                                            modifier = Modifier
+                                                .size(if (idx == currentStepIndex) 10.dp else 8.dp)
+                                                .clip(CircleShape)
+                                                .background(
+                                                    if (idx == currentStepIndex) SelforaPrimary else SelforaPrimary.copy(alpha = 0.25f)
+                                                )
+                                        )
+                                    }
+                                }
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(28.dp))
+
+                        // Back & Next Buttons
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
                             GlassOutlinedButton(
-                                text = if (isUnableSelected) "✓ Unable" else "Unable",
-                                accentColor = SelforaError,
+                                text = "Back",
                                 onClick = {
-                                    currentRecording.outcome = "UNABLE"
-                                    currentRecording.promptLevelId = null
-                                    stepRecordingsMap[currentStepIndex] = currentRecording
+                                    if (currentStepIndex > 0) currentStepIndex-- else stage = TherapySessionStage.SELECT_ACTIVITY
                                 },
                                 modifier = Modifier.weight(1f)
                             )
 
-                            val isNotAssessedSelected = currentRecording.outcome == "NOT_ASSESSED"
-                            GlassOutlinedButton(
-                                text = if (isNotAssessedSelected) "✓ Not Assessed" else "Not Assessed",
-                                accentColor = SelforaWarning,
-                                onClick = {
-                                    currentRecording.outcome = "NOT_ASSESSED"
-                                    currentRecording.promptLevelId = null
-                                    stepRecordingsMap[currentStepIndex] = currentRecording
-                                },
+                            GlassButton(
+                                text = "Next",
+                                onClick = { stage = TherapySessionStage.RECORD_PERFORMANCE },
+                                icon = Icons.Default.ArrowForward,
+                                gradient = listOf(SelforaPrimary, Color(0xFF6D28D9)),
                                 modifier = Modifier.weight(1f)
                             )
                         }
                     }
+                }
 
-                    Spacer(modifier = Modifier.height(16.dp))
+                // ==========================================
+                // 3. RECORD PERFORMANCE STAGE (Image 1 Screen 7)
+                // ==========================================
+                TherapySessionStage.RECORD_PERFORMANCE -> {
+                    if (steps.isNotEmpty()) {
+                        val currentStepObj = steps[currentStepIndex]
+                        val currentRecording = stepRecordingsMap[currentStepIndex] ?: StepAssessmentState(
+                            stepId = currentStepObj.id,
+                            stepNumber = currentStepObj.stepNumber,
+                            title = currentStepObj.title,
+                            instruction = currentStepObj.instructionText ?: ""
+                        )
 
-                    // Therapist Observation Input
-                    GlassTextField(
-                        value = currentRecording.notes,
-                        onValueChange = {
-                            currentRecording.notes = it
-                            stepRecordingsMap[currentStepIndex] = currentRecording
-                        },
-                        label = "Therapist Observation Notes",
-                        placeholder = "Notes on prompt timing, motor coordination, or child behavior...",
-                        singleLine = false,
-                        leadingIcon = Icons.Default.EditNote
-                    )
+                        Text(
+                            text = "Step ${currentStepIndex + 1} of ${steps.size}",
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = SelforaTextSecondary
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = currentStepObj.title,
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = SelforaTextPrimary
+                        )
 
-                    Spacer(modifier = Modifier.height(20.dp))
+                        Spacer(modifier = Modifier.height(18.dp))
 
-                    // Navigation Action Buttons
-                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        if (currentStepIndex > 0) {
-                            GlassOutlinedButton(
-                                text = "← Previous",
-                                onClick = { currentStepIndex-- },
-                                modifier = Modifier.weight(1f)
-                            )
+                        Text(
+                            text = "Level of Assistance",
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = SelforaTextPrimary
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        val assistanceOptions = listOf(
+                            Triple("Independent", "No help needed", SelforaSuccess),
+                            Triple("Verbal Prompt", "Spoken reminder", Color(0xFFF59E0B)),
+                            Triple("Visual Prompt", "Shown picture / gesture", SelforaPrimary),
+                            Triple("Physical Assistance", "Helped physically", Color(0xFF8B5CF6)),
+                            Triple("Unable", "Could not do", SelforaError)
+                        )
+
+                        // Default to Verbal Prompt if nothing chosen yet (matches prototype mockup Screen 7)
+                        val selectedOutcomeName = when {
+                            currentRecording.outcome == "UNABLE" -> "Unable"
+                            currentRecording.promptLevelId == 0 -> "Independent"
+                            currentRecording.promptLevelId == 3 -> "Verbal Prompt"
+                            currentRecording.promptLevelId == 1 -> "Visual Prompt"
+                            currentRecording.promptLevelId in listOf(5, 6) -> "Physical Assistance"
+                            else -> "Verbal Prompt"
                         }
 
+                        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                            assistanceOptions.forEach { (title, subtitle, color) ->
+                                val isSelected = selectedOutcomeName == title
+
+                                GlassCard(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable {
+                                            when (title) {
+                                                "Independent" -> {
+                                                    currentRecording.promptLevelId = 0
+                                                    currentRecording.outcome = "COMPLETED"
+                                                }
+                                                "Verbal Prompt" -> {
+                                                    currentRecording.promptLevelId = 3
+                                                    currentRecording.outcome = "COMPLETED"
+                                                }
+                                                "Visual Prompt" -> {
+                                                    currentRecording.promptLevelId = 1
+                                                    currentRecording.outcome = "COMPLETED"
+                                                }
+                                                "Physical Assistance" -> {
+                                                    currentRecording.promptLevelId = 5
+                                                    currentRecording.outcome = "COMPLETED"
+                                                }
+                                                "Unable" -> {
+                                                    currentRecording.promptLevelId = null
+                                                    currentRecording.outcome = "UNABLE"
+                                                }
+                                            }
+                                            stepRecordingsMap[currentStepIndex] = currentRecording
+                                        },
+                                    backgroundColor = if (isSelected) color.copy(alpha = 0.08f) else Color.White.copy(alpha = 0.9f),
+                                    borderColor = if (isSelected) color else SelforaBorder.copy(alpha = 0.5f),
+                                    cornerRadius = 16.dp
+                                ) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.SpaceBetween
+                                    ) {
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Surface(
+                                                shape = CircleShape,
+                                                color = color.copy(alpha = 0.15f),
+                                                modifier = Modifier.size(36.dp)
+                                            ) {
+                                                Box(contentAlignment = Alignment.Center) {
+                                                    Icon(
+                                                        when (title) {
+                                                            "Independent" -> Icons.Default.CheckCircle
+                                                            "Verbal Prompt" -> Icons.Default.RecordVoiceOver
+                                                            "Visual Prompt" -> Icons.Default.Visibility
+                                                            "Physical Assistance" -> Icons.Default.PanTool
+                                                            else -> Icons.Default.Cancel
+                                                        },
+                                                        contentDescription = null,
+                                                        tint = color,
+                                                        modifier = Modifier.size(18.dp)
+                                                    )
+                                                }
+                                            }
+                                            Spacer(modifier = Modifier.width(12.dp))
+                                            Column {
+                                                Text(
+                                                    text = title,
+                                                    fontSize = 15.sp,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = SelforaTextPrimary
+                                                )
+                                                Text(
+                                                    text = subtitle,
+                                                    fontSize = 12.sp,
+                                                    color = SelforaTextSecondary
+                                                )
+                                            }
+                                        }
+
+                                        RadioButton(
+                                            selected = isSelected,
+                                            onClick = {
+                                                when (title) {
+                                                    "Independent" -> {
+                                                        currentRecording.promptLevelId = 0
+                                                        currentRecording.outcome = "COMPLETED"
+                                                    }
+                                                    "Verbal Prompt" -> {
+                                                        currentRecording.promptLevelId = 3
+                                                        currentRecording.outcome = "COMPLETED"
+                                                    }
+                                                    "Visual Prompt" -> {
+                                                        currentRecording.promptLevelId = 1
+                                                        currentRecording.outcome = "COMPLETED"
+                                                    }
+                                                    "Physical Assistance" -> {
+                                                        currentRecording.promptLevelId = 5
+                                                        currentRecording.outcome = "COMPLETED"
+                                                    }
+                                                    "Unable" -> {
+                                                        currentRecording.promptLevelId = null
+                                                        currentRecording.outcome = "UNABLE"
+                                                    }
+                                                }
+                                                stepRecordingsMap[currentStepIndex] = currentRecording
+                                            },
+                                            colors = RadioButtonDefaults.colors(selectedColor = color)
+                                        )
+                                    }
+                                }
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(28.dp))
+
                         GlassButton(
-                            text = if (currentStepIndex == totalSteps - 1) "Finish Session ✓" else "Record & Next Step →",
+                            text = if (currentStepIndex == steps.size - 1) "Save & Finish Session ✓" else "Save & Next",
                             onClick = {
                                 scope.launch {
-                                    isRecording = true
                                     try {
                                         activeSessionId?.let { sId ->
                                             ApiClient.apiService.recordPerformance(
                                                 id = sId,
                                                 request = RecordPerformanceRequest(
                                                     stepId = currentStepObj.id,
-                                                    promptLevelId = currentRecording.promptLevelId ?: 0,
+                                                    promptLevelId = currentRecording.promptLevelId ?: 3,
                                                     outcome = currentRecording.outcome,
                                                     durationSeconds = 15,
                                                     therapistNote = currentRecording.notes,
@@ -337,15 +577,25 @@ fun TherapySessionScreen(
                                         }
                                     } catch (_: Exception) {}
 
-                                    if (currentStepIndex < totalSteps - 1) {
+                                    if (currentStepIndex < steps.size - 1) {
                                         currentStepIndex++
+                                        stage = TherapySessionStage.STEP_VIEW
                                     } else {
-                                        showConfirmCompleteDialog = true
+                                        // Complete session and advance to summary screen
+                                        activeSessionId?.let { sId ->
+                                            try {
+                                                ApiClient.apiService.completeSession(sId)
+                                            } catch (_: Exception) {}
+                                            onSessionCompleted(sId)
+                                        } ?: onSessionCompleted(1L)
                                     }
-                                    isRecording = false
                                 }
                             },
-                            modifier = Modifier.weight(1.5f)
+                            icon = Icons.Default.Check,
+                            gradient = listOf(SelforaPrimary, Color(0xFF6D28D9)),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(52.dp)
                         )
                     }
                 }
@@ -353,39 +603,5 @@ fun TherapySessionScreen(
 
             Spacer(modifier = Modifier.height(110.dp))
         }
-    }
-
-    // Final Completion Confirmation Dialog
-    if (showConfirmCompleteDialog) {
-        AlertDialog(
-            onDismissRequest = { showConfirmCompleteDialog = false },
-            title = { Text("Complete Therapy Session", fontWeight = FontWeight.Bold) },
-            text = {
-                Column {
-                    Text("All $steps.size steps recorded. Ready to save live therapy session records to backend database?", fontSize = 13.sp, color = SelforaTextSecondary)
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text("Session Duration: ${secondsElapsed / 60}m ${secondsElapsed % 60}s", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = SelforaPrimary)
-                }
-            },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        showConfirmCompleteDialog = false
-                        scope.launch {
-                            activeSessionId?.let { sId ->
-                                try {
-                                    ApiClient.apiService.completeSession(sId)
-                                } catch (_: Exception) {}
-                                onSessionCompleted(sId)
-                            }
-                        }
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = SelforaPrimary)
-                ) { Text("Save & Complete Session ✓") }
-            },
-            dismissButton = {
-                TextButton(onClick = { showConfirmCompleteDialog = false }) { Text("Review Steps") }
-            }
-        )
     }
 }

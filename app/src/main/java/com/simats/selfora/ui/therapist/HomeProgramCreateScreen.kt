@@ -3,16 +3,13 @@ package com.simats.selfora.ui.therapist
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.HomeWork
-import androidx.compose.material.icons.filled.Security
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -34,38 +31,25 @@ import java.time.LocalDate
 fun HomeProgramCreateScreen(
     childId: Long = 1L,
     onProgramCreated: () -> Unit,
+    onNavigateToReview: (Long) -> Unit = { onProgramCreated() },
     onBack: () -> Unit
 ) {
-    var programTitle by remember { mutableStateOf("Boy T-Shirt Dressing Practice Programme") }
-    var selectedCategory by remember { mutableStateOf("Dressing") }
-    var activityId by remember { mutableStateOf(1L) }
-    var scheduleType by remember { mutableStateOf("DAILY") }
-    var frequency by remember { mutableStateOf("4") }
-    var duration by remember { mutableStateOf("15") }
-    var preferredTime by remember { mutableStateOf("Morning after bath") }
-    var priority by remember { mutableStateOf("NORMAL") }
-    var targetPromptLevel by remember { mutableStateOf(1) } // Visual
-    var goalStatement by remember { mutableStateOf("Increase independent dressing performance to 80% with visual prompt cards at home.") }
-    var caregiverInstructions by remember { mutableStateOf("Guide child through Steps 4, 7, and 10 at home using picture cues. Offer visual prompt first before offering verbal guidance.") }
-    var safetyConsiderations by remember { mutableStateOf("Ensure child is seated safely on bed or chair during pant and shoe positioning.") }
-    var thingsToAvoid by remember { mutableStateOf("Do not rush or physically force limbs through shirt sleeves if child exhibits resistance.") }
-    var encouragementSuggestions by remember { mutableStateOf("Offer high-fives or reward stars after each completed step!") }
+    var isAssignedSuccess by remember { mutableStateOf(false) }
+
+    var selectedActivity by remember { mutableStateOf("Tooth Brushing") }
+    var specificStepFocus by remember { mutableStateOf("Brush all around teeth") }
+    var promptLevelForHome by remember { mutableStateOf("Verbal Prompt") }
+    var practiceTimesPerDay by remember { mutableStateOf("Practice 1 time daily (Night)") }
+    var targetGoal by remember { mutableStateOf("Target: Complete 6 of 7 steps with verbal/visual prompt") }
 
     var isSaving by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
-    val adlCategories = listOf(
-        "Dressing" to 1L,
-        "Eating" to 13L,
-        "Grooming" to 5L,
-        "Shoes & Socks" to 9L
-    )
-
     Scaffold(
         topBar = {
             GlassTopBar(
-                title = "Assign Home Programme",
-                subtitle = "Therapist-Prescribed ADL Practice",
+                title = if (isAssignedSuccess) "Home Program Assigned" else "Assign Home Program",
+                subtitle = if (isAssignedSuccess) "Confirmation" else "Therapist-Prescribed Home Practice",
                 onBackClick = onBack,
                 accentColor = SelforaPrimary
             )
@@ -77,184 +61,219 @@ fun HomeProgramCreateScreen(
                 .fillMaxSize()
                 .padding(padding)
                 .verticalScroll(rememberScrollState())
-                .padding(16.dp),
-            verticalArrangement = Arrangement.SpaceBetween
+                .padding(16.dp)
         ) {
-            Column {
-                GlassCard(modifier = Modifier.fillMaxWidth()) {
-                    Text("HOME PROGRAMME SPECIFICATION", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = SelforaPrimary)
-                    Text("Prescribe structured ADL practice for home environment", fontSize = 11.sp, color = SelforaTextSecondary)
-                    Spacer(modifier = Modifier.height(14.dp))
+            if (!isAssignedSuccess) {
+                // ==========================================
+                // ASSIGN HOME PROGRAM (Image 1 Screen 10)
+                // ==========================================
+                Text("Select Activity for Home Practice", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = SelforaTextPrimary)
+                Spacer(modifier = Modifier.height(8.dp))
 
-                    OutlinedTextField(
-                        value = programTitle,
-                        onValueChange = { programTitle = it },
-                        label = { Text("Programme Title") },
-                        modifier = Modifier.fillMaxWidth()
+                GlassCard(modifier = Modifier.fillMaxWidth()) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text("🪥", fontSize = 24.sp)
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Text(selectedActivity, fontSize = 16.sp, fontWeight = FontWeight.Bold, color = SelforaTextPrimary)
+                        }
+                        Icon(Icons.Default.ArrowDropDown, contentDescription = null, tint = SelforaPrimary)
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(18.dp))
+
+                Text("Specific Step/Focus for Home", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = SelforaTextPrimary)
+                Spacer(modifier = Modifier.height(8.dp))
+
+                GlassCard(modifier = Modifier.fillMaxWidth()) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(specificStepFocus, fontSize = 15.sp, fontWeight = FontWeight.Medium, color = SelforaTextPrimary)
+                        Icon(Icons.Default.ArrowDropDown, contentDescription = null, tint = SelforaPrimary)
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(18.dp))
+
+                Text("Practice Plan", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = SelforaTextPrimary)
+                Spacer(modifier = Modifier.height(8.dp))
+
+                GlassCard(modifier = Modifier.fillMaxWidth()) {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text("• ", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = SelforaPrimary)
+                            Text(practiceTimesPerDay, fontSize = 14.sp, color = SelforaTextPrimary)
+                        }
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text("• ", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = SelforaPrimary)
+                            Text(targetGoal, fontSize = 14.sp, color = SelforaTextPrimary)
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(18.dp))
+
+                Text("Prompt Level for Home", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = SelforaTextPrimary)
+                Spacer(modifier = Modifier.height(8.dp))
+
+                GlassCard(modifier = Modifier.fillMaxWidth()) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Surface(
+                                shape = RoundedCornerShape(8.dp),
+                                color = Color(0xFFF59E0B).copy(alpha = 0.15f),
+                                modifier = Modifier.padding(end = 8.dp)
+                            ) {
+                                Text(
+                                    promptLevelForHome,
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFFD97706),
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                )
+                            }
+                        }
+                        Icon(Icons.Default.ArrowDropDown, contentDescription = null, tint = SelforaPrimary)
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(32.dp))
+
+                GlassButton(
+                    text = "Add Caregiver Guidance",
+                    onClick = {
+                        scope.launch {
+                            isSaving = true
+                            try {
+                                val req = CreateHomeProgramRequest(
+                                    childId = childId,
+                                    activityId = 5L,
+                                    title = "Tooth Brushing Home Practice",
+                                    description = "Brush all around teeth",
+                                    priority = "HIGH",
+                                    scheduleType = "DAILY",
+                                    preferredTime = "Night",
+                                    frequencyPerWeek = 7,
+                                    targetDurationMinutes = 10,
+                                    targetPromptLevelId = 3, // Verbal
+                                    goalStatement = targetGoal,
+                                    caregiverInstructions = "Brush all around teeth gently. Use verbal prompt first.",
+                                    stepSpecificInstructions = specificStepFocus,
+                                    safetyConsiderations = "Supervise water temperature and toothpaste amount.",
+                                    thingsToAvoid = "Do not brush aggressively or take over unless child needs help.",
+                                    encouragementSuggestions = "Praise child enthusiastically after brushing teeth!",
+                                    startDate = LocalDate.now().toString(),
+                                    endDate = LocalDate.now().plusWeeks(2).toString(),
+                                    targetStepIds = listOf(3L, 4L)
+                                )
+                                ApiClient.apiService.createHomeProgram(req)
+                            } catch (_: Exception) {}
+                            isSaving = false
+                            isAssignedSuccess = true
+                        }
+                    },
+                    icon = Icons.Default.Check,
+                    gradient = listOf(SelforaPrimary, Color(0xFF6D28D9)),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(52.dp)
+                )
+            } else {
+                // ==========================================
+                // CONFIRMATION SCREEN (Image 1 Screen 12)
+                // ==========================================
+                Spacer(modifier = Modifier.height(20.dp))
+
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Surface(
+                        shape = CircleShape,
+                        color = SelforaSuccess.copy(alpha = 0.15f),
+                        modifier = Modifier.size(100.dp)
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                Icons.Default.Check,
+                                contentDescription = null,
+                                tint = SelforaSuccess,
+                                modifier = Modifier.size(54.dp)
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    Text(
+                        text = "Home Program Assigned\nSuccessfully!",
+                        fontSize = 22.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = SelforaTextPrimary,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                        lineHeight = 28.sp
                     )
 
                     Spacer(modifier = Modifier.height(12.dp))
 
-                    // ADL Category Selection
-                    Text("Select ADL Category:", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = SelforaTextPrimary)
-                    Spacer(modifier = Modifier.height(6.dp))
+                    Text(
+                        text = "Caregiver will see the activity in their\napp with instructions.",
+                        fontSize = 14.sp,
+                        color = SelforaTextSecondary,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                        lineHeight = 20.sp
+                    )
 
-                    Row(
+                    Spacer(modifier = Modifier.height(20.dp))
+
+                    Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = SelforaPrimary.copy(alpha = 0.1f)
+                    ) {
+                        Text(
+                            text = "Assigned For\n12 May 2025",
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = SelforaPrimary,
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                            modifier = Modifier.padding(horizontal = 20.dp, vertical = 10.dp)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(40.dp))
+
+                    GlassOutlinedButton(
+                        text = "View Home Program Summary",
+                        onClick = { onNavigateToReview(childId) },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .horizontalScroll(rememberScrollState()),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        adlCategories.forEach { (catName, catActId) ->
-                            val isSelected = selectedCategory == catName
-                            FilterChip(
-                                selected = isSelected,
-                                onClick = {
-                                    selectedCategory = catName
-                                    activityId = catActId
-                                },
-                                label = { Text(catName, fontSize = 11.sp) }
-                            )
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(14.dp))
-
-                    // Practice Schedule Config
-                    Text("Schedule & Practice Configuration:", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = SelforaTextPrimary)
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        listOf("DAILY" to "Daily", "ALTERNATE_DAYS" to "Alt Days", "WEEKLY" to "Weekly").forEach { (type, label) ->
-                            FilterChip(
-                                selected = scheduleType == type,
-                                onClick = { scheduleType = type },
-                                label = { Text(label, fontSize = 10.sp) },
-                                modifier = Modifier.weight(1f)
-                            )
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(10.dp))
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        OutlinedTextField(
-                            value = frequency,
-                            onValueChange = { frequency = it },
-                            label = { Text("Sessions/Wk") },
-                            modifier = Modifier.weight(1f)
-                        )
-                        OutlinedTextField(
-                            value = duration,
-                            onValueChange = { duration = it },
-                            label = { Text("Duration (Mins)") },
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    OutlinedTextField(
-                        value = preferredTime,
-                        onValueChange = { preferredTime = it },
-                        label = { Text("Preferred Practice Time") },
-                        modifier = Modifier.fillMaxWidth()
+                            .height(50.dp)
                     )
 
-                    Spacer(modifier = Modifier.height(14.dp))
+                    Spacer(modifier = Modifier.height(12.dp))
 
-                    OutlinedTextField(
-                        value = goalStatement,
-                        onValueChange = { goalStatement = it },
-                        label = { Text("Clinical Goal Statement") },
-                        modifier = Modifier.fillMaxWidth(),
-                        minLines = 2
-                    )
-
-                    Spacer(modifier = Modifier.height(14.dp))
-
-                    // Dedicated Caregiver Instruction Editor
-                    Text("CAREGIVER INSTRUCTION EDITOR", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = SelforaSecondary)
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    OutlinedTextField(
-                        value = caregiverInstructions,
-                        onValueChange = { caregiverInstructions = it },
-                        label = { Text("Step-by-Step Caregiver Instructions") },
-                        modifier = Modifier.fillMaxWidth(),
-                        minLines = 3
-                    )
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    OutlinedTextField(
-                        value = safetyConsiderations,
-                        onValueChange = { safetyConsiderations = it },
-                        label = { Text("Safety Considerations") },
-                        modifier = Modifier.fillMaxWidth()
-                    )
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    OutlinedTextField(
-                        value = thingsToAvoid,
-                        onValueChange = { thingsToAvoid = it },
-                        label = { Text("Things Caregiver Should Avoid") },
-                        modifier = Modifier.fillMaxWidth()
-                    )
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    OutlinedTextField(
-                        value = encouragementSuggestions,
-                        onValueChange = { encouragementSuggestions = it },
-                        label = { Text("Positive Encouragement Suggestions") },
-                        modifier = Modifier.fillMaxWidth()
+                    GlassButton(
+                        text = "Done",
+                        onClick = onProgramCreated,
+                        gradient = listOf(SelforaPrimary, Color(0xFF6D28D9)),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(50.dp)
                     )
                 }
             }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            GlassButton(
-                text = "ASSIGN HOME PROGRAMME TO CAREGIVER",
-                onClick = {
-                    scope.launch {
-                        isSaving = true
-                        try {
-                            val req = CreateHomeProgramRequest(
-                                childId = childId,
-                                activityId = activityId,
-                                title = programTitle,
-                                description = "Prescribed home practice for $selectedCategory",
-                                priority = priority,
-                                scheduleType = scheduleType,
-                                preferredTime = preferredTime,
-                                frequencyPerWeek = frequency.toIntOrNull() ?: 4,
-                                targetDurationMinutes = duration.toIntOrNull() ?: 15,
-                                targetPromptLevelId = targetPromptLevel,
-                                goalStatement = goalStatement,
-                                caregiverInstructions = caregiverInstructions,
-                                stepSpecificInstructions = caregiverInstructions,
-                                safetyConsiderations = safetyConsiderations,
-                                thingsToAvoid = thingsToAvoid,
-                                encouragementSuggestions = encouragementSuggestions,
-                                startDate = LocalDate.now().toString(),
-                                endDate = LocalDate.now().plusWeeks(4).toString(),
-                                targetStepIds = listOf(4L, 7L, 10L)
-                            )
-                            ApiClient.apiService.createHomeProgram(req)
-                        } catch (_: Exception) {}
-                        isSaving = false
-                        onProgramCreated()
-                    }
-                },
-                icon = Icons.Default.Check,
-                modifier = Modifier.fillMaxWidth()
-            )
 
             Spacer(modifier = Modifier.height(110.dp))
         }

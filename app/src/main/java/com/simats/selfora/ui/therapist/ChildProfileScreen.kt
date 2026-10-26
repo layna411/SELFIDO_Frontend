@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.simats.selfora.data.api.ApiClient
 import com.simats.selfora.data.local.SessionManager
+import com.simats.selfora.data.model.ChildDto
 import com.simats.selfora.data.model.ResetPasswordResultResponse
 import com.simats.selfora.ui.components.avatar.ChildAvatarImage
 import com.simats.selfora.ui.components.glass.*
@@ -36,6 +37,7 @@ import java.util.UUID
 fun ChildProfileScreen(
     childId: Long,
     onStartAssessment: (Long) -> Unit,
+    onStartSession: (Long) -> Unit = onStartAssessment,
     onAssignProgramme: (Long) -> Unit,
     onViewProgress: (Long) -> Unit,
     onNavigateToAnalyzeAndAdapt: (Long) -> Unit = {},
@@ -49,30 +51,49 @@ fun ChildProfileScreen(
     var showResetPasswordDialog by remember { mutableStateOf(false) }
     var resetPasswordResult by remember { mutableStateOf<ResetPasswordResultResponse?>(null) }
     var isResettingPassword by remember { mutableStateOf(false) }
+    var childDto by remember { mutableStateOf<ChildDto?>(null) }
+    var isLoading by remember { mutableStateOf(true) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
 
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
 
     val tabs = listOf("Overview", "Analyze & Adapt", "Prompt Fading", "ADL Goals", "Assessments", "Sessions", "Home Programmes", "Progress")
 
-    val isDemo = childId >= 100L
-    val childName = when (childId) {
-        101L -> "Aarav Sharma"
-        102L -> "Ananya Reddy"
-        1L -> "Arjun Kumar"
-        2L -> "Ananya Reddy"
-        else -> "Child #$childId"
+    LaunchedEffect(childId) {
+        isLoading = true
+        errorMessage = null
+        try {
+            val response = ApiClient.apiService.getChildById(childId)
+            if (response.isSuccessful && response.body() != null) {
+                childDto = response.body()
+            } else {
+                val code = response.code()
+                errorMessage = if (code == 403) "Access Denied: You are not authorized to view this child record." else "Child profile unavailable (HTTP $code)"
+            }
+        } catch (e: Exception) {
+            errorMessage = "Network error: ${e.localizedMessage}"
+        } finally {
+            isLoading = false
+        }
     }
-    val gender = when (childId) {
-        102L, 2L -> "GIRL"
+
+    val isDemo = childId >= 100L
+    val childName = childDto?.let { "${it.firstName} ${it.lastName ?: ""}".trim() } ?: when (childId) {
+        1L -> "Rohan S."
+        2L -> "Aarav M."
+        3L -> "Vihaan K."
+        4L -> "Ishita P."
+        101L -> "Rohan S."
+        102L -> "Ananya Reddy"
+        else -> "Rohan S."
+    }
+    val gender = childDto?.gender ?: when (childId) {
+        4L, 102L, 2L -> "GIRL"
         else -> "BOY"
     }
-    val age = when (childId) {
-        102L, 2L -> 6
-        101L -> 7
-        else -> 8
-    }
-    val caregiverName = when (childId) {
+    val age = 7
+    val caregiverName = childDto?.caregiverName ?: when (childId) {
         102L, 2L -> "Suresh Reddy"
         else -> "Sunita Sharma"
     }
@@ -80,17 +101,22 @@ fun ChildProfileScreen(
         102L, 2L -> "suresh@example.com" else -> "sunita.sharma@example.com"
     }
     val caregiverPhone = "+91 9876543210"
-    val therapistName = "Dr. Sarah Jenkins (OT Specialist)"
+    val therapistName = childDto?.therapistName ?: "Dr. Priya OT"
 
     var selectedAvatarId by remember { mutableStateOf(if (gender == "GIRL") "ananya_girl" else "aarav_boy") }
 
     Scaffold(
         topBar = {
             GlassTopBar(
-                title = "Child Clinical Profile",
-                subtitle = if (isDemo) "Demonstration 3D Avatar Profile" else "Pediatric OT Record & ADL Goals",
+                title = "$childName - Profile",
+                subtitle = "Age $age • ${if (gender == "GIRL") "Female" else "Male"} • ASD • ID: ASD-0001",
                 onBackClick = onBack,
-                accentColor = SelforaPrimary
+                accentColor = SelforaPrimary,
+                actions = {
+                    IconButton(onClick = { Toast.makeText(context, "Edit Child Profile", Toast.LENGTH_SHORT).show() }) {
+                        Icon(Icons.Default.Edit, contentDescription = "Edit Profile", tint = SelforaPrimary)
+                    }
+                }
             )
         },
         containerColor = SelforaBackground
@@ -102,7 +128,7 @@ fun ChildProfileScreen(
                 .verticalScroll(rememberScrollState())
                 .padding(16.dp)
         ) {
-            // A. Profile Header Glass Card
+            // A. Profile Header Glass Card (Matching Prototype Screen 4)
             GlassCard(modifier = Modifier.fillMaxWidth()) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     ChildAvatarImage(
@@ -120,86 +146,99 @@ fun ChildProfileScreen(
                             Text(childName, fontSize = 20.sp, fontWeight = FontWeight.Bold, color = SelforaTextPrimary)
                             Surface(
                                 shape = RoundedCornerShape(10.dp),
-                                color = if (isDemo) SelforaPrimary.copy(alpha = 0.15f) else SelforaSuccess.copy(alpha = 0.15f)
+                                color = SelforaPrimary.copy(alpha = 0.15f)
                             ) {
                                 Text(
-                                    text = if (isDemo) "DEMO PROFILE" else "Active Clinical Case",
-                                    fontSize = 10.sp,
+                                    text = "ASD-0001",
+                                    fontSize = 11.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = if (isDemo) SelforaPrimary else SelforaSuccess,
+                                    color = SelforaPrimary,
                                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
                                 )
                             }
                         }
                         Spacer(modifier = Modifier.height(2.dp))
-                        Text("Child ID: #$childId • DOB: 2018-05-12 ($age yrs, $gender)", fontSize = 12.sp, color = SelforaPrimary, fontWeight = FontWeight.SemiBold)
-                        Text("Caregiver: $caregiverName (Parent)", fontSize = 12.sp, color = SelforaTextSecondary)
-                        Text("Assigned Doctor: $therapistName", fontSize = 11.sp, color = SelforaTextSecondary)
+                        Text("Age $age • ${if (gender == "GIRL") "Female" else "Male"} • ASD", fontSize = 13.sp, color = SelforaTextSecondary, fontWeight = FontWeight.Medium)
+                        Text("Doctor: $therapistName", fontSize = 11.sp, color = SelforaPrimary)
                     }
                 }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // Primary Quick Action Buttons
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    GlassButton(
-                        text = "Start Assessment",
-                        onClick = { onStartAssessment(childId) },
-                        icon = Icons.Default.PlayArrow,
-                        modifier = Modifier.weight(1f)
-                    )
-                    GlassOutlinedButton(
-                        text = "Assign Programme",
-                        onClick = { onAssignProgramme(childId) },
-                        icon = Icons.Default.HomeWork,
-                        modifier = Modifier.weight(1f)
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    GlassOutlinedButton(
-                        text = "View Progress",
-                        onClick = { onViewProgress(childId) },
-                        icon = Icons.Default.ShowChart,
-                        modifier = Modifier.weight(1f)
-                    )
-                    GlassOutlinedButton(
-                        text = "Message Caregiver",
-                        onClick = { onMessageCaregiver(childId) },
-                        icon = Icons.Default.Chat,
-                        modifier = Modifier.weight(1f)
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(10.dp))
-
-                // Open Child Mode Button (Adult Authorized Launcher)
-                GlassButton(
-                    text = "🎮 Open Child Mode for $childName",
-                    onClick = {
-                        SessionManager.enterChildMode(
-                            adultRole = SessionManager.getUserRole(),
-                            childId = childId,
-                            childName = childName,
-                            gender = gender
-                        )
-                        onOpenChildMode(childId)
-                    },
-                    icon = Icons.Default.SportsEsports,
-                    gradient = listOf(Color(0xFF3B82F6), Color(0xFF8B5CF6)),
-                    modifier = Modifier.fillMaxWidth()
-                )
             }
 
-            Spacer(modifier = Modifier.height(18.dp))
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // B. Current Goals Card (Matching Prototype Screen 4)
+            GlassCard(modifier = Modifier.fillMaxWidth()) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("Current Goals", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = SelforaTextPrimary)
+                    Text(
+                        "View All",
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = SelforaPrimary,
+                        modifier = Modifier.clickable { selectedTab = "ADL Goals" }
+                    )
+                }
+                Spacer(modifier = Modifier.height(10.dp))
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("• ", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = SelforaPrimary)
+                        Text("Improve tooth brushing independence", fontSize = 13.sp, color = SelforaTextPrimary)
+                    }
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("• ", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = SelforaPrimary)
+                        Text("Wear t-shirt independently", fontSize = 13.sp, color = SelforaTextPrimary)
+                    }
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("• ", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = SelforaPrimary)
+                        Text("Eat with spoon independently", fontSize = 13.sp, color = SelforaTextPrimary)
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // C. Recent Sessions Card (Matching Prototype Screen 4)
+            GlassCard(modifier = Modifier.fillMaxWidth()) {
+                Text("Recent Sessions", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = SelforaTextPrimary)
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    RecentSessionItem(
+                        date = "12 May 2025",
+                        activityName = "Tooth Brushing",
+                        promptLevel = "Verbal Prompt"
+                    )
+                    RecentSessionItem(
+                        date = "10 May 2026",
+                        activityName = "Wearing T-Shirt",
+                        promptLevel = "Physical Prompt"
+                    )
+                    RecentSessionItem(
+                        date = "08 May 2025",
+                        activityName = "Eating with Spoon",
+                        promptLevel = "Visual Prompt"
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // D. Primary "Start New Session" Action Button (Screen 4 Main CTA)
+            GlassButton(
+                text = "Start New Session",
+                onClick = { onStartSession(childId) },
+                icon = Icons.Default.PlayArrow,
+                gradient = listOf(SelforaPrimary, Color(0xFF6D28D9)),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(52.dp)
+            )
+
+            Spacer(modifier = Modifier.height(20.dp))
 
             // Navigation Tabs Row
             ScrollableTabRow(
@@ -634,3 +673,46 @@ fun GlassSessionHistoryCard(
         }
     }
 }
+
+@Composable
+fun RecentSessionItem(
+    date: String,
+    activityName: String,
+    promptLevel: String
+) {
+    Surface(
+        shape = RoundedCornerShape(14.dp),
+        color = Color.White.copy(alpha = 0.85f),
+        border = androidx.compose.foundation.BorderStroke(1.dp, SelforaBorder.copy(alpha = 0.5f)),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 14.dp, vertical = 10.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column {
+                Text(date, fontSize = 11.sp, color = SelforaTextSecondary, fontWeight = FontWeight.Medium)
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(activityName, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = SelforaTextPrimary)
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(promptLevel, fontSize = 12.sp, color = SelforaPrimary, fontWeight = FontWeight.SemiBold)
+            }
+            Surface(
+                shape = RoundedCornerShape(10.dp),
+                color = SelforaSuccess.copy(alpha = 0.15f)
+            ) {
+                Text(
+                    text = "Completed",
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = SelforaSuccess,
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                )
+            }
+        }
+    }
+}
+

@@ -30,10 +30,12 @@ import com.simats.selfora.ui.theme.*
 
 sealed class CaregiverTab(val route: String, val title: String, val icon: ImageVector) {
     object Home : CaregiverTab("caregiver_dashboard", "Home", Icons.Default.Home)
+    object History : CaregiverTab("caregiver_history", "History", Icons.Default.ReceiptLong)
+    object Messages : CaregiverTab("caregiver_messages", "Messages", Icons.Default.Chat)
+    object Resources : CaregiverTab("caregiver_resources", "Resources", Icons.Default.MenuBook)
+    object Profile : CaregiverTab("caregiver_profile", "Profile", Icons.Default.Person)
     object Programme : CaregiverTab("home_programme", "Programme", Icons.Default.Assignment)
     object Progress : CaregiverTab("caregiver_progress", "Progress", Icons.Default.BarChart)
-    object Messages : CaregiverTab("caregiver_messages", "Messages", Icons.Default.Chat)
-    object Profile : CaregiverTab("caregiver_profile", "Profile", Icons.Default.Person)
 }
 
 @Composable
@@ -44,8 +46,9 @@ fun CaregiverBottomNavigation(
 ) {
     val tabs = listOf(
         CaregiverTab.Home,
-        CaregiverTab.Programme,
-        CaregiverTab.Progress,
+        CaregiverTab.History,
+        CaregiverTab.Messages,
+        CaregiverTab.Resources,
         CaregiverTab.Profile
     )
 
@@ -57,8 +60,9 @@ fun CaregiverBottomNavigation(
         tabs.forEach { tab ->
             val isSelected = when (tab) {
                 CaregiverTab.Home -> currentRoute == "caregiver_dashboard"
-                CaregiverTab.Programme -> currentRoute.startsWith("home_programme") || currentRoute.startsWith("home_practice")
-                CaregiverTab.Progress -> currentRoute.startsWith("caregiver_progress") || currentRoute.startsWith("caregiver_history")
+                CaregiverTab.History -> currentRoute.startsWith("caregiver_history")
+                CaregiverTab.Messages -> currentRoute.startsWith("caregiver_messages")
+                CaregiverTab.Resources -> currentRoute.startsWith("caregiver_resources")
                 CaregiverTab.Profile -> currentRoute.startsWith("caregiver_profile") || currentRoute.startsWith("caregiver_notifications")
                 else -> false
             }

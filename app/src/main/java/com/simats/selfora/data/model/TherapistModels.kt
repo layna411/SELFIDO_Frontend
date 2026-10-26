@@ -46,16 +46,16 @@ data class PendingReviewItem(
 )
 
 data class TherapistDashboardSummaryResponse(
-    val therapistName: String = "Dr. Sarah Jenkins",
-    val designation: String = "Senior Occupational Specialist",
+    val therapistName: String = "Dr. Priya OT",
+    val designation: String = "Occupational Therapist",
     val avatarUrl: String = "ic_therapist_default",
-    val activeChildrenCount: Int = 24,
-    val linkedCaregiversCount: Int = 20,
-    val pendingAssessmentsCount: Int = 12,
-    val activeHomeProgramsCount: Int = 18,
-    val todaySessionsCount: Int = 4,
-    val completedSessionsCount: Int = 2,
-    val pendingReviewsCount: Int = 5,
+    val activeChildrenCount: Int = 8,
+    val linkedCaregiversCount: Int = 8,
+    val pendingAssessmentsCount: Int = 3,
+    val activeHomeProgramsCount: Int = 12,
+    val todaySessionsCount: Int = 5,
+    val completedSessionsCount: Int = 3,
+    val pendingReviewsCount: Int = 7,
     val todaySchedule: List<ScheduledSessionItem> = emptyList(),
     val pendingReviews: List<PendingReviewItem> = emptyList()
 )
@@ -94,4 +94,17 @@ data class PromptHistoryItem(
     val promptLevelName: String,
     val promptLevelCode: String,
     val observation: String
+)
+
+data class TherapistCaregiverSummaryItem(
+    val id: Long,
+    val fullName: String,
+    val email: String,
+    val phone: String = "",
+    val isActive: Boolean = true,
+    val relationship: String = "Parent",
+    val childId: Long,
+    val childName: String,
+    val activeHomeProgramsCount: Int = 0,
+    val pendingPracticeReviewsCount: Int = 0
 )

@@ -206,6 +206,18 @@ fun SelforaNavHost(
 
             composable(NavRoutes.CaregiverManagement.route) {
                 CaregiverManagementScreen(
+                    onNavigateToCaregiverDetails = { id -> navController.navigate(NavRoutes.CaregiverDetails.createRoute(id)) },
+                    onBack = { navController.popBackStack() }
+                )
+            }
+
+            composable(
+                route = NavRoutes.CaregiverDetails.route,
+                arguments = listOf(navArgument("caregiverId") { type = NavType.LongType })
+            ) { backStack ->
+                val caregiverId = backStack.arguments?.getLong("caregiverId") ?: 1L
+                CaregiverDetailsScreen(
+                    caregiverId = caregiverId,
                     onBack = { navController.popBackStack() }
                 )
             }
@@ -308,6 +320,7 @@ fun SelforaNavHost(
                 ChildProfileScreen(
                     childId = childId,
                     onStartAssessment = { id -> navController.navigate(NavRoutes.Assessment.createRoute(id)) },
+                    onStartSession = { id -> navController.navigate(NavRoutes.TherapySession.createRoute(id, 1L)) },
                     onAssignProgramme = { id -> navController.navigate(NavRoutes.HomeProgramCreate.createRoute(id)) },
                     onViewProgress = { id -> navController.navigate(NavRoutes.Progress.createRoute(id)) },
                     onMessageCaregiver = { id -> navController.navigate(NavRoutes.Messages.createRoute(id)) },
@@ -377,6 +390,7 @@ fun SelforaNavHost(
                 HomeProgramCreateScreen(
                     childId = childId,
                     onProgramCreated = { navController.navigate(NavRoutes.TherapistDashboard.route) { popUpTo(NavRoutes.TherapistDashboard.route) { inclusive = true } } },
+                    onNavigateToReview = { cId -> navController.navigate(NavRoutes.HomeProgramReview.createRoute(cId)) },
                     onBack = { navController.popBackStack() }
                 )
             }

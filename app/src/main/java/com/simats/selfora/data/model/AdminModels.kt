@@ -63,3 +63,63 @@ data class AuditLogItem(
     val changeSummary: String,
     val timestamp: String
 )
+
+data class AdminChildItem(
+    val id: Long,
+    val fullName: String = "",
+    val firstName: String = "",
+    val lastName: String = "",
+    val dateOfBirth: String? = null,
+    val age: Int = 6,
+    val gender: String = "MALE",
+    val avatarUrl: String? = null,
+    val isActive: Boolean = true,
+    val assignedTherapistId: Long? = null,
+    val assignedTherapistName: String = "Unassigned",
+    val linkedCaregiverId: Long? = null,
+    val linkedCaregiverName: String = "Unassigned Caregiver",
+    val activeAdlCategory: String = "Dressing - Upper Body T-Shirt",
+    val createdAt: String? = null
+)
+
+data class AdminChildDetailProfile(
+    val summary: AdminChildItem,
+    val diagnosisNotes: String = "",
+    val supportedAdlCategories: List<String> = listOf("Dressing", "Eating", "Grooming", "Shoes & Socks"),
+    val totalSessions: Long = 0L,
+    val completedAssessments: Long = 0L,
+    val activeHomeProgramTitle: String = "",
+    val homePracticeSessionsCount: Long = 0L
+)
+
+data class CaregiverItem(
+    val id: Long,
+    val username: String = "",
+    val fullName: String = "",
+    val email: String = "",
+    val phone: String = "+91 9876543210",
+    val isActive: Boolean = true,
+    val mustChangePassword: Boolean = false,
+    val createdAt: String? = null,
+    val linkedChildrenCount: Long = 0L,
+    val linkedChildrenNames: List<String> = emptyList(),
+    val linkedChildren: List<AdminChildItem> = emptyList()
+)
+
+data class CreateCaregiverRequest(
+    val fullName: String,
+    val email: String,
+    val phone: String,
+    val username: String,
+    val password: String
+)
+
+data class UpdateCaregiverRequest(
+    val fullName: String,
+    val email: String,
+    val phone: String
+)
+
+data class ResetPasswordRequest(
+    val newPassword: String
+)

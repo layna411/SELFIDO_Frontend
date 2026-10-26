@@ -1,7 +1,9 @@
 package com.simats.selfora.ui.caregiver
 
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -10,17 +12,19 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.PictureAsPdf
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.simats.selfora.data.model.MessageResponse
+import com.simats.selfora.ui.components.glass.*
 import com.simats.selfora.ui.theme.*
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -29,64 +33,37 @@ fun CaregiverMessagesScreen(
     onNavigateToTab: (String) -> Unit = {},
     onBack: () -> Unit = {}
 ) {
+    val context = LocalContext.current
     var messages by remember {
         mutableStateOf(
             listOf(
-                MessageResponse(1L, 2L, "Dr. Sarah Jenkins", 1L, "Sunita Sharma (Parent)", 1L, "Hello Sunita, please continue practicing the T-shirt activity with Aarav this week.", true, "2026-09-28 09:30"),
-                MessageResponse(2L, 1L, "Sunita Sharma (Parent)", 2L, "Dr. Sarah Jenkins", 1L, "Sure Doctor! Aarav did really well with putting his arms through the sleeves yesterday.", true, "2026-09-28 10:15"),
-                MessageResponse(3L, 2L, "Dr. Sarah Jenkins", 1L, "Sunita Sharma (Parent)", 1L, "That is fantastic progress! Make sure to encourage him to try line alignment next.", true, "2026-09-28 11:00")
+                MessageResponse(
+                    id = 1L,
+                    senderId = 2L,
+                    senderName = "Dr. Priya OT",
+                    receiverId = 1L,
+                    receiverName = "Meena (Caregiver)",
+                    childId = 1L,
+                    messageText = "Hi Meena,\n\nRohan is doing well!\nPlease continue the same home practice. Try reducing prompt gradually as guided.\n\nYou're doing a wonderful job! ❤️",
+                    isRead = true,
+                    sentAt = "Today, 9:30 AM"
+                )
             )
         )
     }
     var newMessageText by remember { mutableStateOf("") }
     val listState = rememberLazyListState()
 
-    // Auto-scroll to bottom when new messages arrive
-    LaunchedEffect(messages.size) {
-        if (messages.isNotEmpty()) {
-            listState.animateScrollToItem(messages.size - 1)
-        }
-    }
-
-    val imeBottomPadding = WindowInsets.ime.asPaddingValues().calculateBottomPadding()
-    val isKeyboardVisible = imeBottomPadding > 0.dp
-
     Scaffold(
         containerColor = SelforaBackground,
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
-            Surface(
-                color = SelforaSurface,
-                shadowElevation = 2.dp,
-                modifier = Modifier.statusBarsPadding()
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 8.dp, vertical = 10.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = SelforaPrimary)
-                    }
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            "Therapist Chat",
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 18.sp,
-                            color = SelforaTextPrimary
-                        )
-                        Spacer(modifier = Modifier.height(2.dp))
-                        Text(
-                            "Dr. Sarah Jenkins (Occupational Therapist)",
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = SelforaPrimary
-                        )
-                    }
-                }
-            }
+            GlassTopBar(
+                title = "Messages",
+                subtitle = "Messages from Therapist",
+                onBackClick = onBack,
+                accentColor = SelforaPrimary
+            )
         }
     ) { padding ->
         Box(
@@ -106,8 +83,30 @@ fun CaregiverMessagesScreen(
                         .weight(1f)
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp, vertical = 12.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                    verticalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
+                    // Therapist Header Info Card (Image 2 Screen 10)
+                    item {
+                        GlassCard(modifier = Modifier.fillMaxWidth()) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Surface(
+                                    shape = CircleShape,
+                                    color = SelforaPrimary.copy(alpha = 0.15f),
+                                    modifier = Modifier.size(46.dp)
+                                ) {
+                                    Box(contentAlignment = Alignment.Center) {
+                                        Text("👩‍⚕️", fontSize = 24.sp)
+                                    }
+                                }
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Column {
+                                    Text("Dr. Priya OT", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = SelforaTextPrimary)
+                                    Text("Today, 9:30 AM", fontSize = 12.sp, color = SelforaTextSecondary)
+                                }
+                            }
+                        }
+                    }
+
                     items(messages) { msg ->
                         val isCaregiverMsg = msg.senderId == 1L
 
@@ -125,25 +124,19 @@ fun CaregiverMessagesScreen(
                                 color = if (isCaregiverMsg) SelforaPrimary else Color.White,
                                 shadowElevation = 2.dp,
                                 modifier = Modifier
-                                    .widthIn(max = 290.dp)
-                                    .then(
-                                        if (!isCaregiverMsg) Modifier.border(1.dp, SelforaBorder, RoundedCornerShape(16.dp, 16.dp, 16.dp, 4.dp))
-                                        else Modifier
+                                    .widthIn(max = 320.dp)
+                                    .border(
+                                        1.dp,
+                                        if (isCaregiverMsg) SelforaPrimary else SelforaBorder.copy(alpha = 0.5f),
+                                        RoundedCornerShape(16.dp)
                                     )
                             ) {
                                 Column(modifier = Modifier.padding(14.dp)) {
                                     Text(
-                                        msg.senderName,
-                                        fontSize = 11.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = if (isCaregiverMsg) Color.White.copy(alpha = 0.9f) else SelforaPrimary
-                                    )
-                                    Spacer(modifier = Modifier.height(6.dp))
-                                    Text(
                                         msg.messageText,
                                         fontSize = 14.sp,
                                         color = if (isCaregiverMsg) Color.White else SelforaTextPrimary,
-                                        lineHeight = 19.sp
+                                        lineHeight = 20.sp
                                     )
                                     Spacer(modifier = Modifier.height(6.dp))
                                     Text(
@@ -156,33 +149,88 @@ fun CaregiverMessagesScreen(
                             }
                         }
                     }
+
+                    // Attachment Card (Image 2 Screen 10)
+                    item {
+                        Column {
+                            Text("Attachment", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = SelforaTextSecondary)
+                            Spacer(modifier = Modifier.height(6.dp))
+
+                            Surface(
+                                shape = RoundedCornerShape(14.dp),
+                                color = Color.White,
+                                border = androidx.compose.foundation.BorderStroke(1.dp, SelforaBorder.copy(alpha = 0.5f)),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        Toast.makeText(context, "Opening Tooth Brushing Step Guide.pdf", Toast.LENGTH_SHORT).show()
+                                    }
+                            ) {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(12.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Surface(
+                                            shape = RoundedCornerShape(8.dp),
+                                            color = SelforaError.copy(alpha = 0.12f),
+                                            modifier = Modifier.size(38.dp)
+                                        ) {
+                                            Box(contentAlignment = Alignment.Center) {
+                                                Icon(Icons.Default.PictureAsPdf, contentDescription = null, tint = SelforaError, modifier = Modifier.size(20.dp))
+                                            }
+                                        }
+                                        Spacer(modifier = Modifier.width(12.dp))
+                                        Column {
+                                            Text("Tooth Brushing", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = SelforaTextPrimary)
+                                            Text("Step Guide", fontSize = 12.sp, color = SelforaTextSecondary)
+                                        }
+                                    }
+
+                                    Surface(
+                                        shape = RoundedCornerShape(6.dp),
+                                        color = SelforaError.copy(alpha = 0.15f)
+                                    ) {
+                                        Text(
+                                            "PDF",
+                                            fontSize = 11.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = SelforaError,
+                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
 
-                // Input bar sitting directly at bottom (or above keyboard when open)
+                // Reply Input Bar (Image 2 Screen 10)
                 Surface(
                     color = SelforaSurface,
-                    shadowElevation = 4.dp,
+                    shadowElevation = 6.dp,
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
                             .navigationBarsPadding()
-                            .padding(horizontal = 12.dp, vertical = 8.dp),
+                            .padding(horizontal = 14.dp, vertical = 10.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         OutlinedTextField(
                             value = newMessageText,
                             onValueChange = { newMessageText = it },
-                            placeholder = { Text("Write a message to therapist...", fontSize = 13.sp, color = SelforaTextSecondary) },
+                            placeholder = { Text("Reply to Therapist...", fontSize = 13.sp, color = SelforaTextSecondary) },
                             modifier = Modifier.weight(1f),
                             maxLines = 3,
                             shape = RoundedCornerShape(24.dp),
                             colors = OutlinedTextFieldDefaults.colors(
                                 focusedTextColor = SelforaTextPrimary,
                                 unfocusedTextColor = SelforaTextPrimary,
-                                focusedContainerColor = Color.Transparent,
-                                unfocusedContainerColor = Color.Transparent,
                                 focusedBorderColor = SelforaPrimary,
                                 unfocusedBorderColor = SelforaBorder
                             )
@@ -196,9 +244,9 @@ fun CaregiverMessagesScreen(
                                     messages = messages + MessageResponse(
                                         id = (messages.size + 1).toLong(),
                                         senderId = 1L,
-                                        senderName = "Sunita Sharma (Parent)",
+                                        senderName = "Meena (Caregiver)",
                                         receiverId = 2L,
-                                        receiverName = "Dr. Sarah Jenkins",
+                                        receiverName = "Dr. Priya OT",
                                         childId = 1L,
                                         messageText = newMessageText.trim(),
                                         isRead = false,

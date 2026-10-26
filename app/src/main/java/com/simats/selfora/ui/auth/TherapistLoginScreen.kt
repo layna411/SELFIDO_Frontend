@@ -309,7 +309,7 @@ fun TherapistLoginScreen(
                     Button(
                         onClick = {
                             if (email.isBlank() || password.isBlank()) {
-                                errorMessage = "Please enter both email and password."
+                                errorMessage = "Please enter both User ID / Email and password."
                                 return@Button
                             }
                             if (isLoading) return@Button
@@ -318,21 +318,29 @@ fun TherapistLoginScreen(
                             errorMessage = null
                             scope.launch {
                                 try {
-                                    val response = ApiClient.apiService.login(LoginRequest(email, password))
+                                    val response = ApiClient.apiService.login(LoginRequest(email.trim(), password.trim()))
                                     if (response.isSuccessful && response.body() != null) {
                                         val authRes = response.body()!!
                                         ApiClient.setJwtToken(authRes.token)
                                         val primaryRole = authRes.roles.firstOrNull() ?: "ROLE_THERAPIST"
                                         val mustChange = authRes.mustChangePassword ?: false
-                                        SessionManager.saveSession(primaryRole, authRes.userId, email, authRes.token, mustChange)
+                                        SessionManager.saveSession(primaryRole, authRes.userId, authRes.username ?: email.trim(), authRes.token, mustChange)
                                         onLoginSuccess(primaryRole, authRes.userId)
                                     } else {
-                                        SessionManager.saveSession("ROLE_THERAPIST", 1L, email, "", false)
-                                        onLoginSuccess("ROLE_THERAPIST", 1L)
+                                        val code = response.code()
+                                        errorMessage = when (code) {
+                                            401 -> "Invalid User ID or password. Please check your credentials."
+                                            403 -> "Your account has been disabled or expired. Please contact support."
+                                            404 -> "Therapist account not found."
+                                            else -> "Authentication failed (HTTP $code). Please try again."
+                                        }
                                     }
                                 } catch (e: Exception) {
-                                    SessionManager.saveSession("ROLE_THERAPIST", 1L, email, "", false)
-                                    onLoginSuccess("ROLE_THERAPIST", 1L)
+                                    errorMessage = if (e is java.io.IOException) {
+                                        "Unable to connect to server. Please check your network connection."
+                                    } else {
+                                        "Authentication error: ${e.localizedMessage}"
+                                    }
                                 } finally {
                                     isLoading = false
                                 }

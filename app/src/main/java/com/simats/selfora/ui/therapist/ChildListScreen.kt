@@ -23,6 +23,7 @@ import com.simats.selfora.data.model.ChildSummaryItem
 import com.simats.selfora.ui.components.avatar.ChildAvatarImage
 import com.simats.selfora.ui.components.glass.*
 import com.simats.selfora.ui.theme.*
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -36,73 +37,78 @@ fun ChildListScreen(
     var sortBy by remember { mutableStateOf("Name") } // Name, Recent Session
     var childrenList by remember { mutableStateOf<List<ChildSummaryItem>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
+    val scope = rememberCoroutineScope()
 
     val filterOptions = listOf("All", "Active", "Assessment Pending", "Completed")
     val sortOptions = listOf("Name", "Recent Session")
 
-    // Default sample list featuring 3D Avatar Demo profiles & pediatric cases
+    // Default sample list matching Therapist Flow Prototype (Image 1 Screen 3)
     val defaultChildren = listOf(
-        ChildSummaryItem(101L, "Aarav Sharma", 7, "BOY", "aarav_boy", "Sunita Sharma", "Mother", "Today", "ACTIVE", 3, 80, 75, 70, 80, false, true, isDemoProfile = true),
-        ChildSummaryItem(102L, "Ananya Reddy", 6, "GIRL", "ananya_girl", "Suresh Reddy", "Father", "Yesterday", "ACTIVE", 3, 85, 90, 78, 85, false, true, isDemoProfile = true),
-        ChildSummaryItem(1L, "Arjun Kumar", 8, "BOY", "aarav_boy", "Priya Kumar", "Mother", "2026-10-02", "ACTIVE", 3, 72, 65, 80, 72, true, true),
-        ChildSummaryItem(3L, "Kavya Patel", 7, "GIRL", "ananya_girl", "Meera Patel", "Mother", "2026-09-25", "PENDING_ASSESSMENT", 2, 45, 50, 60, 51, true, false),
-        ChildSummaryItem(4L, "Rohan Sharma", 9, "BOY", "aarav_boy", "Sunita Sharma", "Mother", "2026-10-01", "ACTIVE", 3, 92, 88, 95, 91, false, true)
+        ChildSummaryItem(1L, "Rohan S.", 7, "BOY", "aarav_boy", "Meena S.", "Mother", "12 May 2025", "ACTIVE", 3, 65, 75, 70, 70, false, true),
+        ChildSummaryItem(101L, "Aarav M.", 6, "BOY", "aarav_boy", "Sunita M.", "Mother", "10 May 2025", "ACTIVE", 3, 80, 75, 70, 75, false, true),
+        ChildSummaryItem(103L, "Vihaan K.", 8, "BOY", "aarav_boy", "Priya K.", "Mother", "08 May 2025", "ACTIVE", 3, 70, 60, 65, 65, false, true),
+        ChildSummaryItem(102L, "Ishita P.", 7, "GIRL", "ananya_girl", "Meera P.", "Mother", "05 May 2025", "ACTIVE", 3, 85, 90, 78, 84, false, true)
     )
 
-    LaunchedEffect(searchQuery, selectedFilter, sortBy) {
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+
+    fun loadChildren() {
         isLoading = true
-        try {
-            val filterParam = when (selectedFilter) {
-                "Assessment Pending" -> "ASSESSMENT_PENDING"
-                "Completed" -> "COMPLETED"
-                "Active" -> "ACTIVE"
-                else -> null
-            }
-            val response = ApiClient.apiService.getTherapistChildren(filterParam, searchQuery.ifBlank { null })
-            val body = response.body()
-            var listToUse = if (response.isSuccessful && body != null && body.isNotEmpty()) body else defaultChildren
-
-            listToUse = listToUse.filter {
-                val matchSearch = searchQuery.isBlank() || it.name.contains(searchQuery, ignoreCase = true) || it.id.toString().contains(searchQuery)
-                val matchFilter = when (selectedFilter) {
-                    "Assessment Pending" -> it.hasPendingAssessment || it.programmeStatus == "PENDING_ASSESSMENT"
-                    "Active" -> it.programmeStatus == "ACTIVE" || it.hasActiveHomeProgram
-                    "Completed" -> it.programmeStatus == "COMPLETED"
-                    else -> true
+        errorMessage = null
+        scope.launch {
+            try {
+                val filterParam = when (selectedFilter) {
+                    "Assessment Pending" -> "ASSESSMENT_PENDING"
+                    "Completed" -> "COMPLETED"
+                    "Active" -> "ACTIVE"
+                    else -> null
                 }
-                matchSearch && matchFilter
-            }
+                val response = ApiClient.apiService.getTherapistChildren(filterParam, searchQuery.ifBlank { null })
+                if (response.isSuccessful && !response.body().isNullOrEmpty()) {
+                    var listToUse = response.body()!!
 
-            listToUse = if (sortBy == "Recent Session") {
-                listToUse.sortedByDescending { it.lastSessionDate }
-            } else {
-                listToUse.sortedBy { it.name }
-            }
+                    listToUse = listToUse.filter {
+                        val matchSearch = searchQuery.isBlank() || it.name.contains(searchQuery, ignoreCase = true) || it.id.toString().contains(searchQuery)
+                        val matchFilter = when (selectedFilter) {
+                            "Assessment Pending" -> it.hasPendingAssessment || it.programmeStatus == "PENDING_ASSESSMENT"
+                            "Active" -> it.programmeStatus == "ACTIVE" || it.hasActiveHomeProgram
+                            "Completed" -> it.programmeStatus == "COMPLETED"
+                            else -> true
+                        }
+                        matchSearch && matchFilter
+                    }
 
-            childrenList = listToUse
-        } catch (_: Exception) {
-            var listToUse = defaultChildren.filter {
-                val matchSearch = searchQuery.isBlank() || it.name.contains(searchQuery, ignoreCase = true) || it.id.toString().contains(searchQuery)
-                val matchFilter = when (selectedFilter) {
-                    "Assessment Pending" -> it.hasPendingAssessment || it.programmeStatus == "PENDING_ASSESSMENT"
-                    "Active" -> it.programmeStatus == "ACTIVE" || it.hasActiveHomeProgram
-                    "Completed" -> it.programmeStatus == "COMPLETED"
-                    else -> true
+                    listToUse = if (sortBy == "Recent Session") {
+                        listToUse.sortedByDescending { it.lastSessionDate }
+                    } else {
+                        listToUse.sortedBy { it.name }
+                    }
+
+                    childrenList = listToUse
+                } else {
+                    childrenList = defaultChildren.filter {
+                        searchQuery.isBlank() || it.name.contains(searchQuery, ignoreCase = true)
+                    }
                 }
-                matchSearch && matchFilter
+            } catch (e: Exception) {
+                childrenList = defaultChildren.filter {
+                    searchQuery.isBlank() || it.name.contains(searchQuery, ignoreCase = true)
+                }
+            } finally {
+                isLoading = false
             }
-            listToUse = if (sortBy == "Recent Session") listToUse.sortedByDescending { it.lastSessionDate } else listToUse.sortedBy { it.name }
-            childrenList = listToUse
-        } finally {
-            isLoading = false
         }
+    }
+
+    LaunchedEffect(searchQuery, selectedFilter, sortBy) {
+        loadChildren()
     }
 
     Scaffold(
         topBar = {
             GlassTopBar(
-                title = "Assigned Children",
-                subtitle = "Assigned Pediatric Records & ADL Profiles",
+                title = "Select Child",
+                subtitle = "Active Pediatric Cases & ADL Goals",
                 onBackClick = onBack,
                 accentColor = SelforaPrimary,
                 actions = {
@@ -130,7 +136,7 @@ fun ChildListScreen(
             GlassSearchBar(
                 query = searchQuery,
                 onQueryChange = { searchQuery = it },
-                placeholder = "Search child by name or ID...",
+                placeholder = "Search child",
                 accentColor = SelforaPrimary
             )
 
