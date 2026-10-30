@@ -20,12 +20,11 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.simats.selfora.data.api.ApiClient
 import com.simats.selfora.data.model.CaregiverItem
-import com.simats.selfora.data.model.CreateCaregiverRequest
 import com.simats.selfora.ui.components.glass.GlassTextField
 import kotlinx.coroutines.launch
 
@@ -48,8 +47,6 @@ fun CaregiverManagementScreen(
     var caregivers by remember { mutableStateOf<List<CaregiverItem>>(emptyList()) }
     var isLoading by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
-
-    var showCreateDialog by remember { mutableStateOf(false) }
 
     // Status Toggle Dialog State
     var caregiverToToggle by remember { mutableStateOf<CaregiverItem?>(null) }
@@ -111,15 +108,6 @@ fun CaregiverManagementScreen(
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
             )
         },
-        floatingActionButton = {
-            ExtendedFloatingActionButton(
-                onClick = { showCreateDialog = true },
-                icon = { Icon(Icons.Default.PersonAdd, contentDescription = null) },
-                text = { Text("New Caregiver", fontWeight = FontWeight.Bold) },
-                containerColor = purpleAccent,
-                contentColor = Color.White
-            )
-        },
         containerColor = Color(0xFFF8FAFC)
     ) { padding ->
         Column(
@@ -127,8 +115,38 @@ fun CaregiverManagementScreen(
                 .fillMaxSize()
                 .padding(padding)
                 .imePadding()
-                .padding(16.dp)
+                .padding(horizontal = 16.dp, vertical = 12.dp)
         ) {
+            // Informational Notice Banner
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 12.dp),
+                shape = RoundedCornerShape(14.dp),
+                color = purpleAccent.copy(alpha = 0.08f),
+                border = androidx.compose.foundation.BorderStroke(1.dp, purpleAccent.copy(alpha = 0.2f))
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Info,
+                        contentDescription = null,
+                        tint = purpleAccent,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Text(
+                        text = "Caregiver accounts are registered by therapists during child intake. Admin can view accounts, manage access status, and reset passwords.",
+                        fontSize = 11.5.sp,
+                        color = Color(0xFF581C87),
+                        lineHeight = 16.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+            }
+
             // Search Input
             GlassTextField(
                 value = searchQuery,
@@ -139,7 +157,7 @@ fun CaregiverManagementScreen(
                 modifier = Modifier.fillMaxWidth()
             )
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(10.dp))
 
             // Filter Chips
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -158,7 +176,7 @@ fun CaregiverManagementScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(14.dp))
 
             // Content States
             if (isLoading) {
@@ -187,132 +205,19 @@ fun CaregiverManagementScreen(
                     }
                 }
             } else {
-                LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                LazyColumn(
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    contentPadding = PaddingValues(bottom = 24.dp)
+                ) {
                     items(filteredList, key = { it.id }) { caregiver ->
-                        Surface(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .shadow(3.dp, RoundedCornerShape(20.dp), clip = false)
-                                .clickable { onNavigateToCaregiverDetails(caregiver.id) },
-                            shape = RoundedCornerShape(20.dp),
-                            color = Color.White,
-                            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0))
-                        ) {
-                            Column(modifier = Modifier.padding(16.dp)) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(48.dp)
-                                            .clip(CircleShape)
-                                            .background(if (caregiver.isActive) purpleAccent.copy(alpha = 0.12f) else Color(0xFFCBD5E1)),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Icon(
-                                            Icons.Default.FamilyRestroom,
-                                            contentDescription = null,
-                                            tint = if (caregiver.isActive) purpleAccent else Color(0xFF64748B),
-                                            modifier = Modifier.size(24.dp)
-                                        )
-                                    }
-
-                                    Spacer(modifier = Modifier.width(12.dp))
-
-                                    Column(modifier = Modifier.weight(1f)) {
-                                        Row(
-                                            verticalAlignment = Alignment.CenterVertically,
-                                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                        ) {
-                                            Text(
-                                                text = caregiver.fullName,
-                                                fontSize = 15.sp,
-                                                fontWeight = FontWeight.Bold,
-                                                color = textPrimary,
-                                                maxLines = 1,
-                                                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
-                                                modifier = Modifier.weight(1f, fill = false)
-                                            )
-
-                                            Surface(
-                                                shape = RoundedCornerShape(8.dp),
-                                                color = if (caregiver.isActive) Color(0xFFDCFCE7) else Color(0xFFFEE2E2)
-                                            ) {
-                                                Text(
-                                                    text = if (caregiver.isActive) "ACTIVE" else "INACTIVE",
-                                                    fontSize = 9.sp,
-                                                    fontWeight = FontWeight.Bold,
-                                                    color = if (caregiver.isActive) Color(0xFF166534) else Color(0xFF991B1B),
-                                                    softWrap = false,
-                                                    maxLines = 1,
-                                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp)
-                                                )
-                                            }
-                                        }
-
-                                        Spacer(modifier = Modifier.height(2.dp))
-                                        Text(
-                                            text = "Caregiver ID: #${caregiver.id}",
-                                            fontSize = 11.sp,
-                                            color = textSecondary
-                                        )
-                                    }
-
-                                    Spacer(modifier = Modifier.width(8.dp))
-
-                                    Switch(
-                                        checked = caregiver.isActive,
-                                        onCheckedChange = { caregiverToToggle = caregiver },
-                                        modifier = Modifier.    scale(0.85f),
-                                        colors = SwitchDefaults.colors(
-                                            checkedThumbColor = Color.White,
-                                            checkedTrackColor = Color(0xFF10B981)
-                                        )
-                                    )
-                                }
-
-                                Spacer(modifier = Modifier.height(10.dp))
-                                HorizontalDivider(color = Color(0xFFF1F5F9))
-                                Spacer(modifier = Modifier.height(10.dp))
-
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Column(modifier = Modifier.weight(1f)) {
-                                        Text("Email Address", fontSize = 10.sp, color = textSecondary)
-                                        Text(
-                                            text = caregiver.email.ifBlank { "N/A" },
-                                            fontSize = 12.sp,
-                                            fontWeight = FontWeight.Medium,
-                                            color = textPrimary,
-                                            maxLines = 1,
-                                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
-                                        )
-                                    }
-
-                                    Spacer(modifier = Modifier.width(16.dp))
-
-                                    Column(horizontalAlignment = Alignment.End) {
-                                        Text("Linked Children", fontSize = 10.sp, color = textSecondary)
-                                        val childrenLabel = if (caregiver.linkedChildrenNames.isNotEmpty()) {
-                                            caregiver.linkedChildrenNames.joinToString(", ")
-                                        } else {
-                                            "${caregiver.linkedChildrenCount} Linked"
-                                        }
-                                        Text(
-                                            text = childrenLabel,
-                                            fontSize = 12.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            color = purpleAccent,
-                                            maxLines = 1,
-                                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
-                                        )
-                                    }
-                                }
-                            }
-                        }
+                        CaregiverCard(
+                            caregiver = caregiver,
+                            purpleAccent = purpleAccent,
+                            textPrimary = textPrimary,
+                            textSecondary = textSecondary,
+                            onClick = { onNavigateToCaregiverDetails(caregiver.id) },
+                            onToggleStatus = { caregiverToToggle = caregiver }
+                        )
                     }
                 }
             }
@@ -328,7 +233,7 @@ fun CaregiverManagementScreen(
             onDismissRequest = { if (!isTogglingStatus) caregiverToToggle = null },
             title = { Text(if (newStatus) "Activate Caregiver Account?" else "Deactivate Caregiver Account?", fontWeight = FontWeight.Bold) },
             text = {
-                Text("Are you sure you want to ${if (newStatus) "activate" else "deactivate"} account for '${target.fullName}'? Child records will NOT be deleted.")
+                Text("Are you sure you want to ${if (newStatus) "activate" else "deactivate"} account for '${target.fullName}'? Child records and history will NOT be deleted.")
             },
             confirmButton = {
                 Button(
@@ -367,112 +272,164 @@ fun CaregiverManagementScreen(
             }
         )
     }
+}
 
-    // Create Caregiver Dialog Form
-    if (showCreateDialog) {
-        var fullName by remember { mutableStateOf("") }
-        var email by remember { mutableStateOf("") }
-        var phone by remember { mutableStateOf("") }
-        var username by remember { mutableStateOf("") }
-        var password by remember { mutableStateOf("") }
-        var isSubmitting by remember { mutableStateOf(false) }
+@Composable
+private fun CaregiverCard(
+    caregiver: CaregiverItem,
+    purpleAccent: Color,
+    textPrimary: Color,
+    textSecondary: Color,
+    onClick: () -> Unit,
+    onToggleStatus: () -> Unit
+) {
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .shadow(3.dp, RoundedCornerShape(18.dp), clip = false)
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(18.dp),
+        color = Color.White,
+        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0))
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            // Top Row: Avatar + Info + Badge/Switch
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(46.dp)
+                        .clip(CircleShape)
+                        .background(if (caregiver.isActive) purpleAccent.copy(alpha = 0.12f) else Color(0xFFCBD5E1)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.FamilyRestroom,
+                        contentDescription = null,
+                        tint = if (caregiver.isActive) purpleAccent else Color(0xFF64748B),
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
 
-        AlertDialog(
-            onDismissRequest = { if (!isSubmitting) showCreateDialog = false },
-            title = { Text("Create Caregiver Account", fontWeight = FontWeight.Bold) },
-            text = {
+                Spacer(modifier = Modifier.width(12.dp))
+
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = caregiver.fullName,
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = textPrimary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = "ID: #${caregiver.id} • ${caregiver.username}",
+                        fontSize = 11.5.sp,
+                        color = textSecondary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = caregiver.email.ifBlank { "No email address" },
+                        fontSize = 11.sp,
+                        color = Color(0xFF94A3B8),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+
+                Spacer(modifier = Modifier.width(10.dp))
+
+                // Status Badge & Clean Switch
                 Column(
-                    modifier = Modifier.fillMaxWidth().imePadding(),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                    horizontalAlignment = Alignment.End,
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
-                    GlassTextField(
-                        value = fullName,
-                        onValueChange = { fullName = it },
-                        label = "Full Name *",
-                        leadingIcon = Icons.Default.Person,
-                        modifier = Modifier.fillMaxWidth()
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = if (caregiver.isActive) Color(0xFFDCFCE7) else Color(0xFFFEE2E2)
+                    ) {
+                        Text(
+                            text = if (caregiver.isActive) "ACTIVE" else "INACTIVE",
+                            fontSize = 9.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = if (caregiver.isActive) Color(0xFF166534) else Color(0xFF991B1B),
+                            modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp)
+                        )
+                    }
+
+                    Switch(
+                        checked = caregiver.isActive,
+                        onCheckedChange = { onToggleStatus() },
+                        modifier = Modifier.scale(0.8f),
+                        colors = SwitchDefaults.colors(
+                            checkedThumbColor = Color.White,
+                            checkedTrackColor = Color(0xFF10B981)
+                        )
                     )
-                    GlassTextField(
-                        value = email,
-                        onValueChange = { email = it },
-                        label = "Email Address *",
-                        leadingIcon = Icons.Default.Email,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                    GlassTextField(
-                        value = phone,
-                        onValueChange = { phone = it },
-                        label = "Phone Number",
-                        leadingIcon = Icons.Default.Phone,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                    GlassTextField(
-                        value = username,
-                        onValueChange = { username = it },
-                        label = "Username *",
-                        leadingIcon = Icons.Default.AccountCircle,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                    OutlinedTextField(
-                        value = password,
-                        onValueChange = { password = it },
-                        label = { Text("Initial Password *") },
-                        visualTransformation = PasswordVisualTransformation(),
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true
-                    )
-                }
-            },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        val emailPattern = "^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,6}$".toRegex()
-                        if (fullName.isBlank() || email.isBlank() || username.isBlank() || password.isBlank()) {
-                            Toast.makeText(context, "Please fill in all required fields (*).", Toast.LENGTH_SHORT).show()
-                            return@Button
-                        }
-                        if (!email.trim().matches(emailPattern)) {
-                            Toast.makeText(context, "Please enter a valid email address.", Toast.LENGTH_SHORT).show()
-                            return@Button
-                        }
-                        isSubmitting = true
-                        scope.launch {
-                            try {
-                                val req = CreateCaregiverRequest(
-                                    fullName = fullName.trim(),
-                                    email = email.trim(),
-                                    phone = phone.trim(),
-                                    username = username.trim(),
-                                    password = password
-                                )
-                                val resp = ApiClient.apiService.createCaregiver(req)
-                                if (resp.isSuccessful && resp.body() != null) {
-                                    Toast.makeText(context, "Caregiver account created successfully!", Toast.LENGTH_SHORT).show()
-                                    showCreateDialog = false
-                                    loadCaregivers()
-                                } else {
-                                    val err = resp.errorBody()?.string() ?: "HTTP ${resp.code()}"
-                                    Toast.makeText(context, "Creation failed: $err", Toast.LENGTH_LONG).show()
-                                }
-                            } catch (e: Exception) {
-                                Toast.makeText(context, "Error creating account: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
-                            } finally {
-                                isSubmitting = false
-                            }
-                        }
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = purpleAccent),
-                    enabled = !isSubmitting
-                ) {
-                    if (isSubmitting) CircularProgressIndicator(modifier = Modifier.size(16.dp), color = Color.White, strokeWidth = 2.dp)
-                    else Text("Create Account")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showCreateDialog = false }, enabled = !isSubmitting) {
-                    Text("Cancel")
                 }
             }
-        )
+
+            Spacer(modifier = Modifier.height(10.dp))
+            HorizontalDivider(color = Color(0xFFF1F5F9))
+            Spacer(modifier = Modifier.height(10.dp))
+
+            // Bottom Info Row: Phone Number & Linked Children (Balanced 50/50 weights)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(0.5f)) {
+                    Text(
+                        text = "PHONE NUMBER",
+                        fontSize = 9.5.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = textSecondary
+                    )
+                    Spacer(modifier = Modifier.height(1.dp))
+                    Text(
+                        text = caregiver.phone.ifBlank { "Not Provided" },
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = textPrimary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+
+                Spacer(modifier = Modifier.width(12.dp))
+
+                Column(
+                    modifier = Modifier.weight(0.5f),
+                    horizontalAlignment = Alignment.End
+                ) {
+                    Text(
+                        text = "LINKED CHILDREN",
+                        fontSize = 9.5.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = textSecondary
+                    )
+                    Spacer(modifier = Modifier.height(1.dp))
+                    val childrenLabel = if (caregiver.linkedChildrenNames.isNotEmpty()) {
+                        caregiver.linkedChildrenNames.joinToString(", ")
+                    } else {
+                        "${caregiver.linkedChildrenCount} Linked"
+                    }
+                    Text(
+                        text = childrenLabel,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = purpleAccent,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+            }
+        }
     }
 }

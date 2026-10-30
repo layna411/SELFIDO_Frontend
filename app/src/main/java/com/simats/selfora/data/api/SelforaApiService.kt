@@ -215,7 +215,8 @@ interface SelforaApiService {
     @PUT("api/admin/therapists/{id}/status")
     suspend fun updateTherapistStatus(
         @Path("id") id: Long,
-        @Query("active") active: Boolean
+        @Query("active") active: Boolean,
+        @Query("isActive") isActive: Boolean = active
     ): Response<TherapistItem>
 
     @POST("api/admin/therapists/{id}/reset-password")

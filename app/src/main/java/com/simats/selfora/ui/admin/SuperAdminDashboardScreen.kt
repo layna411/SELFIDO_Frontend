@@ -1,6 +1,5 @@
 package com.simats.selfora.ui.admin
 
-import androidx.compose.animation.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -20,14 +19,11 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.simats.selfora.data.api.ApiClient
-import com.simats.selfora.data.model.AdminChartDataResponse
 import com.simats.selfora.data.model.AdminDashboardStatsResponse
-import com.simats.selfora.ui.components.progress.*
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -37,15 +33,14 @@ fun SuperAdminDashboardScreen(
     onNavigateToCreateTherapist: () -> Unit,
     onNavigateToChildren: () -> Unit,
     onNavigateToCaregivers: () -> Unit,
-    onNavigateToClinicalOverview: () -> Unit,
-    onNavigateToHomeProgrammes: () -> Unit,
+    onNavigateToClinicalOverview: () -> Unit = {},
+    onNavigateToHomeProgrammes: () -> Unit = {},
     onNavigateToReports: () -> Unit,
     onNavigateToAuditLogs: () -> Unit,
     onNavigateToSettings: () -> Unit,
     onLogout: () -> Unit
 ) {
     var stats by remember { mutableStateOf(AdminDashboardStatsResponse()) }
-    var chartData by remember { mutableStateOf(AdminChartDataResponse()) }
     var isLoading by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
@@ -74,11 +69,6 @@ fun SuperAdminDashboardScreen(
                     } else {
                         "Failed to load dashboard statistics (Error $code)."
                     }
-                }
-
-                val chartRes = ApiClient.apiService.getAdminChartData()
-                if (chartRes.isSuccessful && chartRes.body() != null) {
-                    chartData = chartRes.body()!!
                 }
             } catch (e: Exception) {
                 errorMessage = if (e is java.io.IOException) {
@@ -232,7 +222,7 @@ fun SuperAdminDashboardScreen(
                                     )
                                     Spacer(modifier = Modifier.width(6.dp))
                                     Text(
-                                        text = "System Operational • Live Analytics Active",
+                                        text = "System Operational • Administrator Console",
                                         fontSize = 11.sp,
                                         color = Color(0xFF94A3B8),
                                         fontWeight = FontWeight.Medium
@@ -244,11 +234,11 @@ fun SuperAdminDashboardScreen(
                 }
             }
 
-            // Main Content Area with Tight Vertical Spacing (No Gaps)
+            // Main Content Area
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(start = 20.dp, end = 20.dp, top = 12.dp, bottom = 24.dp)
+                    .padding(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 28.dp)
             ) {
                 // Error Banner with Retry Action
                 if (errorMessage != null) {
@@ -297,24 +287,91 @@ fun SuperAdminDashboardScreen(
                     }
                 }
 
-                // Section Title
+                // Quick Action: Register New Therapist (Admin primary creation duty)
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(20.dp),
+                    color = Color.White,
+                    shadowElevation = 3.dp,
+                    border = androidx.compose.foundation.BorderStroke(1.5.dp, blueAccent.copy(alpha = 0.25f))
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(48.dp)
+                                .clip(RoundedCornerShape(14.dp))
+                                .background(blueAccent.copy(alpha = 0.12f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.PersonAdd,
+                                contentDescription = null,
+                                tint = blueAccent,
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.width(14.dp))
+
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Therapist Registration",
+                                fontSize = 15.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = textPrimary
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = "Admin creates & onboards clinical therapists",
+                                fontSize = 11.5.sp,
+                                color = textSecondary
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.width(8.dp))
+
+                        Button(
+                            onClick = onNavigateToCreateTherapist,
+                            colors = ButtonDefaults.buttonColors(containerColor = blueAccent),
+                            shape = RoundedCornerShape(12.dp),
+                            contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Add,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("New Therapist", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(20.dp))
+
+                // Section Title: Executive Statistics
                 Column(modifier = Modifier.fillMaxWidth()) {
                     Text(
-                        text = "Executive Statistics",
+                        text = "System Statistics",
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
                         color = textPrimary
                     )
                     Text(
-                        text = "Platform performance overview",
-                        fontSize = 11.sp,
+                        text = "Real-time user & platform activity counts",
+                        fontSize = 11.5.sp,
                         color = textSecondary
                     )
                 }
 
-                Spacer(modifier = Modifier.height(10.dp))
+                Spacer(modifier = Modifier.height(12.dp))
 
-                // Stats Grid (Equal-Height Cards 148dp - Zero Gap, Zero Text Clipping)
+                // Clean 2x2 Stats Grid with pixel-perfect alignment
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -330,21 +387,6 @@ fun SuperAdminDashboardScreen(
                             onClick = onNavigateToTherapists
                         )
                         AdminStatCard(
-                            title = "Registered Children",
-                            value = "${stats.totalChildren}",
-                            subtitle = "ADL Active Profiles",
-                            icon = Icons.Default.ChildCare,
-                            accentColor = Color(0xFF10B981),
-                            modifier = Modifier.weight(1f),
-                            onClick = onNavigateToChildren
-                        )
-                    }
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        AdminStatCard(
                             title = "Caregiver Accounts",
                             value = "${stats.totalCaregivers}",
                             subtitle = "Linked Parent Logins",
@@ -353,15 +395,6 @@ fun SuperAdminDashboardScreen(
                             modifier = Modifier.weight(1f),
                             onClick = onNavigateToCaregivers
                         )
-                        AdminStatCard(
-                            title = "Therapy Sessions",
-                            value = "${stats.activeTherapySessions}",
-                            subtitle = "Recorded Sessions",
-                            icon = Icons.Default.Psychology,
-                            accentColor = Color(0xFFF59E0B),
-                            modifier = Modifier.weight(1f),
-                            onClick = onNavigateToClinicalOverview
-                        )
                     }
 
                     Row(
@@ -369,192 +402,92 @@ fun SuperAdminDashboardScreen(
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         AdminStatCard(
-                            title = "Completed Assessments",
-                            value = "${stats.completedAssessments}",
-                            subtitle = "Clinical Baselines",
-                            icon = Icons.Default.AssignmentTurnedIn,
-                            accentColor = Color(0xFF06B6D4),
+                            title = "Registered Children",
+                            value = "${stats.totalChildren}",
+                            subtitle = "Clinical Profiles",
+                            icon = Icons.Default.ChildCare,
+                            accentColor = Color(0xFF10B981),
                             modifier = Modifier.weight(1f),
-                            onClick = onNavigateToClinicalOverview
+                            onClick = onNavigateToChildren
                         )
                         AdminStatCard(
-                            title = "Home Programmes",
-                            value = "${stats.activeHomeProgrammes}",
-                            subtitle = "${stats.pendingCaregiverReviews} Pending Reviews",
-                            icon = Icons.Default.HomeWork,
-                            accentColor = Color(0xFFEC4899),
+                            title = "Therapy Sessions",
+                            value = "${stats.activeTherapySessions}",
+                            subtitle = "Recorded Sessions",
+                            icon = Icons.Default.Psychology,
+                            accentColor = Color(0xFFF59E0B),
                             modifier = Modifier.weight(1f),
-                            onClick = onNavigateToHomeProgrammes
+                            onClick = onNavigateToReports
                         )
                     }
                 }
 
-                Spacer(modifier = Modifier.height(20.dp))
-
-                // Interactive Chart Section
-                Text(
-                    text = "Analytics & Platform Progress Trends",
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = textPrimary
-                )
-
-                Spacer(modifier = Modifier.height(10.dp))
-
-                // Platform Overall ADL Independence Trend
-                ProgressTrendChart(
-                    dataPoints = listOf(
-                        "Jul" to 48f,
-                        "Aug" to 58f,
-                        "Sep" to 67f,
-                        "Oct" to 76f
-                    ),
-                    title = "Platform Overall Independence Trend",
-                    subtitle = "Average child ADL progress across all registered clinical profiles",
-                    lineColor = blueAccent
-                )
-
-                Spacer(modifier = Modifier.height(14.dp))
-
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(20.dp),
-                    color = Color.White,
-                    shadowElevation = 4.dp,
-                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0))
-                ) {
-                    Column(modifier = Modifier.padding(18.dp)) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Column {
-                                Text(
-                                    text = "ADL Skill Distribution",
-                                    fontSize = 15.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = textPrimary
-                                )
-                                Text(
-                                    text = "Active child skills training across categories",
-                                    fontSize = 11.sp,
-                                    color = textSecondary
-                                )
-                            }
-
-                            Icon(
-                                imageVector = Icons.Default.PieChart,
-                                contentDescription = null,
-                                tint = blueAccent,
-                                modifier = Modifier.size(22.dp)
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        Spacer(modifier = Modifier.height(12.dp))
-
-                        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                            val adlMap = chartData.adlCategoryDistribution ?: emptyMap()
-                            if (adlMap.isEmpty()) {
-                                ADLProgressCard(
-                                    category = "Dressing",
-                                    percentage = 0,
-                                    sessionCount = 0,
-                                    onClick = onNavigateToClinicalOverview
-                                )
-                            } else {
-                                adlMap.forEach { (category, count) ->
-                                    val safeCategory = category ?: "General ADL"
-                                    val safeCount = count ?: 0L
-                                    val totalChildCount = stats.totalChildren
-                                    val pct = if (totalChildCount > 0) {
-                                        ((safeCount.toFloat() / totalChildCount) * 100).toInt().coerceIn(0, 100)
-                                    } else 0
-                                    ADLProgressCard(
-                                        category = safeCategory,
-                                        percentage = pct,
-                                        sessionCount = safeCount.toInt(),
-                                        trendDelta = "+${(safeCount % 4) + 2}%",
-                                        onClick = onNavigateToClinicalOverview
-                                    )
-                                }
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.height(14.dp))
-                        ProgressLegend(type = "ADL_CATEGORIES")
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(20.dp))
+                Spacer(modifier = Modifier.height(24.dp))
 
                 // System Administration Modules Section
-                Text(
-                    text = "System Administration Modules",
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = textPrimary
-                )
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    Text(
+                        text = "Administration Modules",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = textPrimary
+                    )
+                    Text(
+                        text = "Manage system accounts, access controls, and security logs",
+                        fontSize = 11.5.sp,
+                        color = textSecondary
+                    )
+                }
 
-                Spacer(modifier = Modifier.height(10.dp))
+                Spacer(modifier = Modifier.height(12.dp))
 
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     AdminModuleRow(
-                        title = "Therapist & Doctor Management",
-                        description = "Add, edit, deactivate, or reassign therapists & clinicians",
+                        title = "Therapist & Clinician Management",
+                        description = "Register, edit profile, activate/deactivate therapists & reset credentials",
                         icon = Icons.Default.MedicalServices,
                         accentColor = blueAccent,
                         onClick = onNavigateToTherapists
                     )
 
                     AdminModuleRow(
-                        title = "Centralized Child Management",
-                        description = "View profiles, linked caregivers, and therapy activity",
-                        icon = Icons.Default.ChildCare,
-                        accentColor = Color(0xFF10B981),
-                        onClick = onNavigateToChildren
-                    )
-
-                    AdminModuleRow(
-                        title = "Caregiver Accounts & Linking",
-                        description = "Manage parent logins, home practice, and access control",
+                        title = "Caregiver & Parent Accounts",
+                        description = "Oversee parent logins, access status, linked children & password resets",
                         icon = Icons.Default.FamilyRestroom,
                         accentColor = purpleAccent,
                         onClick = onNavigateToCaregivers
                     )
 
                     AdminModuleRow(
-                        title = "Clinical Data & Prompt Level Overview",
-                        description = "Audit prompt levels L0-L6, fading plans & independence rates",
-                        icon = Icons.Default.Assessment,
-                        accentColor = Color(0xFF06B6D4),
-                        onClick = onNavigateToClinicalOverview
+                        title = "Centralized Child Records",
+                        description = "View child clinical profiles, linked caregivers & assigned clinicians",
+                        icon = Icons.Default.ChildCare,
+                        accentColor = Color(0xFF10B981),
+                        onClick = onNavigateToChildren
                     )
 
                     AdminModuleRow(
-                        title = "Home Programmes Overview",
-                        description = "Review all active home training schedules & completions",
-                        icon = Icons.Default.HomeWork,
-                        accentColor = Color(0xFFEC4899),
-                        onClick = onNavigateToHomeProgrammes
+                        title = "Security & System Audit Logs",
+                        description = "Audit trail of logins, administrative actions, and data updates",
+                        icon = Icons.Default.History,
+                        accentColor = darkSlate,
+                        onClick = onNavigateToAuditLogs
                     )
 
                     AdminModuleRow(
-                        title = "Reports & PDF/Excel Exports",
-                        description = "Generate clinician performance & clinical progress reports",
+                        title = "Platform Reports & Overview",
+                        description = "Generate clinician performance and child registration reports",
                         icon = Icons.Default.BarChart,
                         accentColor = Color(0xFFF59E0B),
                         onClick = onNavigateToReports
                     )
 
                     AdminModuleRow(
-                        title = "System Activity & Audit Logs",
-                        description = "Review security logs, login attempts, and data edits",
-                        icon = Icons.Default.History,
-                        accentColor = darkSlate,
-                        onClick = onNavigateToAuditLogs
+                        title = "System Settings & Access Security",
+                        description = "Administrative configuration, credentials & session preferences",
+                        icon = Icons.Default.Settings,
+                        accentColor = Color(0xFF64748B),
+                        onClick = onNavigateToSettings
                     )
                 }
 
@@ -576,20 +509,21 @@ private fun AdminStatCard(
 ) {
     Surface(
         modifier = modifier
-            .height(148.dp)
-            .shadow(4.dp, RoundedCornerShape(20.dp), clip = false)
-            .clip(RoundedCornerShape(20.dp))
+            .fillMaxWidth()
+            .height(134.dp)
+            .clip(RoundedCornerShape(18.dp))
             .clickable(onClick = onClick),
-        shape = RoundedCornerShape(20.dp),
+        shape = RoundedCornerShape(18.dp),
         color = Color.White,
-        border = androidx.compose.foundation.BorderStroke(1.dp, accentColor.copy(alpha = 0.25f))
+        shadowElevation = 2.5.dp,
+        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0))
     ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(14.dp),
-            verticalArrangement = Arrangement.SpaceBetween
+                .padding(horizontal = 14.dp, vertical = 12.dp)
         ) {
+            // Top Row: Icon on left, Chevron arrow on right
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -597,12 +531,17 @@ private fun AdminStatCard(
             ) {
                 Box(
                     modifier = Modifier
-                        .size(38.dp)
+                        .size(36.dp)
                         .clip(CircleShape)
                         .background(accentColor.copy(alpha = 0.12f)),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(imageVector = icon, contentDescription = null, tint = accentColor, modifier = Modifier.size(20.dp))
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = null,
+                        tint = accentColor,
+                        modifier = Modifier.size(19.dp)
+                    )
                 }
 
                 Icon(
@@ -613,37 +552,41 @@ private fun AdminStatCard(
                 )
             }
 
-            Column {
-                Text(
-                    text = value,
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = Color(0xFF0F172A),
-                    lineHeight = 26.sp
-                )
+            Spacer(modifier = Modifier.height(10.dp))
 
-                Spacer(modifier = Modifier.height(2.dp))
+            // Big Metric Value - strictly anchored at identical Y level across left & right cards
+            Text(
+                text = value,
+                fontSize = 24.sp,
+                fontWeight = FontWeight.ExtraBold,
+                color = Color(0xFF0F172A),
+                lineHeight = 26.sp,
+                maxLines = 1
+            )
 
-                Text(
-                    text = title,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFF334155),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
+            Spacer(modifier = Modifier.height(2.dp))
 
-                Spacer(modifier = Modifier.height(1.dp))
+            // Title - strictly anchored at identical Y level across left & right cards
+            Text(
+                text = title,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFF334155),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
 
-                Text(
-                    text = subtitle,
-                    fontSize = 10.5.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = Color(0xFF64748B),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
+            Spacer(modifier = Modifier.height(2.dp))
+
+            // Subtitle - strictly anchored at identical Y level across left & right cards
+            Text(
+                text = subtitle,
+                fontSize = 10.5.sp,
+                fontWeight = FontWeight.Medium,
+                color = Color(0xFF64748B),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
         }
     }
 }
@@ -659,11 +602,11 @@ private fun AdminModuleRow(
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .shadow(2.dp, RoundedCornerShape(18.dp), clip = false)
             .clip(RoundedCornerShape(18.dp))
             .clickable(onClick = onClick),
         shape = RoundedCornerShape(18.dp),
         color = Color.White,
+        shadowElevation = 2.dp,
         border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0))
     ) {
         Row(
@@ -685,7 +628,7 @@ private fun AdminModuleRow(
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = title,
-                    fontSize = 15.sp,
+                    fontSize = 14.5.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color(0xFF0F172A)
                 )

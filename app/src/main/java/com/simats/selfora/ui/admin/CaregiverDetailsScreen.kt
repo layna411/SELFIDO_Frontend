@@ -288,7 +288,7 @@ fun CaregiverDetailsScreen(
                         ) {
                             Icon(Icons.Default.LockReset, contentDescription = null, modifier = Modifier.size(18.dp))
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text("Reset Password (Request Body)")
+                            Text("Reset Password")
                         }
                     }
                 }
@@ -518,7 +518,7 @@ private fun DetailRow(icon: androidx.compose.ui.graphics.vector.ImageVector, lab
     ) {
         Icon(icon, contentDescription = null, tint = Color(0xFF64748B), modifier = Modifier.size(18.dp))
         Spacer(modifier = Modifier.width(10.dp))
-        Text(label, fontSize = 13.sp, color = Color(0xFF64748B), modifier = Modifier.width(130.dp))
-        Text(value, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF0F172A))
+        Text(label, fontSize = 13.sp, color = Color(0xFF64748B), modifier = Modifier.weight(0.42f))
+        Text(value, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF0F172A), modifier = Modifier.weight(0.58f))
     }
 }
