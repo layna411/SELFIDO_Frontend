@@ -139,7 +139,7 @@ interface SelforaApiService {
     @POST("api/caregiver-practice/submit")
     suspend fun submitPractice(@Body request: SubmitPracticeRequest): Response<CaregiverPracticeSessionResponse>
 
-    @GET("api/caregiver-practice/reviews/pending")
+    @GET("api/caregiver-practice/pending-reviews")
     suspend fun getPendingReviews(): Response<List<CaregiverPracticeSessionResponse>>
 
     @GET("api/caregiver-practice/history/child/{childId}")
@@ -163,6 +163,14 @@ interface SelforaApiService {
         @Path("childId") childId: Long,
         @Query("activityId") activityId: Long = 1
     ): Response<AnalyzeAndAdaptDashboardResponse>
+
+    // Reports
+    @Streaming
+    @GET("api/reports/children/{childId}/pdf")
+    suspend fun downloadChildReportPdf(
+        @Path("childId") childId: Long,
+        @Query("activityId") activityId: Long = 1
+    ): Response<okhttp3.ResponseBody>
 
     // Messages
     @POST("api/messages")
@@ -222,7 +230,7 @@ interface SelforaApiService {
     @POST("api/admin/therapists/{id}/reset-password")
     suspend fun resetTherapistPassword(
         @Path("id") id: Long,
-        @Query("newPassword") newPassword: String? = null
+        @Body request: ResetPasswordRequest
     ): Response<Unit>
 
     @GET("api/admin/audit-logs")
@@ -233,6 +241,12 @@ interface SelforaApiService {
 
     @GET("api/admin/children/{id}")
     suspend fun getAdminChildDetails(@Path("id") id: Long): Response<AdminChildDetailProfile>
+
+    @PUT("api/admin/children/{childId}/reassign-therapist")
+    suspend fun reassignChildTherapist(
+        @Path("childId") childId: Long,
+        @Body request: ChildReassignRequest
+    ): Response<AdminChildDetailProfile>
 
     // Super Admin Caregiver Endpoints
     @GET("api/admin/caregivers")

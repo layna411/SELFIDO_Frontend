@@ -21,6 +21,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.simats.selfora.data.api.ApiClient
+import com.simats.selfora.data.model.ResetPasswordRequest
 import com.simats.selfora.data.model.TherapistItem
 import com.simats.selfora.data.model.UpdateTherapistRequest
 import com.simats.selfora.ui.components.glass.GlassTextField
@@ -311,7 +312,7 @@ fun TherapistDetailsScreen(
                         isResetting = true
                         scope.launch {
                             try {
-                                val resp = ApiClient.apiService.resetTherapistPassword(therapistId, newPassText.trim())
+                                val resp = ApiClient.apiService.resetTherapistPassword(therapistId, ResetPasswordRequest(newPassText.trim()))
                                 if (resp.isSuccessful) {
                                     Toast.makeText(context, "Password reset successfully!", Toast.LENGTH_SHORT).show()
                                     showResetPasswordDialog = false

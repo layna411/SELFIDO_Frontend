@@ -120,6 +120,12 @@ data class UpdateCaregiverRequest(
     val phone: String
 )
 
+data class ChildReassignRequest(
+    val childId: Long,
+    val newTherapistId: Long,
+    val reason: String
+)
+
 data class ResetPasswordRequest(
     val newPassword: String
 )
