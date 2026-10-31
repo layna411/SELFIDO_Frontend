@@ -12,6 +12,7 @@ object SessionManager {
     private const val KEY_USERNAME = "username"
     private const val KEY_JWT_TOKEN = "jwt_token"
     private const val KEY_MUST_CHANGE_PASSWORD = "must_change_password"
+    private const val KEY_CUSTOM_BASE_URL = "custom_base_url"
 
     // Child Context & Child Mode Keys
     private const val KEY_ACTIVE_CHILD_ID = "active_child_id"
@@ -85,6 +86,24 @@ object SessionManager {
     fun getJwtToken(): String? {
         if (!::prefs.isInitialized) return null
         return prefs.getString(KEY_JWT_TOKEN, null)
+    }
+
+    fun getCustomBaseUrl(): String? {
+        if (!::prefs.isInitialized) return null
+        val url = prefs.getString(KEY_CUSTOM_BASE_URL, null)
+        return if (!url.isNullOrBlank()) url else null
+    }
+
+    fun setCustomBaseUrl(url: String?) {
+        if (!::prefs.isInitialized) return
+        prefs.edit().apply {
+            if (url.isNullOrBlank()) {
+                remove(KEY_CUSTOM_BASE_URL)
+            } else {
+                putString(KEY_CUSTOM_BASE_URL, url.trim())
+            }
+            apply()
+        }
     }
 
     // ==========================================

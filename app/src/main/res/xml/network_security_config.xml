@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!-- Production Network Security Configuration for SELFORA -->
+    <!-- Cleartext HTTP traffic is strictly prohibited in release builds; HTTPS is mandatory -->
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>
+

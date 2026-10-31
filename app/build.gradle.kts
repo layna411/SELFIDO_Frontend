@@ -15,10 +15,30 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        val defaultEmulatorUrl = (project.findProperty("selfora.emulator.url") as? String) ?: "http://10.0.2.2:8080/"
+        val defaultLanUrl = (project.findProperty("selfora.lan.url") as? String) ?: defaultEmulatorUrl
+        val defaultProdUrl = (project.findProperty("selfora.prod.url") as? String) ?: "https://api.selfora.placeholder/"
+
+        buildConfigField("String", "EMULATOR_BASE_URL", "\"$defaultEmulatorUrl\"")
+        buildConfigField("String", "DEFAULT_LAN_BASE_URL", "\"$defaultLanUrl\"")
+        buildConfigField("String", "PROD_BASE_URL", "\"$defaultProdUrl\"")
     }
 
     buildTypes {
-        release {
+        getByName("debug") {
+            val devUrl = (project.findProperty("selfora.lan.url") as? String)
+                ?: (project.findProperty("selfora.emulator.url") as? String)
+                ?: "http://10.0.2.2:8080/"
+            buildConfigField("String", "BASE_URL", "\"$devUrl\"")
+            buildConfigField("String", "ENVIRONMENT", "\"DEVELOPMENT\"")
+            buildConfigField("Boolean", "ALLOW_CLEAR_TEXT", "true")
+        }
+        getByName("release") {
+            val prodUrl = (project.findProperty("selfora.prod.url") as? String) ?: "https://api.selfora.placeholder/"
+            buildConfigField("String", "BASE_URL", "\"$prodUrl\"")
+            buildConfigField("String", "ENVIRONMENT", "\"PRODUCTION\"")
+            buildConfigField("Boolean", "ALLOW_CLEAR_TEXT", "false")
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
@@ -32,6 +52,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 
