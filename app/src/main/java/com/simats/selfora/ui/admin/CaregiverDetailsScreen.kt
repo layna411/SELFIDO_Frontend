@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -19,6 +20,8 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -305,11 +308,15 @@ fun CaregiverDetailsScreen(
         var isSaving by remember { mutableStateOf(false) }
 
         AlertDialog(
+            modifier = Modifier.imePadding(),
             onDismissRequest = { if (!isSaving) showEditDialog = false },
             title = { Text("Edit Caregiver Details", fontWeight = FontWeight.Bold) },
             text = {
                 Column(
-                    modifier = Modifier.fillMaxWidth().imePadding(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .imePadding()
+                        .verticalScroll(rememberScrollState()),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     GlassTextField(
@@ -317,6 +324,7 @@ fun CaregiverDetailsScreen(
                         onValueChange = { fullName = it },
                         label = "Full Name",
                         leadingIcon = Icons.Default.Person,
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
                         modifier = Modifier.fillMaxWidth()
                     )
                     GlassTextField(
@@ -324,6 +332,7 @@ fun CaregiverDetailsScreen(
                         onValueChange = { email = it },
                         label = "Email Address",
                         leadingIcon = Icons.Default.Email,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email, imeAction = ImeAction.Next),
                         modifier = Modifier.fillMaxWidth()
                     )
                     GlassTextField(
@@ -331,6 +340,7 @@ fun CaregiverDetailsScreen(
                         onValueChange = { phone = it },
                         label = "Phone Number",
                         leadingIcon = Icons.Default.Phone,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone, imeAction = ImeAction.Done),
                         modifier = Modifier.fillMaxWidth()
                     )
                 }
@@ -436,29 +446,37 @@ fun CaregiverDetailsScreen(
         var isResetting by remember { mutableStateOf(false) }
 
         AlertDialog(
+            modifier = Modifier.imePadding(),
             onDismissRequest = { if (!isResetting) showResetPasswordDialog = false },
             title = { Text("Reset Caregiver Password", fontWeight = FontWeight.Bold) },
             text = {
                 Column(
-                    modifier = Modifier.fillMaxWidth().imePadding(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .imePadding()
+                        .verticalScroll(rememberScrollState()),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     Text("This resets the password via a validated request body and sets mustChangePassword = true.", fontSize = 12.sp, color = textSecondary)
 
-                    OutlinedTextField(
+                    GlassTextField(
                         value = newPassword,
                         onValueChange = { newPassword = it },
-                        label = { Text("New Password") },
+                        label = "New Password",
+                        leadingIcon = Icons.Default.Lock,
                         visualTransformation = PasswordVisualTransformation(),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Next),
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true
                     )
 
-                    OutlinedTextField(
+                    GlassTextField(
                         value = confirmPassword,
                         onValueChange = { confirmPassword = it },
-                        label = { Text("Confirm New Password") },
+                        label = "Confirm New Password",
+                        leadingIcon = Icons.Default.Lock,
                         visualTransformation = PasswordVisualTransformation(),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done),
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true
                     )

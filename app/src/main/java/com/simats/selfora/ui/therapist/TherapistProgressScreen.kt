@@ -308,19 +308,19 @@ fun TherapistProgressScreen(
 @Composable
 fun ProgressCategoryBar(label: String, percentage: Float, color: Color, percentageText: String) {
     Column {
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             Text(label, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = SelforaTextPrimary)
             Text(percentageText, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = color)
         }
-        Spacer(modifier = Modifier.height(4.dp))
-        LinearProgressIndicator(
-            progress = { percentage },
+        Spacer(modifier = Modifier.height(6.dp))
+        SelforaLinearProgress(
+            progress = percentage,
             color = color,
-            trackColor = color.copy(alpha = 0.15f),
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(10.dp)
-                .clip(RoundedCornerShape(5.dp))
+            height = 8.dp
         )
     }
 }

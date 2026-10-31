@@ -6,6 +6,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Lock
@@ -16,7 +18,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.simats.selfora.ui.components.glass.GlassTextField
@@ -58,9 +65,25 @@ fun AdminSettingsScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
+                .imePadding()
                 .verticalScroll(scrollState)
                 .padding(20.dp)
         ) {
+            val focusManager = LocalFocusManager.current
+            val keyboardController = LocalSoftwareKeyboardController.current
+
+            val updatePasswordAction = {
+                if (newPass.length < 6) {
+                    Toast.makeText(context, "Password must be at least 6 characters", Toast.LENGTH_SHORT).show()
+                } else if (newPass != confirmPass) {
+                    Toast.makeText(context, "Passwords do not match", Toast.LENGTH_SHORT).show()
+                } else {
+                    keyboardController?.hide()
+                    focusManager.clearFocus()
+                    Toast.makeText(context, "Super Admin password updated successfully!", Toast.LENGTH_SHORT).show()
+                }
+            }
+
             Surface(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(24.dp),
@@ -77,6 +100,11 @@ fun AdminSettingsScreen(
                         onValueChange = { currentPass = it },
                         label = "Current Password",
                         leadingIcon = Icons.Default.Lock,
+                        visualTransformation = PasswordVisualTransformation(),
+                        keyboardOptions = KeyboardOptions(
+                            keyboardType = KeyboardType.Password,
+                            imeAction = ImeAction.Next
+                        ),
                         modifier = Modifier.fillMaxWidth()
                     )
 
@@ -87,6 +115,11 @@ fun AdminSettingsScreen(
                         onValueChange = { newPass = it },
                         label = "New Admin Password",
                         leadingIcon = Icons.Default.Lock,
+                        visualTransformation = PasswordVisualTransformation(),
+                        keyboardOptions = KeyboardOptions(
+                            keyboardType = KeyboardType.Password,
+                            imeAction = ImeAction.Next
+                        ),
                         modifier = Modifier.fillMaxWidth()
                     )
 
@@ -97,23 +130,21 @@ fun AdminSettingsScreen(
                         onValueChange = { confirmPass = it },
                         label = "Confirm New Password",
                         leadingIcon = Icons.Default.Lock,
+                        visualTransformation = PasswordVisualTransformation(),
+                        keyboardOptions = KeyboardOptions(
+                            keyboardType = KeyboardType.Password,
+                            imeAction = ImeAction.Done
+                        ),
+                        keyboardActions = KeyboardActions(
+                            onDone = { updatePasswordAction() }
+                        ),
                         modifier = Modifier.fillMaxWidth()
                     )
 
                     Spacer(modifier = Modifier.height(16.dp))
 
                     Button(
-                        onClick = {
-                            if (newPass.length < 6) {
-                                Toast.makeText(context, "Password must be at least 6 characters", Toast.LENGTH_SHORT).show()
-                                return@Button
-                            }
-                            if (newPass != confirmPass) {
-                                Toast.makeText(context, "Passwords do not match", Toast.LENGTH_SHORT).show()
-                                return@Button
-                            }
-                            Toast.makeText(context, "Super Admin password updated successfully!", Toast.LENGTH_SHORT).show()
-                        },
+                        onClick = { updatePasswordAction() },
                         colors = ButtonDefaults.buttonColors(containerColor = darkSlate),
                         shape = CircleShape,
                         modifier = Modifier.fillMaxWidth()

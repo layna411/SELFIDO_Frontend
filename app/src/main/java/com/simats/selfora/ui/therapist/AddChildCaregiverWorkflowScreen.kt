@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -22,6 +23,9 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.simats.selfora.data.api.ApiClient
@@ -51,6 +55,7 @@ fun AddChildCaregiverWorkflowScreen(
     // Step 2 - Caregiver Info
     var caregiverName by remember { mutableStateOf("") }
     var relationship by remember { mutableStateOf("Mother") }
+    var otherRelationshipText by remember { mutableStateOf("") }
     var phone by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var address by remember { mutableStateOf("Chennai, Tamil Nadu") }
@@ -79,6 +84,7 @@ fun AddChildCaregiverWorkflowScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
+                .imePadding()
                 .verticalScroll(rememberScrollState())
                 .padding(16.dp)
         ) {
@@ -117,7 +123,8 @@ fun AddChildCaregiverWorkflowScreen(
                                 onValueChange = { childFirstName = it },
                                 label = "Child Name *",
                                 placeholder = "e.g. Arjun",
-                                leadingIcon = Icons.Default.ChildCare
+                                leadingIcon = Icons.Default.ChildCare,
+                                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next)
                             )
 
                             Spacer(modifier = Modifier.height(12.dp))
@@ -127,7 +134,8 @@ fun AddChildCaregiverWorkflowScreen(
                                 onValueChange = { childLastName = it },
                                 label = "Last Name (Optional)",
                                 placeholder = "e.g. Kumar",
-                                leadingIcon = Icons.Default.Person
+                                leadingIcon = Icons.Default.Person,
+                                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next)
                             )
 
                             Spacer(modifier = Modifier.height(12.dp))
@@ -137,7 +145,8 @@ fun AddChildCaregiverWorkflowScreen(
                                 onValueChange = { dob = it },
                                 label = "Date of Birth * (YYYY-MM-DD)",
                                 placeholder = "2018-05-14",
-                                leadingIcon = Icons.Default.Cake
+                                leadingIcon = Icons.Default.Cake,
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Next)
                             )
 
                             Spacer(modifier = Modifier.height(14.dp))
@@ -155,7 +164,8 @@ fun AddChildCaregiverWorkflowScreen(
                                 value = registrationId,
                                 onValueChange = { registrationId = it },
                                 label = "Child ID / Registration ID",
-                                leadingIcon = Icons.Default.Badge
+                                leadingIcon = Icons.Default.Badge,
+                                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next)
                             )
 
                             Spacer(modifier = Modifier.height(12.dp))
@@ -166,7 +176,8 @@ fun AddChildCaregiverWorkflowScreen(
                                 label = "Relevant Clinical / Diagnosis Notes",
                                 placeholder = "Notes regarding child's motor skills or needs...",
                                 singleLine = false,
-                                leadingIcon = Icons.Default.Notes
+                                leadingIcon = Icons.Default.Notes,
+                                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done)
                             )
 
                             Spacer(modifier = Modifier.height(20.dp))
@@ -197,23 +208,89 @@ fun AddChildCaregiverWorkflowScreen(
                                 onValueChange = { caregiverName = it },
                                 label = "Caregiver Name *",
                                 placeholder = "e.g. Priya Kumar",
-                                leadingIcon = Icons.Default.Person
+                                leadingIcon = Icons.Default.Person,
+                                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next)
                             )
 
                             Spacer(modifier = Modifier.height(14.dp))
 
                             Text("Relationship to Child *", fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = SelforaTextPrimary)
-                            Spacer(modifier = Modifier.height(6.dp))
-                            Row(
+                            Spacer(modifier = Modifier.height(8.dp))
+
+                            // Balanced 2x2 Grid with guaranteed identical heights, centered content, and no text wrapping
+                            Column(
                                 modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
-                                relationshipOptions.forEach { rel ->
-                                    GlassChip(
-                                        text = rel,
-                                        selected = relationship == rel,
-                                        onClick = { relationship = rel },
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                ) {
+                                    RelationshipOptionChip(
+                                        label = "Mother",
+                                        emoji = "👩",
+                                        selected = relationship == "Mother",
+                                        onClick = {
+                                            relationship = "Mother"
+                                            otherRelationshipText = ""
+                                        },
                                         modifier = Modifier.weight(1f)
+                                    )
+                                    RelationshipOptionChip(
+                                        label = "Father",
+                                        emoji = "👨",
+                                        selected = relationship == "Father",
+                                        onClick = {
+                                            relationship = "Father"
+                                            otherRelationshipText = ""
+                                        },
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                }
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                ) {
+                                    RelationshipOptionChip(
+                                        label = "Guardian",
+                                        emoji = "🛡️",
+                                        selected = relationship == "Guardian",
+                                        onClick = {
+                                            relationship = "Guardian"
+                                            otherRelationshipText = ""
+                                        },
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                    RelationshipOptionChip(
+                                        label = "Other",
+                                        emoji = "🤝",
+                                        selected = relationship == "Other" || (relationship !in listOf("Mother", "Father", "Guardian")),
+                                        onClick = {
+                                            if (relationship in listOf("Mother", "Father", "Guardian")) {
+                                                relationship = if (otherRelationshipText.isNotBlank()) otherRelationshipText else "Other"
+                                            }
+                                        },
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                }
+                            }
+
+                            // Dynamic input when Other is selected
+                            AnimatedVisibility(
+                                visible = relationship == "Other" || (relationship !in listOf("Mother", "Father", "Guardian")),
+                                enter = expandVertically() + fadeIn(),
+                                exit = shrinkVertically() + fadeOut()
+                            ) {
+                                Column(modifier = Modifier.padding(top = 10.dp)) {
+                                    GlassTextField(
+                                        value = otherRelationshipText,
+                                        onValueChange = {
+                                            otherRelationshipText = it
+                                            relationship = it.ifBlank { "Other" }
+                                        },
+                                        label = "Specify Relationship *",
+                                        placeholder = "e.g. Grandmother, Aunt, Foster Parent",
+                                        leadingIcon = Icons.Default.FamilyRestroom
                                     )
                                 }
                             }
@@ -225,7 +302,8 @@ fun AddChildCaregiverWorkflowScreen(
                                 onValueChange = { phone = it },
                                 label = "Phone Number *",
                                 placeholder = "+91 9876543210",
-                                leadingIcon = Icons.Default.Phone
+                                leadingIcon = Icons.Default.Phone,
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone, imeAction = ImeAction.Next)
                             )
 
                             Spacer(modifier = Modifier.height(12.dp))
@@ -235,7 +313,8 @@ fun AddChildCaregiverWorkflowScreen(
                                 onValueChange = { email = it },
                                 label = "Caregiver Login Email *",
                                 placeholder = "parent@example.com",
-                                leadingIcon = Icons.Default.Email
+                                leadingIcon = Icons.Default.Email,
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email, imeAction = ImeAction.Next)
                             )
 
                             Spacer(modifier = Modifier.height(12.dp))
@@ -245,7 +324,8 @@ fun AddChildCaregiverWorkflowScreen(
                                 onValueChange = { address = it },
                                 label = "Address",
                                 placeholder = "Residential address...",
-                                leadingIcon = Icons.Default.Home
+                                leadingIcon = Icons.Default.Home,
+                                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done)
                             )
 
                             Spacer(modifier = Modifier.height(20.dp))
@@ -325,7 +405,13 @@ fun AddChildCaregiverWorkflowScreen(
                                     modifier = Modifier.padding(14.dp),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Text("👩", fontSize = 32.sp)
+                                    val caregiverEmoji = when {
+                                        relationship.contains("Father", ignoreCase = true) -> "👨"
+                                        relationship.contains("Guardian", ignoreCase = true) -> "🛡️"
+                                        relationship.contains("Other", ignoreCase = true) -> "🤝"
+                                        else -> "👩"
+                                    }
+                                    Text(caregiverEmoji, fontSize = 32.sp)
                                     Spacer(modifier = Modifier.width(12.dp))
                                     Column {
                                         Text("CAREGIVER", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = SelforaSecondary)
@@ -478,5 +564,60 @@ fun StepIndicator(
             fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Medium,
             color = if (isCurrent) SelforaPrimary else SelforaTextSecondary
         )
+    }
+}
+
+@Composable
+private fun RelationshipOptionChip(
+    label: String,
+    emoji: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val bgAnim by animateColorAsState(
+        targetValue = if (selected) SelforaPrimary else Color.White.copy(alpha = 0.92f),
+        animationSpec = tween(durationMillis = 200),
+        label = "chipBg"
+    )
+    val contentColor by animateColorAsState(
+        targetValue = if (selected) Color.White else SelforaTextPrimary,
+        animationSpec = tween(durationMillis = 200),
+        label = "chipText"
+    )
+    val borderColor by animateColorAsState(
+        targetValue = if (selected) SelforaPrimary else Color(0xFFE2E8F0),
+        animationSpec = tween(durationMillis = 200),
+        label = "chipBorder"
+    )
+
+    Surface(
+        modifier = modifier
+            .height(44.dp)
+            .clip(RoundedCornerShape(16.dp))
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(16.dp),
+        color = bgAnim,
+        shadowElevation = if (selected) 3.dp else 1.dp,
+        border = androidx.compose.foundation.BorderStroke(1.dp, borderColor)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 12.dp),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(text = emoji, fontSize = 16.sp)
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = label,
+                fontSize = 13.5.sp,
+                fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
+                color = contentColor,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
     }
 }

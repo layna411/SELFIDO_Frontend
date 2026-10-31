@@ -26,6 +26,7 @@ import com.simats.selfora.data.model.ChildDashboardResponse
 import com.simats.selfora.ui.components.avatar.ChildAvatarImage
 import com.simats.selfora.ui.components.glass.GlassCard
 import com.simats.selfora.ui.components.glass.GlassIconButton
+import com.simats.selfora.ui.components.progress.ChildRewardProgress
 import com.simats.selfora.ui.theme.*
 import com.simats.selfora.utils.TtsManager
 import kotlinx.coroutines.launch
@@ -201,34 +202,13 @@ fun ChildHomeScreen(
 
         Spacer(modifier = Modifier.height(18.dp))
 
-        // Total Earned Rewards Banner
-        GlassCard(
-            modifier = Modifier.fillMaxWidth(),
-            cornerRadius = 22.dp,
-            backgroundColor = Color.White.copy(alpha = 0.95f),
-            elevation = 6.dp
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.Star, contentDescription = null, tint = ChildYellowStar, modifier = Modifier.size(34.dp))
-                    Spacer(modifier = Modifier.width(10.dp))
-                    Column {
-                        Text("${dashboardData?.totalStars ?: 0} Stars Earned! 🌟", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = SelforaTextPrimary)
-                        Text("${dashboardData?.completedCount ?: 0} Activities Finished", fontSize = 12.sp, color = SelforaTextSecondary)
-                    }
-                }
-                Surface(
-                    shape = RoundedCornerShape(12.dp),
-                    color = ChildGreenPlay.copy(alpha = 0.15f)
-                ) {
-                    Text("Great Job! 👍", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = ChildGreenPlay, modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp))
-                }
-            }
-        }
+        // Total Earned Rewards Banner with Interactive Animated Progress
+        ChildRewardProgress(
+            starsEarned = dashboardData?.totalStars ?: 0,
+            totalStars = 5,
+            currentStreak = 3,
+            modifier = Modifier.fillMaxWidth()
+        )
 
         Spacer(modifier = Modifier.height(20.dp))
 

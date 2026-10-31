@@ -10,6 +10,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.PictureAsPdf
@@ -21,6 +23,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.simats.selfora.data.model.MessageResponse
@@ -208,16 +211,35 @@ fun CaregiverMessagesScreen(
                     }
                 }
 
+                val sendCaregiverMessage = {
+                    if (newMessageText.isNotBlank()) {
+                        messages = messages + MessageResponse(
+                            id = (messages.size + 1).toLong(),
+                            senderId = 1L,
+                            senderName = "Meena (Caregiver)",
+                            receiverId = 2L,
+                            receiverName = "Dr. Priya OT",
+                            childId = 1L,
+                            messageText = newMessageText.trim(),
+                            isRead = false,
+                            sentAt = "Just now"
+                        )
+                        newMessageText = ""
+                    }
+                }
+
                 // Reply Input Bar (Image 2 Screen 10)
                 Surface(
                     color = SelforaSurface,
                     shadowElevation = 6.dp,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .navigationBarsPadding()
+                        .imePadding()
                 ) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .navigationBarsPadding()
                             .padding(horizontal = 14.dp, vertical = 10.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
@@ -228,6 +250,8 @@ fun CaregiverMessagesScreen(
                             modifier = Modifier.weight(1f),
                             maxLines = 3,
                             shape = RoundedCornerShape(24.dp),
+                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
+                            keyboardActions = KeyboardActions(onSend = { sendCaregiverMessage() }),
                             colors = OutlinedTextFieldDefaults.colors(
                                 focusedTextColor = SelforaTextPrimary,
                                 unfocusedTextColor = SelforaTextPrimary,
@@ -239,22 +263,7 @@ fun CaregiverMessagesScreen(
                         Spacer(modifier = Modifier.width(8.dp))
 
                         IconButton(
-                            onClick = {
-                                if (newMessageText.isNotBlank()) {
-                                    messages = messages + MessageResponse(
-                                        id = (messages.size + 1).toLong(),
-                                        senderId = 1L,
-                                        senderName = "Meena (Caregiver)",
-                                        receiverId = 2L,
-                                        receiverName = "Dr. Priya OT",
-                                        childId = 1L,
-                                        messageText = newMessageText.trim(),
-                                        isRead = false,
-                                        sentAt = "Just now"
-                                    )
-                                    newMessageText = ""
-                                }
-                            },
+                            onClick = { sendCaregiverMessage() },
                             modifier = Modifier
                                 .size(46.dp)
                                 .background(SelforaPrimary, CircleShape)

@@ -29,6 +29,8 @@ import com.simats.selfora.data.model.ChildDto
 import com.simats.selfora.data.model.ResetPasswordResultResponse
 import com.simats.selfora.ui.components.avatar.ChildAvatarImage
 import com.simats.selfora.ui.components.glass.*
+import com.simats.selfora.ui.components.progress.SelforaAdlCategoryGrid
+import com.simats.selfora.ui.components.progress.SelforaLinearProgress
 import com.simats.selfora.ui.theme.*
 import kotlinx.coroutines.launch
 import java.util.UUID
@@ -320,16 +322,17 @@ fun ChildProfileScreen(
 
                     Spacer(modifier = Modifier.height(14.dp))
 
-                    // ADL Performance Summary Card
+                    // ADL Performance Summary Card (All 4 Clinical Categories)
                     GlassCard(modifier = Modifier.fillMaxWidth()) {
                         Text("ADL PERFORMANCE METRICS", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = SelforaPrimary)
                         Spacer(modifier = Modifier.height(12.dp))
 
-                        ChildMetricProgress("Dressing (Boy T-Shirt & Pants)", 72, SelforaPrimary)
-                        Spacer(modifier = Modifier.height(10.dp))
-                        ChildMetricProgress("Eating with Spoon", 65, SelforaSecondary)
-                        Spacer(modifier = Modifier.height(10.dp))
-                        ChildMetricProgress("Shoes & Socks", 80, SelforaSuccess)
+                        SelforaAdlCategoryGrid(
+                            dressingPct = 72,
+                            eatingPct = 65,
+                            groomingPct = 60,
+                            shoesPct = 80
+                        )
                     }
 
                     Spacer(modifier = Modifier.height(14.dp))
@@ -446,7 +449,7 @@ fun ChildProfileScreen(
                             currentAssistance = "Physical Prompt",
                             progressPercentage = 60,
                             lastUpdated = "Sep 28, 2026",
-                            accentColor = SelforaWarning
+                            accentColor = SelforaSuccess
                         )
 
                         GlassGoalCategoryCard(
@@ -456,7 +459,7 @@ fun ChildProfileScreen(
                             currentAssistance = "Independent",
                             progressPercentage = 80,
                             lastUpdated = "Sep 30, 2026",
-                            accentColor = SelforaSuccess
+                            accentColor = SelforaWarning
                         )
                     }
                 }
@@ -666,7 +669,21 @@ fun GlassSessionHistoryCard(
             Column(modifier = Modifier.weight(1f)) {
                 Text(activityName, fontSize = 15.sp, fontWeight = FontWeight.Bold, color = SelforaTextPrimary)
                 Text("Date: $date • Duration: $duration", fontSize = 12.sp, color = SelforaTextSecondary)
-                Text("Independence Score: $independencePercentage%", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = SelforaPrimary)
+                Spacer(modifier = Modifier.height(6.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("Independence Score", fontSize = 11.5.sp, color = SelforaTextSecondary)
+                    Text("$independencePercentage%", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = SelforaPrimary)
+                }
+                Spacer(modifier = Modifier.height(4.dp))
+                SelforaLinearProgress(
+                    progress = independencePercentage.toFloat() / 100f,
+                    color = SelforaPrimary,
+                    height = 6.dp
+                )
             }
             Surface(shape = RoundedCornerShape(10.dp), color = SelforaSuccess.copy(alpha = 0.15f)) {
                 Text(status, fontSize = 10.sp, fontWeight = FontWeight.Bold, color = SelforaSuccess, modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp))

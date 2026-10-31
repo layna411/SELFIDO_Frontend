@@ -3,12 +3,15 @@ package com.simats.selfora.ui.components.glass
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
@@ -22,11 +25,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.focus.FocusDirection
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
@@ -37,6 +46,8 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.simats.selfora.ui.theme.*
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 // ============================================================================
 // 1. GLASS CARD
@@ -126,8 +137,10 @@ fun GlassButton(
     gradient: List<Color> = listOf(SelforaPrimary, Color(0xFF1D4ED8)),
     contentColor: Color = Color.White,
     enabled: Boolean = true,
-    cornerRadius: Dp = 24.dp
+    cornerRadius: Dp = 24.dp,
+    leadingIcon: ImageVector? = null
 ) {
+    val effectiveIcon = leadingIcon ?: icon
     val safeText = text ?: ""
     var isPressed by remember { mutableStateOf(false) }
     val scale by animateFloatAsState(
@@ -183,9 +196,9 @@ fun GlassButton(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.Center
             ) {
-                if (icon != null) {
+                if (effectiveIcon != null) {
                     Icon(
-                        imageVector = icon,
+                        imageVector = effectiveIcon,
                         contentDescription = null,
                         tint = contentColor,
                         modifier = Modifier.size(20.dp)
@@ -473,8 +486,9 @@ fun GlassBottomNavigation(
 }
 
 // ============================================================================
-// 6. GLASS TEXT FIELD
+// 6. GLASS TEXT FIELD (WITH AUTO-SCROLL, IME ACTIONS & ANIMATED VALIDATION)
 // ============================================================================
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun GlassTextField(
     value: String,
@@ -489,9 +503,55 @@ fun GlassTextField(
     singleLine: Boolean = true,
     visualTransformation: VisualTransformation = VisualTransformation.None,
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
-    accentColor: Color = SelforaPrimary
+    keyboardActions: KeyboardActions = KeyboardActions.Default,
+    focusRequester: FocusRequester? = null,
+    accentColor: Color = SelforaPrimary,
+    autoScrollOnFocus: Boolean = true
 ) {
-    Column(modifier = modifier) {
+    val bringIntoViewRequester = remember { BringIntoViewRequester() }
+    val coroutineScope = rememberCoroutineScope()
+    val focusManager = LocalFocusManager.current
+    val keyboardController = LocalSoftwareKeyboardController.current
+    var isFocused by remember { mutableStateOf(false) }
+
+    // Automatically bring into view if validation fails
+    LaunchedEffect(isError) {
+        if (isError && autoScrollOnFocus) {
+            delay(100)
+            bringIntoViewRequester.bringIntoView()
+        }
+    }
+
+    // Smart default keyboard actions based on imeAction
+    val effectiveKeyboardActions = remember(keyboardActions, keyboardOptions.imeAction) {
+        if (keyboardActions != KeyboardActions.Default) {
+            keyboardActions
+        } else {
+            KeyboardActions(
+                onNext = { focusManager.moveFocus(FocusDirection.Down) },
+                onDone = {
+                    keyboardController?.hide()
+                    focusManager.clearFocus()
+                },
+                onSearch = {
+                    keyboardController?.hide()
+                    focusManager.clearFocus()
+                },
+                onGo = {
+                    keyboardController?.hide()
+                    focusManager.clearFocus()
+                },
+                onSend = {
+                    keyboardController?.hide()
+                    focusManager.clearFocus()
+                }
+            )
+        }
+    }
+
+    Column(
+        modifier = modifier.bringIntoViewRequester(bringIntoViewRequester)
+    ) {
         if (label.isNotEmpty()) {
             Text(
                 text = label,
@@ -505,29 +565,47 @@ fun GlassTextField(
             modifier = Modifier
                 .fillMaxWidth()
                 .shadow(
-                    elevation = 4.dp,
+                    elevation = if (isFocused) 6.dp else 4.dp,
                     shape = RoundedCornerShape(20.dp),
-                    spotColor = Color(0x12000000)
+                    spotColor = if (isFocused) accentColor.copy(alpha = 0.25f) else Color(0x12000000)
                 )
                 .clip(RoundedCornerShape(20.dp))
                 .background(Color.White.copy(alpha = 0.90f))
                 .border(
-                    width = 1.2.dp,
-                    color = if (isError) SelforaError else SelforaBorder,
+                    width = if (isFocused) 1.6.dp else 1.2.dp,
+                    color = when {
+                        isError -> SelforaError
+                        isFocused -> accentColor
+                        else -> SelforaBorder
+                    },
                     shape = RoundedCornerShape(20.dp)
                 )
         ) {
+            val fieldModifier = Modifier
+                .fillMaxWidth()
+                .then(if (focusRequester != null) Modifier.focusRequester(focusRequester) else Modifier)
+                .onFocusChanged { focusState ->
+                    isFocused = focusState.isFocused
+                    if (focusState.isFocused && autoScrollOnFocus) {
+                        coroutineScope.launch {
+                            delay(250) // Allow soft keyboard layout resize animation to start
+                            bringIntoViewRequester.bringIntoView()
+                        }
+                    }
+                }
+
             OutlinedTextField(
                 value = value,
                 onValueChange = onValueChange,
                 placeholder = { Text(placeholder, color = SelforaTextSecondary.copy(alpha = 0.70f), fontSize = 14.sp) },
                 leadingIcon = leadingIcon?.let {
-                    { Icon(it, contentDescription = null, tint = accentColor) }
+                    { Icon(it, contentDescription = null, tint = if (isFocused) accentColor else SelforaTextSecondary) }
                 },
                 trailingIcon = trailingIcon,
                 singleLine = singleLine,
                 visualTransformation = visualTransformation,
                 keyboardOptions = keyboardOptions,
+                keyboardActions = effectiveKeyboardActions,
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = Color.Transparent,
                     unfocusedBorderColor = Color.Transparent,
@@ -536,14 +614,19 @@ fun GlassTextField(
                     focusedContainerColor = Color.Transparent,
                     unfocusedContainerColor = Color.Transparent
                 ),
-                modifier = Modifier.fillMaxWidth()
+                modifier = fieldModifier
             )
         }
-        if (isError && errorMessage != null) {
+        AnimatedVisibility(
+            visible = isError && !errorMessage.isNullOrEmpty(),
+            enter = fadeIn() + expandVertically(),
+            exit = fadeOut() + shrinkVertically()
+        ) {
             Text(
-                text = errorMessage,
+                text = errorMessage ?: "",
                 color = SelforaError,
                 fontSize = 12.sp,
+                fontWeight = FontWeight.Medium,
                 modifier = Modifier.padding(start = 6.dp, top = 4.dp)
             )
         }

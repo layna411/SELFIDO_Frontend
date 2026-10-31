@@ -2,12 +2,16 @@ package com.simats.selfora.ui.therapist
 
 import androidx.compose.animation.*
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -22,6 +26,7 @@ import com.simats.selfora.data.api.ApiClient
 import com.simats.selfora.data.model.ChildSummaryItem
 import com.simats.selfora.ui.components.avatar.ChildAvatarImage
 import com.simats.selfora.ui.components.glass.*
+import com.simats.selfora.ui.components.progress.*
 import com.simats.selfora.ui.theme.*
 import kotlinx.coroutines.launch
 
@@ -205,19 +210,25 @@ fun GlassChildCard(
     onViewChild: () -> Unit
 ) {
     val safeGender = (child.gender ?: "BOY").uppercase()
-    val isGirl = safeGender.contains("GIRL") || safeGender.contains("FEMALE")
-    val avatarEmoji = if (isGirl) "👧" else "👦"
     val safeName = child.name ?: "Unnamed Child"
     val safeCaregiver = child.caregiverName ?: "Unlinked"
     val safeRel = child.caregiverRelationship ?: "Caregiver"
     val safeStatus = child.programmeStatus ?: "ACTIVE"
     val safeLastSession = child.lastSessionDate ?: "No recent session"
+    val overallPct = child.overallProgressPercentage.coerceIn(0, 100)
+    val overallColor = when {
+        overallPct >= 75 -> SelforaSuccess
+        overallPct >= 50 -> SelforaPrimary
+        else -> SelforaWarning
+    }
 
     GlassCard(
         modifier = Modifier.fillMaxWidth(),
-        elevation = 8.dp,
+        elevation = 6.dp,
+        contentPadding = PaddingValues(16.dp),
         onClick = onViewChild
     ) {
+        // Top Row: Avatar, Child Identity & Overall Progress Circular Indicator
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -227,31 +238,43 @@ fun GlassChildCard(
                 modifier = Modifier.weight(1f),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                ChildAvatarImage(
-                    avatarId = child.avatarUrl ?: "ic_avatar_default",
-                    gender = safeGender,
-                    size = 50.dp
-                )
+                Box(
+                    modifier = Modifier
+                        .size(52.dp)
+                        .clip(CircleShape)
+                        .border(1.5.dp, SelforaPrimary.copy(alpha = 0.2f), CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    ChildAvatarImage(
+                        avatarId = child.avatarUrl ?: "ic_avatar_default",
+                        gender = safeGender,
+                        size = 50.dp
+                    )
+                }
+
                 Spacer(modifier = Modifier.width(12.dp))
+
                 Column(modifier = Modifier.weight(1f)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
                         Text(
                             text = safeName,
                             fontWeight = FontWeight.Bold,
                             fontSize = 16.sp,
                             color = SelforaTextPrimary,
                             maxLines = 1,
-                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                            overflow = TextOverflow.Ellipsis
                         )
                         if (child.isDemoProfile || child.id >= 100L) {
-                            Spacer(modifier = Modifier.width(6.dp))
                             Surface(
                                 shape = RoundedCornerShape(4.dp),
                                 color = SelforaPrimary
                             ) {
                                 Text(
                                     "DEMO",
-                                    fontSize = 9.sp,
+                                    fontSize = 8.5.sp,
                                     fontWeight = FontWeight.ExtraBold,
                                     color = Color.White,
                                     modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
@@ -259,28 +282,57 @@ fun GlassChildCard(
                             }
                         }
                     }
+
+                    Spacer(modifier = Modifier.height(2.dp))
+
                     Text(
                         text = "ID: #${child.id} • ${child.age} yrs • $safeGender",
-                        fontSize = 12.sp,
+                        fontSize = 11.5.sp,
                         color = SelforaPrimary,
                         fontWeight = FontWeight.SemiBold
                     )
+
+                    Spacer(modifier = Modifier.height(1.dp))
+
                     Text(
                         text = "Caregiver: $safeCaregiver ($safeRel)",
-                        fontSize = 11.sp,
+                        fontSize = 10.5.sp,
                         color = SelforaTextSecondary,
                         maxLines = 1,
-                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
             }
 
+            Spacer(modifier = Modifier.width(10.dp))
+
+            // Overall Progress Circular Gauge
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                CircularProgressRing(
+                    progress = overallPct / 100f,
+                    ringColor = overallColor,
+                    size = 50.dp,
+                    strokeWidth = 5.dp,
+                    showPercentageText = true,
+                    subText = "Overall"
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // Status Chip & Assigned Goals Sub-Row
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             Surface(
-                shape = RoundedCornerShape(12.dp),
+                shape = RoundedCornerShape(8.dp),
                 color = when (safeStatus) {
-                    "PENDING_ASSESSMENT" -> SelforaWarning.copy(alpha = 0.15f)
-                    "COMPLETED" -> SelforaSuccess.copy(alpha = 0.15f)
-                    else -> SelforaPrimary.copy(alpha = 0.15f)
+                    "PENDING_ASSESSMENT" -> SelforaWarning.copy(alpha = 0.12f)
+                    "COMPLETED" -> SelforaSuccess.copy(alpha = 0.12f)
+                    else -> SelforaPrimary.copy(alpha = 0.12f)
                 }
             ) {
                 Text(
@@ -296,41 +348,67 @@ fun GlassChildCard(
                         "COMPLETED" -> SelforaSuccess
                         else -> SelforaPrimary
                     },
-                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                )
+            }
+
+            Text(
+                text = "Last: $safeLastSession",
+                fontSize = 10.5.sp,
+                fontWeight = FontWeight.Medium,
+                color = SelforaTextSecondary
+            )
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // Standardized 4-ADL Category Progress Grid
+        Surface(
+            shape = RoundedCornerShape(14.dp),
+            color = Color.White.copy(alpha = 0.65f),
+            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0)),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(modifier = Modifier.padding(12.dp)) {
+                Text(
+                    text = "ADL CATEGORY PROGRESS",
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = SelforaTextSecondary,
+                    letterSpacing = 0.5.sp
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                SelforaAdlCategoryGrid(
+                    dressingPct = child.dressingPercentage,
+                    eatingPct = child.eatingPercentage,
+                    groomingPct = child.groomingPercentage,
+                    shoesPct = child.shoesPercentage
                 )
             }
         }
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // ADL Progress Bar Breakdown
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
-            ChildMetricProgress("Dressing", child.dressingPercentage, SelforaPrimary, modifier = Modifier.weight(1f))
-            ChildMetricProgress("Eating", child.eatingPercentage, SelforaSecondary, modifier = Modifier.weight(1f))
-            ChildMetricProgress("Shoes", child.shoesPercentage, SelforaSuccess, modifier = Modifier.weight(1f))
-        }
-
-        Spacer(modifier = Modifier.height(10.dp))
-
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text("Assigned Goals: ${child.assignedGoalsCount} • Last Session: $safeLastSession", fontSize = 11.sp, color = SelforaTextSecondary)
-            Text("Overall: ${child.overallProgressPercentage}%", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = SelforaPrimary)
+            Text(
+                text = "Assigned Goals: ${child.assignedGoalsCount}",
+                fontSize = 11.5.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = SelforaTextSecondary
+            )
+            Text(
+                text = "Clinical Profile →",
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold,
+                color = SelforaPrimary
+            )
         }
-
-        Spacer(modifier = Modifier.height(10.dp))
-
-        GlassOutlinedButton(
-            text = "View Clinical Profile →",
-            onClick = onViewChild,
-            modifier = Modifier.fillMaxWidth()
-        )
     }
 }
 
@@ -338,24 +416,40 @@ fun GlassChildCard(
 fun ChildMetricProgress(
     title: String?,
     percentage: Int,
-    color: Color,
+    color: Color = SelforaPrimary,
     modifier: Modifier = Modifier
 ) {
     val safeTitle = title ?: "Progress"
-    Column(modifier = modifier) {
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text(safeTitle, fontSize = 11.sp, color = SelforaTextSecondary)
-            Text("$percentage%", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = color)
+    val safePct = percentage.coerceIn(0, 100)
+
+    Column(modifier = modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = safeTitle,
+                fontSize = 11.5.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = SelforaTextSecondary,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f, fill = false)
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = "$safePct%",
+                fontSize = 12.sp,
+                fontWeight = FontWeight.ExtraBold,
+                color = color
+            )
         }
-        Spacer(modifier = Modifier.height(4.dp))
-        LinearProgressIndicator(
-            progress = (percentage / 100f).coerceIn(0f, 1f),
+        Spacer(modifier = Modifier.height(5.dp))
+        SelforaLinearProgress(
+            percentage = safePct,
             color = color,
-            trackColor = color.copy(alpha = 0.15f),
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(6.dp)
-                .background(Color.Transparent, shape = RoundedCornerShape(3.dp))
+            height = 6.dp
         )
     }
 }

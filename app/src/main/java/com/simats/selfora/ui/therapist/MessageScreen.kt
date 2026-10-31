@@ -8,6 +8,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Search
@@ -20,6 +22,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.simats.selfora.data.api.ApiClient
@@ -245,10 +248,32 @@ fun MessageScreen(
                         }
                     }
 
+                    val sendMessageAction = {
+                        if (inputText.isNotBlank()) {
+                            val text = inputText
+                            inputText = ""
+                            scope.launch {
+                                try {
+                                    ApiClient.apiService.sendMessage(
+                                        SendMessageRequest(
+                                            receiverId = selectedCaregiver!!.caregiverId,
+                                            childId = selectedCaregiver!!.childId,
+                                            messageText = text
+                                        )
+                                    )
+                                } catch (e: Exception) {}
+                                loadConversation(selectedCaregiver!!.childId)
+                            }
+                        }
+                    }
+
                     Surface(
                         color = Color.White,
                         shadowElevation = 8.dp,
-                        modifier = Modifier.fillMaxWidth().navigationBarsPadding()
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .navigationBarsPadding()
+                            .imePadding()
                     ) {
                         Row(
                             modifier = Modifier
@@ -262,28 +287,13 @@ fun MessageScreen(
                                 placeholder = { Text("Type message to ${selectedCaregiver!!.caregiverName}...") },
                                 modifier = Modifier.weight(1f),
                                 shape = RoundedCornerShape(20.dp),
-                                singleLine = true
+                                singleLine = true,
+                                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
+                                keyboardActions = KeyboardActions(onSend = { sendMessageAction() })
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             IconButton(
-                                onClick = {
-                                    if (inputText.isNotBlank()) {
-                                        val text = inputText
-                                        inputText = ""
-                                        scope.launch {
-                                            try {
-                                                ApiClient.apiService.sendMessage(
-                                                    SendMessageRequest(
-                                                        receiverId = selectedCaregiver!!.caregiverId,
-                                                        childId = selectedCaregiver!!.childId,
-                                                        messageText = text
-                                                    )
-                                                )
-                                            } catch (e: Exception) {}
-                                            loadConversation(selectedCaregiver!!.childId)
-                                        }
-                                    }
-                                }
+                                onClick = { sendMessageAction() }
                             ) {
                                 Surface(shape = CircleShape, color = SelforaPrimary, modifier = Modifier.size(42.dp)) {
                                     Icon(Icons.Default.Send, contentDescription = "Send", tint = Color.White, modifier = Modifier.padding(10.dp))

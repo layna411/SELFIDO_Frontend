@@ -77,7 +77,8 @@ data class ChildSummaryItem(
     val overallProgressPercentage: Int = 75,
     val hasPendingAssessment: Boolean = false,
     val hasActiveHomeProgram: Boolean = true,
-    val isDemoProfile: Boolean = false
+    val isDemoProfile: Boolean = false,
+    val groomingPercentage: Int = 60
 )
 
 data class ResetPasswordResultResponse(

@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -22,6 +23,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -29,6 +31,7 @@ import com.simats.selfora.data.api.ApiClient
 import com.simats.selfora.data.model.*
 import com.simats.selfora.ui.components.VisualStepGuidanceCard
 import com.simats.selfora.ui.components.glass.*
+import com.simats.selfora.ui.components.progress.ActivityStepProgress
 import com.simats.selfora.ui.therapist.*
 import com.simats.selfora.ui.theme.*
 import kotlinx.coroutines.launch
@@ -410,20 +413,12 @@ fun HomePracticeScreen(
 
                                 Spacer(modifier = Modifier.height(16.dp))
 
-                                // Step indicator dots
-                                Row(
-                                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    steps.forEachIndexed { i, _ ->
-                                        Box(
-                                            modifier = Modifier
-                                                .size(if (i == currentStepIndex) 10.dp else 6.dp)
-                                                .clip(CircleShape)
-                                                .background(if (i == currentStepIndex) SelforaPrimary else Color(0xFFCBD5E1))
-                                        )
-                                    }
-                                }
+                                // Modern Activity Step Progress
+                                ActivityStepProgress(
+                                    currentStep = currentStepIndex + 1,
+                                    totalSteps = steps.size,
+                                    accentColor = SelforaPrimary
+                                )
                             }
 
                             Spacer(modifier = Modifier.height(24.dp))
@@ -455,8 +450,9 @@ fun HomePracticeScreen(
                         Column(
                             modifier = Modifier
                                 .fillMaxSize()
-                                .padding(16.dp)
-                                .verticalScroll(rememberScrollState()),
+                                .imePadding()
+                                .verticalScroll(rememberScrollState())
+                                .padding(16.dp),
                             verticalArrangement = Arrangement.spacedBy(16.dp)
                         ) {
                             Column {
@@ -510,13 +506,14 @@ fun HomePracticeScreen(
                             }
 
                             // Notes (optional)
-                            OutlinedTextField(
+                            GlassTextField(
                                 value = stepNoteText,
                                 onValueChange = { stepNoteText = it },
-                                label = { Text("Notes (optional)") },
-                                placeholder = { Text("Write your notes...") },
-                                modifier = Modifier.fillMaxWidth(),
-                                shape = RoundedCornerShape(14.dp)
+                                label = "Notes (optional)",
+                                placeholder = "Write any observations or notes...",
+                                singleLine = false,
+                                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                                modifier = Modifier.fillMaxWidth()
                             )
 
                             GlassButton(

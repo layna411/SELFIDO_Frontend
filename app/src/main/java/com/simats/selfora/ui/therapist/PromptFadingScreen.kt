@@ -103,6 +103,7 @@ fun PromptFadingScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
+                .imePadding()
                 .verticalScroll(rememberScrollState())
                 .padding(16.dp)
         ) {
@@ -204,20 +205,20 @@ fun PromptFadingScreen(
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                OutlinedTextField(
+                GlassTextField(
                     value = clinicalReasonText,
                     onValueChange = { clinicalReasonText = it },
-                    label = { Text("Clinical Rationale for Fading / Restoring Level") },
-                    modifier = Modifier.fillMaxWidth(),
-                    minLines = 2
+                    label = "Clinical Rationale for Fading / Restoring Level",
+                    singleLine = false,
+                    modifier = Modifier.fillMaxWidth()
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                OutlinedTextField(
+                GlassTextField(
                     value = reviewCriteriaText,
                     onValueChange = { reviewCriteriaText = it },
-                    label = { Text("Review Criteria (e.g. 3 consecutive sessions)") },
+                    label = "Review Criteria (e.g. 3 consecutive sessions)",
                     modifier = Modifier.fillMaxWidth()
                 )
 

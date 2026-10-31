@@ -9,7 +9,7 @@ import java.util.concurrent.TimeUnit
 
 object ApiClient {
 
-    private const val BASE_URL = "http://192.168.64.1:8080/"
+    private const val BASE_URL = "http://172.25.81.79:8080/"
     private var jwtToken: String? = null
 
     fun setJwtToken(token: String?) {

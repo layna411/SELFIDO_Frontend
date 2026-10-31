@@ -3,7 +3,11 @@ package com.simats.selfora.ui.auth
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Visibility
@@ -15,6 +19,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
@@ -42,6 +48,31 @@ fun ChangePasswordScreen(
 
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    val scrollState = rememberScrollState()
+
+    val submitChangePassword: () -> Unit = {
+        if (newPassword.length < 6) {
+            Toast.makeText(context, "Password must be at least 6 characters long", Toast.LENGTH_SHORT).show()
+        } else if (newPassword != confirmPassword) {
+            Toast.makeText(context, "Passwords do not match", Toast.LENGTH_SHORT).show()
+        } else {
+            isLoading = true
+            scope.launch {
+                try {
+                    val response = ApiClient.apiService.changePassword(ChangePasswordRequest(newPassword = newPassword))
+                    SessionManager.setMustChangePassword(false)
+                    Toast.makeText(context, "Password updated successfully!", Toast.LENGTH_SHORT).show()
+                    onPasswordChanged()
+                } catch (e: Exception) {
+                    SessionManager.setMustChangePassword(false)
+                    Toast.makeText(context, "Password updated successfully!", Toast.LENGTH_SHORT).show()
+                    onPasswordChanged()
+                } finally {
+                    isLoading = false
+                }
+            }
+        }
+    }
 
     Scaffold(
         containerColor = SelforaBackground
@@ -50,7 +81,9 @@ fun ChangePasswordScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(20.dp),
+                .imePadding()
+                .verticalScroll(scrollState)
+                .padding(horizontal = 20.dp, vertical = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
@@ -85,6 +118,10 @@ fun ChangePasswordScreen(
                     placeholder = "Minimum 6 characters",
                     leadingIcon = Icons.Default.Lock,
                     visualTransformation = if (showNewPassword) VisualTransformation.None else PasswordVisualTransformation(),
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Password,
+                        imeAction = ImeAction.Next
+                    ),
                     trailingIcon = {
                         IconButton(onClick = { showNewPassword = !showNewPassword }) {
                             Icon(if (showNewPassword) Icons.Default.VisibilityOff else Icons.Default.Visibility, contentDescription = null)
@@ -101,6 +138,13 @@ fun ChangePasswordScreen(
                     placeholder = "Re-enter new password",
                     leadingIcon = Icons.Default.Lock,
                     visualTransformation = if (showConfirmPassword) VisualTransformation.None else PasswordVisualTransformation(),
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Password,
+                        imeAction = ImeAction.Done
+                    ),
+                    keyboardActions = KeyboardActions(
+                        onDone = { submitChangePassword() }
+                    ),
                     trailingIcon = {
                         IconButton(onClick = { showConfirmPassword = !showConfirmPassword }) {
                             Icon(if (showConfirmPassword) Icons.Default.VisibilityOff else Icons.Default.Visibility, contentDescription = null)
@@ -115,32 +159,7 @@ fun ChangePasswordScreen(
                 } else {
                     GlassButton(
                         text = "Save New Password & Continue",
-                        onClick = {
-                            if (newPassword.length < 6) {
-                                Toast.makeText(context, "Password must be at least 6 characters long", Toast.LENGTH_SHORT).show()
-                                return@GlassButton
-                            }
-                            if (newPassword != confirmPassword) {
-                                Toast.makeText(context, "Passwords do not match", Toast.LENGTH_SHORT).show()
-                                return@GlassButton
-                            }
-
-                            isLoading = true
-                            scope.launch {
-                                try {
-                                    val response = ApiClient.apiService.changePassword(ChangePasswordRequest(newPassword = newPassword))
-                                    SessionManager.setMustChangePassword(false)
-                                    Toast.makeText(context, "Password updated successfully!", Toast.LENGTH_SHORT).show()
-                                    onPasswordChanged()
-                                } catch (e: Exception) {
-                                    SessionManager.setMustChangePassword(false)
-                                    Toast.makeText(context, "Password updated successfully!", Toast.LENGTH_SHORT).show()
-                                    onPasswordChanged()
-                                } finally {
-                                    isLoading = false
-                                }
-                            }
-                        },
+                        onClick = submitChangePassword,
                         modifier = Modifier.fillMaxWidth()
                     )
                 }

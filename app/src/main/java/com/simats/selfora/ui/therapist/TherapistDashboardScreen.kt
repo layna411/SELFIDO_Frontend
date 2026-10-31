@@ -26,6 +26,7 @@ import com.simats.selfora.data.model.ScheduledSessionItem
 import com.simats.selfora.data.model.TherapistDashboardSummaryResponse
 import com.simats.selfora.ui.components.avatar.ChildAvatarImage
 import com.simats.selfora.ui.components.glass.*
+import com.simats.selfora.ui.components.progress.SelforaLinearProgress
 import com.simats.selfora.ui.theme.*
 import kotlinx.coroutines.launch
 
@@ -340,8 +341,23 @@ fun TherapistDashboardScreen(
                         Spacer(modifier = Modifier.height(8.dp))
                         Text("Aarav", fontWeight = FontWeight.Bold, fontSize = 15.sp, color = SelforaTextPrimary)
                         Text("7 yrs • Boy Avatar", fontSize = 11.sp, color = SelforaPrimary, fontWeight = FontWeight.SemiBold)
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text("ADL Progress: 80%", fontSize = 11.sp, color = SelforaSuccess, fontWeight = FontWeight.Bold)
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text("Progress", fontSize = 10.5.sp, color = SelforaTextSecondary)
+                            Text("80%", fontSize = 11.sp, color = SelforaSuccess, fontWeight = FontWeight.Bold)
+                        }
+                        Spacer(modifier = Modifier.height(3.dp))
+                        SelforaLinearProgress(
+                            progress = 0.80f,
+                            color = SelforaSuccess,
+                            height = 5.dp,
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp)
+                        )
+                        Spacer(modifier = Modifier.height(6.dp))
                         Text("Assigned: Dressing, Eating", fontSize = 10.sp, color = SelforaTextSecondary)
                     }
                 }
@@ -374,8 +390,23 @@ fun TherapistDashboardScreen(
                         Spacer(modifier = Modifier.height(8.dp))
                         Text("Ananya", fontWeight = FontWeight.Bold, fontSize = 15.sp, color = SelforaTextPrimary)
                         Text("6 yrs • Girl Avatar", fontSize = 11.sp, color = Color(0xFF9333EA), fontWeight = FontWeight.SemiBold)
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text("ADL Progress: 85%", fontSize = 11.sp, color = SelforaSuccess, fontWeight = FontWeight.Bold)
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text("Progress", fontSize = 10.5.sp, color = SelforaTextSecondary)
+                            Text("85%", fontSize = 11.sp, color = SelforaSuccess, fontWeight = FontWeight.Bold)
+                        }
+                        Spacer(modifier = Modifier.height(3.dp))
+                        SelforaLinearProgress(
+                            progress = 0.85f,
+                            color = SelforaSuccess,
+                            height = 5.dp,
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp)
+                        )
+                        Spacer(modifier = Modifier.height(6.dp))
                         Text("Assigned: Dressing, Shoes", fontSize = 10.sp, color = SelforaTextSecondary)
                     }
                 }

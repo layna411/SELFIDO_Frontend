@@ -1,8 +1,11 @@
 package com.simats.selfora.ui.child
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material3.*
@@ -11,11 +14,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.simats.selfora.ui.components.glass.GlassTextField
 import com.simats.selfora.ui.theme.*
 
 @Composable
@@ -26,7 +31,16 @@ fun AdultExitDialog(
     var pinText by remember { mutableStateOf("") }
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
+    val handleConfirm = {
+        if (pinText.isBlank() || pinText == "1234") {
+            onConfirmExit()
+        } else {
+            errorMessage = "Incorrect PIN. Default is 1234"
+        }
+    }
+
     AlertDialog(
+        modifier = Modifier.imePadding(),
         onDismissRequest = onDismiss,
         title = {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -36,7 +50,12 @@ fun AdultExitDialog(
             }
         },
         text = {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState()),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
                 Text(
                     "Please enter the adult exit PIN (default: 1234) or confirm exit to return to the Adult Interface.",
                     fontSize = 13.sp,
@@ -44,32 +63,34 @@ fun AdultExitDialog(
                     textAlign = TextAlign.Start
                 )
                 Spacer(modifier = Modifier.height(16.dp))
-                OutlinedTextField(
+                GlassTextField(
                     value = pinText,
-                    onValueChange = { if (it.length <= 4) pinText = it },
-                    label = { Text("Adult PIN") },
-                    placeholder = { Text("1234") },
+                    onValueChange = {
+                        if (it.length <= 4) {
+                            pinText = it
+                            errorMessage = null
+                        }
+                    },
+                    label = "Adult PIN",
+                    placeholder = "1234",
                     singleLine = true,
                     visualTransformation = PasswordVisualTransformation(),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp)
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Number,
+                        imeAction = ImeAction.Done
+                    ),
+                    keyboardActions = KeyboardActions(
+                        onDone = { handleConfirm() }
+                    ),
+                    isError = errorMessage != null,
+                    errorMessage = errorMessage,
+                    modifier = Modifier.fillMaxWidth()
                 )
-                if (errorMessage != null) {
-                    Spacer(modifier = Modifier.height(6.dp))
-                    Text(errorMessage!!, fontSize = 12.sp, color = SelforaError)
-                }
             }
         },
         confirmButton = {
             Button(
-                onClick = {
-                    if (pinText.isBlank() || pinText == "1234") {
-                        onConfirmExit()
-                    } else {
-                        errorMessage = "Incorrect PIN. Default is 1234"
-                    }
-                },
+                onClick = handleConfirm,
                 colors = ButtonDefaults.buttonColors(containerColor = SelforaPrimary),
                 shape = RoundedCornerShape(12.dp)
             ) {

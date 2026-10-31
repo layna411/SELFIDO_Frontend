@@ -60,6 +60,7 @@ fun AdaptationScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
+                .imePadding()
                 .verticalScroll(rememberScrollState())
                 .padding(16.dp)
         ) {
@@ -67,16 +68,13 @@ fun AdaptationScreen(
             GlassCard(modifier = Modifier.fillMaxWidth()) {
                 Text("Analysis", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = SelforaTextPrimary)
                 Spacer(modifier = Modifier.height(10.dp))
-                OutlinedTextField(
+                GlassTextField(
                     value = analysisText,
                     onValueChange = { analysisText = it },
-                    modifier = Modifier.fillMaxWidth(),
-                    minLines = 3,
-                    shape = RoundedCornerShape(12.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = SelforaPrimary,
-                        unfocusedBorderColor = SelforaBorder
-                    )
+                    label = "",
+                    placeholder = "Record clinical analysis...",
+                    singleLine = false,
+                    modifier = Modifier.fillMaxWidth()
                 )
             }
 
@@ -86,16 +84,13 @@ fun AdaptationScreen(
             GlassCard(modifier = Modifier.fillMaxWidth()) {
                 Text("Adapt Plan", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = SelforaTextPrimary)
                 Spacer(modifier = Modifier.height(10.dp))
-                OutlinedTextField(
+                GlassTextField(
                     value = adaptPlanText,
                     onValueChange = { adaptPlanText = it },
-                    modifier = Modifier.fillMaxWidth(),
-                    minLines = 3,
-                    shape = RoundedCornerShape(12.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = SelforaPrimary,
-                        unfocusedBorderColor = SelforaBorder
-                    )
+                    label = "",
+                    placeholder = "Describe adaptation strategy...",
+                    singleLine = false,
+                    modifier = Modifier.fillMaxWidth()
                 )
             }
 

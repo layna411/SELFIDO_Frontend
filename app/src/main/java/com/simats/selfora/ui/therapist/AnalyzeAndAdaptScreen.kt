@@ -8,6 +8,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -18,11 +20,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.simats.selfora.data.api.ApiClient
 import com.simats.selfora.data.model.*
 import com.simats.selfora.ui.components.glass.*
+import com.simats.selfora.ui.components.progress.CircularProgressRing
+import com.simats.selfora.ui.components.progress.SelforaLinearProgress
 import com.simats.selfora.ui.theme.*
 import kotlinx.coroutines.launch
 
@@ -192,19 +197,48 @@ fun AnalyzeAndAdaptScreen(
                     Text("OVERALL PERFORMANCE SUMMARY ($selectedCategory)", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = SelforaPrimary)
                     Spacer(modifier = Modifier.height(12.dp))
 
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                        Column {
-                            Text("Current Independence", fontSize = 11.sp, color = SelforaTextSecondary)
-                            Text("${data.currentIndependencePercentage}%", fontSize = 22.sp, fontWeight = FontWeight.ExtraBold, color = SelforaPrimary)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                Column {
+                                    Text("Current Independence", fontSize = 11.sp, color = SelforaTextSecondary)
+                                    Text("${data.currentIndependencePercentage.toInt()}%", fontSize = 22.sp, fontWeight = FontWeight.ExtraBold, color = SelforaPrimary)
+                                }
+                                Column {
+                                    Text("Previous Session", fontSize = 11.sp, color = SelforaTextSecondary)
+                                    Text("${data.previousIndependencePercentage.toInt()}%", fontSize = 22.sp, fontWeight = FontWeight.Bold, color = SelforaTextSecondary)
+                                }
+                                Column {
+                                    Text("Recorded", fontSize = 11.sp, color = SelforaTextSecondary)
+                                    Text("${data.totalRecordedSessions} sessions", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = SelforaTextPrimary)
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(10.dp))
+
+                            // Current vs Previous Comparison Progress Bar
+                            SelforaLinearProgress(
+                                progress = (data.currentIndependencePercentage / 100.0).toFloat(),
+                                color = SelforaPrimary,
+                                height = 7.dp,
+                                modifier = Modifier.fillMaxWidth()
+                            )
                         }
-                        Column {
-                            Text("Previous Session", fontSize = 11.sp, color = SelforaTextSecondary)
-                            Text("${data.previousIndependencePercentage}%", fontSize = 22.sp, fontWeight = FontWeight.Bold, color = SelforaTextSecondary)
-                        }
-                        Column {
-                            Text("Recorded Sessions", fontSize = 11.sp, color = SelforaTextSecondary)
-                            Text("${data.totalRecordedSessions} sessions", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = SelforaTextPrimary)
-                        }
+
+                        Spacer(modifier = Modifier.width(14.dp))
+
+                        CircularProgressRing(
+                            progress = (data.currentIndependencePercentage / 100.0).toFloat(),
+                            size = 64.dp,
+                            strokeWidth = 6.dp,
+                            ringColor = SelforaPrimary,
+                            centerText = "${data.currentIndependencePercentage.toInt()}%",
+                            subText = "Overall"
+                        )
                     }
 
                     Spacer(modifier = Modifier.height(10.dp))
@@ -225,6 +259,13 @@ fun AnalyzeAndAdaptScreen(
                             "Grooming" -> "🧼"
                             else -> "👟"
                         }
+                        val categoryColor = when (card.categoryName) {
+                            "Dressing" -> Color(0xFF2563EB)
+                            "Eating" -> Color(0xFF7C3AED)
+                            "Grooming" -> Color(0xFF10B981)
+                            else -> Color(0xFFF59E0B)
+                        }
+
                         GlassCard(modifier = Modifier.fillMaxWidth()) {
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
@@ -241,12 +282,22 @@ fun AnalyzeAndAdaptScreen(
                                 }
 
                                 Column(horizontalAlignment = Alignment.End) {
-                                    Text("${card.currentIndependencePct}%", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = SelforaPrimary)
+                                    Text("${card.currentIndependencePct}%", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = categoryColor)
                                     Surface(shape = RoundedCornerShape(8.dp), color = SelforaSuccess.copy(alpha = 0.15f)) {
                                         Text(card.trend, fontSize = 9.sp, fontWeight = FontWeight.Bold, color = SelforaSuccess, modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp))
                                     }
                                 }
                             }
+
+                            Spacer(modifier = Modifier.height(8.dp))
+
+                            // Modern Animated Progress Indicator
+                            SelforaLinearProgress(
+                                progress = (card.currentIndependencePct / 100.0).toFloat(),
+                                color = categoryColor,
+                                height = 7.dp,
+                                modifier = Modifier.fillMaxWidth()
+                            )
                         }
                     }
                 }
@@ -316,6 +367,16 @@ fun AnalyzeAndAdaptScreen(
                                 Text(if (diff >= 0) "+${Math.round(diff * 10.0) / 10.0}%" else "${Math.round(diff * 10.0) / 10.0}%", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = if (diff >= 0) SelforaSuccess else SelforaError)
                             }
                         }
+
+                        Spacer(modifier = Modifier.height(10.dp))
+
+                        // Visual Comparison Indicator
+                        SelforaLinearProgress(
+                            progress = (comp.currentIndependencePercentage / 100.0).toFloat(),
+                            color = SelforaPrimary,
+                            height = 6.dp,
+                            modifier = Modifier.fillMaxWidth()
+                        )
 
                         Spacer(modifier = Modifier.height(10.dp))
                         Text("• Improved Steps: ${comp.improvedSteps.joinToString(", ")}", fontSize = 11.sp, color = SelforaSuccess)
@@ -460,56 +521,66 @@ fun AnalyzeAndAdaptScreen(
 
     // Modify/Create Custom Adaptation Plan Dialog
     if (showCustomDialog) {
+        val savePlanAction = {
+            planStatus = "Active"
+            showCustomDialog = false
+        }
+
         AlertDialog(
+            modifier = Modifier.imePadding(),
             onDismissRequest = { showCustomDialog = false },
             title = {
                 Text("Modify / Custom Adaptation Plan", fontWeight = FontWeight.Bold, fontSize = 16.sp)
             },
             text = {
-                Column {
-                    OutlinedTextField(
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    GlassTextField(
                         value = targetStepText,
                         onValueChange = { targetStepText = it },
-                        label = { Text("Target Task Step") },
+                        label = "Target Task Step",
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
                         modifier = Modifier.fillMaxWidth()
                     )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    OutlinedTextField(
+                    GlassTextField(
                         value = currentPromptText,
                         onValueChange = { currentPromptText = it },
-                        label = { Text("Current Assistance Level") },
+                        label = "Current Assistance Level",
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
                         modifier = Modifier.fillMaxWidth()
                     )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    OutlinedTextField(
+                    GlassTextField(
                         value = targetPromptText,
                         onValueChange = { targetPromptText = it },
-                        label = { Text("Target Fading Prompt Level") },
+                        label = "Target Fading Prompt Level",
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
                         modifier = Modifier.fillMaxWidth()
                     )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    OutlinedTextField(
+                    GlassTextField(
                         value = clinicalNotesText,
                         onValueChange = { clinicalNotesText = it },
-                        label = { Text("Clinical Rationale & Notes") },
-                        modifier = Modifier.fillMaxWidth(),
-                        minLines = 3
+                        label = "Clinical Rationale & Notes",
+                        singleLine = false,
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                        modifier = Modifier.fillMaxWidth()
                     )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    OutlinedTextField(
+                    GlassTextField(
                         value = reviewDateText,
                         onValueChange = { reviewDateText = it },
-                        label = { Text("Review Date (YYYY-MM-DD)") },
+                        label = "Review Date (YYYY-MM-DD)",
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                        keyboardActions = KeyboardActions(onDone = { savePlanAction() }),
                         modifier = Modifier.fillMaxWidth()
                     )
                 }
             },
             confirmButton = {
                 Button(
-                    onClick = {
-                        planStatus = "Active"
-                        showCustomDialog = false
-                    },
+                    onClick = savePlanAction,
                     colors = ButtonDefaults.buttonColors(containerColor = SelforaPrimary)
                 ) {
                     Text("Save Approved Plan")

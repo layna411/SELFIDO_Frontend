@@ -21,6 +21,7 @@ import androidx.compose.ui.unit.sp
 import com.simats.selfora.data.api.ApiClient
 import com.simats.selfora.data.model.HomeProgramResponse
 import com.simats.selfora.data.repository.PracticeSessionStore
+import com.simats.selfora.ui.components.progress.SelforaLinearProgress
 import com.simats.selfora.ui.theme.*
 import kotlinx.coroutines.launch
 
@@ -336,6 +337,16 @@ fun HomeProgrammeCard(
                         )
                     }
                 }
+            }
+
+            if (totalSteps > 0) {
+                Spacer(modifier = Modifier.height(8.dp))
+                SelforaLinearProgress(
+                    progress = (completedCount.toFloat() / totalSteps.toFloat()).coerceIn(0f, 1f),
+                    color = if (isPracticedToday) SelforaSuccess else SelforaPrimary,
+                    height = 5.dp,
+                    modifier = Modifier.fillMaxWidth()
+                )
             }
 
             Spacer(modifier = Modifier.height(14.dp))

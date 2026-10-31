@@ -9,6 +9,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -21,12 +23,15 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.simats.selfora.data.api.ApiClient
 import com.simats.selfora.data.model.*
 import com.simats.selfora.ui.components.VisualStepGuidanceCard
 import com.simats.selfora.ui.components.glass.*
+import com.simats.selfora.ui.components.progress.ActivityStepProgress
+import com.simats.selfora.ui.components.progress.SelforaLinearProgress
 import com.simats.selfora.ui.theme.*
 import kotlinx.coroutines.launch
 import java.time.LocalDate
@@ -212,17 +217,25 @@ fun AssessmentScreen(
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text(selectedActivityTitle, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = SelforaTextPrimary)
-                            Surface(shape = RoundedCornerShape(12.dp), color = SelforaPrimary.copy(alpha = 0.15f)) {
+                            Column {
+                                Text(selectedActivityTitle, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = SelforaTextPrimary)
+                                Text("Task Step Assessment", fontSize = 11.5.sp, color = SelforaTextSecondary)
+                            }
+                            Surface(shape = RoundedCornerShape(12.dp), color = SelforaPrimary.copy(alpha = 0.12f)) {
                                 Text("Step ${currentStep.stepNumber} of $totalSteps", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = SelforaPrimary, modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp))
                             }
                         }
                         Spacer(modifier = Modifier.height(10.dp))
-                        LinearProgressIndicator(
-                            progress = (currentStepIndex + 1) / totalSteps.toFloat(),
+                        SelforaLinearProgress(
+                            progress = ((currentStepIndex + 1).toFloat() / totalSteps.coerceAtLeast(1).toFloat()),
                             color = SelforaPrimary,
-                            trackColor = SelforaPrimary.copy(alpha = 0.15f),
-                            modifier = Modifier.fillMaxWidth().height(8.dp).clip(RoundedCornerShape(4.dp))
+                            height = 8.dp
+                        )
+                        Spacer(modifier = Modifier.height(10.dp))
+                        ActivityStepProgress(
+                            currentStep = currentStepIndex + 1,
+                            totalSteps = totalSteps,
+                            accentColor = SelforaPrimary
                         )
                     }
 
@@ -374,30 +387,40 @@ fun AssessmentScreen(
 
     // Not Assessed Reason Dialog
     if (showNotAssessedDialog) {
+        val confirmNotAssessed = {
+            val step = stepStates[currentStepIndex]
+            step.outcome = "NOT_ASSESSED"
+            step.promptLevelId = null
+            step.notAssessedReason = notAssessedReasonInput
+            showNotAssessedDialog = false
+        }
+
         AlertDialog(
+            modifier = Modifier.imePadding(),
             onDismissRequest = { showNotAssessedDialog = false },
             title = { Text("Mark Step as Not Assessed", fontWeight = FontWeight.Bold) },
             text = {
-                Column {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .verticalScroll(rememberScrollState())
+                ) {
                     Text("Provide clinical explanation for skipping this step:", fontSize = 13.sp, color = SelforaTextSecondary)
                     Spacer(modifier = Modifier.height(8.dp))
-                    OutlinedTextField(
+                    GlassTextField(
                         value = notAssessedReasonInput,
                         onValueChange = { notAssessedReasonInput = it },
-                        placeholder = { Text("e.g. Physical constraint, sensory aversion...") },
+                        label = "Reason",
+                        placeholder = "e.g. Physical constraint, sensory aversion...",
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                        keyboardActions = KeyboardActions(onDone = { confirmNotAssessed() }),
                         modifier = Modifier.fillMaxWidth()
                     )
                 }
             },
             confirmButton = {
                 Button(
-                    onClick = {
-                        val step = stepStates[currentStepIndex]
-                        step.outcome = "NOT_ASSESSED"
-                        step.promptLevelId = null
-                        step.notAssessedReason = notAssessedReasonInput
-                        showNotAssessedDialog = false
-                    },
+                    onClick = confirmNotAssessed,
                     colors = ButtonDefaults.buttonColors(containerColor = SelforaPrimary)
                 ) { Text("Confirm Skip") }
             },
