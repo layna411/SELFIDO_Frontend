@@ -72,6 +72,15 @@ interface SelforaApiService {
     @GET("api/assessments/{id}")
     suspend fun getAssessmentById(@Path("id") id: Long): Response<AssessmentResponse>
 
+    @GET("api/assessments/child/{childId}")
+    suspend fun getAssessmentsForChild(@Path("childId") childId: Long): Response<List<AssessmentResponse>>
+
+    @GET("api/assessments/child/{childId}/latest")
+    suspend fun getLatestAssessmentForChild(
+        @Path("childId") childId: Long,
+        @Query("activityId") activityId: Long? = null
+    ): Response<AssessmentResponse>
+
     // Sessions
     @POST("api/sessions/start")
     suspend fun startSession(@Body request: StartSessionRequest): Response<SessionResponse>
@@ -87,6 +96,9 @@ interface SelforaApiService {
 
     @GET("api/sessions/{id}")
     suspend fun getSessionById(@Path("id") id: Long): Response<SessionResponse>
+
+    @GET("api/sessions/child/{childId}")
+    suspend fun getSessionsForChild(@Path("childId") childId: Long): Response<List<SessionResponse>>
 
     // Adaptive Plans
     @POST("api/adaptive-plans")
@@ -130,8 +142,14 @@ interface SelforaApiService {
     @POST("api/home-programs")
     suspend fun createHomeProgram(@Body request: CreateHomeProgramRequest): Response<HomeProgramResponse>
 
+    @GET("api/home-programs/{id}")
+    suspend fun getHomeProgramById(@Path("id") id: Long): Response<HomeProgramResponse>
+
     @GET("api/home-programs/child/{childId}")
     suspend fun getActiveHomeProgramForChild(@Path("childId") childId: Long): Response<HomeProgramResponse>
+
+    @GET("api/home-programs/child/{childId}/all")
+    suspend fun getAllHomeProgramsForChild(@Path("childId") childId: Long): Response<List<HomeProgramResponse>>
 
     @GET("api/home-programs/today")
     suspend fun getTodayHomePrograms(): Response<List<HomeProgramResponse>>
@@ -184,7 +202,7 @@ interface SelforaApiService {
     suspend fun getChildModeDashboard(@Path("childId") childId: Long): Response<ChildDashboardResponse>
 
     @POST("api/child-mode/progress")
-    suspend fun recordChildStepProgress(@Body request: RecordStepProgressRequest): Response<Unit>
+    suspend fun recordChildStepProgress(@Body request: RecordStepProgressRequest): Response<StepProgressResponse>
 
     @GET("api/child-mode/rewards/{childId}")
     suspend fun getChildRewards(@Path("childId") childId: Long): Response<List<ChildRewardDto>>

@@ -1,7 +1,9 @@
 package com.simats.selfora.ui.child
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -17,12 +19,15 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.simats.selfora.data.api.ApiClient
 import com.simats.selfora.data.local.SessionManager
 import com.simats.selfora.data.model.ChildActivitySummaryDto
 import com.simats.selfora.data.model.ChildDashboardResponse
+import com.simats.selfora.data.model.ChildRewardDto
 import com.simats.selfora.ui.components.avatar.ChildAvatarImage
 import com.simats.selfora.ui.components.glass.GlassCard
 import com.simats.selfora.ui.components.glass.GlassIconButton
@@ -206,11 +211,49 @@ fun ChildHomeScreen(
         ChildRewardProgress(
             starsEarned = dashboardData?.totalStars ?: 0,
             totalStars = 5,
-            currentStreak = 3,
+            currentStreak = dashboardData?.currentStreak ?: 0,
             modifier = Modifier.fillMaxWidth()
         )
 
         Spacer(modifier = Modifier.height(20.dp))
+
+        // Section: Badges & Trophies
+        val allBadges = dashboardData?.allBadges ?: emptyList()
+        if (allBadges.isNotEmpty()) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    "My Badges & Trophies 🏆",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 18.sp,
+                    color = SelforaTextPrimary
+                )
+                val unlockedCount = allBadges.count { it.isUnlocked }
+                Text(
+                    "$unlockedCount of ${allBadges.size} Unlocked",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = SelforaPrimary
+                )
+            }
+            Spacer(modifier = Modifier.height(10.dp))
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                allBadges.forEach { badge ->
+                    ChildBadgeCard(badge = badge)
+                }
+            }
+
+            Spacer(modifier = Modifier.height(20.dp))
+        }
 
         // Section A: Today's Assigned Home Programme Activities
         Text("Today's Assigned Activities 🎯", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = SelforaTextPrimary, modifier = Modifier.fillMaxWidth())
@@ -262,11 +305,84 @@ fun ChildHomeScreen(
 }
 
 @Composable
+fun ChildBadgeCard(badge: ChildRewardDto) {
+    Surface(
+        modifier = Modifier
+            .width(135.dp)
+            .height(155.dp),
+        shape = RoundedCornerShape(18.dp),
+        color = if (badge.isUnlocked) Color(0xFFFFFBEB) else Color(0xFFF8FAFC),
+        border = BorderStroke(
+            width = if (badge.isUnlocked) 1.5.dp else 1.dp,
+            color = if (badge.isUnlocked) Color(0xFFF59E0B) else Color(0xFFE2E8F0)
+        ),
+        shadowElevation = if (badge.isUnlocked) 3.dp else 1.dp
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(10.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(
+                text = if (badge.isUnlocked) (badge.badgeIcon ?: "⭐") else "🔒",
+                fontSize = 32.sp
+            )
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(
+                    text = badge.badgeTitle,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = if (badge.isUnlocked) Color(0xFF92400E) else Color(0xFF64748B),
+                    textAlign = TextAlign.Center,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = badge.description.ifBlank { if (badge.isUnlocked) "Completed!" else "Practice to unlock" },
+                    fontSize = 10.sp,
+                    color = if (badge.isUnlocked) Color(0xFFB45309) else Color(0xFF94A3B8),
+                    textAlign = TextAlign.Center,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    lineHeight = 12.sp
+                )
+            }
+            Surface(
+                shape = RoundedCornerShape(8.dp),
+                color = if (badge.isUnlocked) Color(0xFFFEF3C7) else Color(0xFFF1F5F9)
+            ) {
+                Text(
+                    text = if (badge.isUnlocked) "Unlocked! 🎉" else "Locked",
+                    fontSize = 9.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = if (badge.isUnlocked) Color(0xFFD97706) else Color(0xFF94A3B8),
+                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                )
+            }
+        }
+    }
+}
+
+@Composable
 fun AssignedActivityCard(
     act: ChildActivitySummaryDto,
     primaryColor: Color,
     onClick: () -> Unit
 ) {
+    val ctaText = when {
+        act.isCompleted -> "Replay"
+        act.completedSteps > 0 -> "Step ${act.completedSteps + 1}"
+        else -> "Start"
+    }
+    val ctaColor = when {
+        act.isCompleted -> SelforaPrimary
+        act.completedSteps > 0 -> Color(0xFFEA580C)
+        else -> ChildGreenPlay
+    }
+
     GlassCard(
         modifier = Modifier.fillMaxWidth(),
         cornerRadius = 22.dp,
@@ -293,15 +409,21 @@ fun AssignedActivityCard(
                 Spacer(modifier = Modifier.width(14.dp))
                 Column {
                     Text(act.title, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = SelforaTextPrimary)
-                    Text("${act.totalSteps} Simple Steps", fontSize = 12.sp, color = SelforaTextSecondary)
+                    Text(
+                        text = if (act.isCompleted) "Completed ⭐ • Replay anytime"
+                               else if (act.completedSteps > 0) "Step ${act.completedSteps} of ${act.totalSteps} Completed"
+                               else "${act.totalSteps} Simple Steps",
+                        fontSize = 12.sp,
+                        color = if (act.completedSteps > 0 && !act.isCompleted) Color(0xFFEA580C) else SelforaTextSecondary
+                    )
                 }
             }
             Button(
                 onClick = onClick,
                 shape = RoundedCornerShape(14.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = ChildGreenPlay)
+                colors = ButtonDefaults.buttonColors(containerColor = ctaColor)
             ) {
-                Text(if (act.isCompleted) "Replay" else "Start", fontWeight = FontWeight.Bold, color = Color.White)
+                Text(ctaText, fontWeight = FontWeight.Bold, color = Color.White)
             }
         }
     }
@@ -312,6 +434,22 @@ fun CategoryActivityCard(
     act: ChildActivitySummaryDto,
     onClick: () -> Unit
 ) {
+    val ctaText = when {
+        act.isCompleted -> "Replay"
+        act.completedSteps > 0 -> "Continue"
+        else -> "Start"
+    }
+    val ctaBg = when {
+        act.isCompleted -> SelforaPrimary.copy(alpha = 0.12f)
+        act.completedSteps > 0 -> Color(0xFFFFF7ED)
+        else -> ChildGreenPlay.copy(alpha = 0.12f)
+    }
+    val ctaColor = when {
+        act.isCompleted -> SelforaPrimary
+        act.completedSteps > 0 -> Color(0xFFEA580C)
+        else -> ChildGreenPlay
+    }
+
     GlassCard(
         modifier = Modifier.fillMaxWidth(),
         cornerRadius = 20.dp,
@@ -337,11 +475,33 @@ fun CategoryActivityCard(
                 Spacer(modifier = Modifier.width(12.dp))
                 Column {
                     Text(act.title, fontWeight = FontWeight.Bold, fontSize = 15.sp, color = SelforaTextPrimary)
-                    Text(act.categoryName, fontSize = 12.sp, color = SelforaTextSecondary)
+                    Text(
+                        text = if (act.isCompleted) "Mastered ⭐ • Replay"
+                               else if (act.completedSteps > 0) "Step ${act.completedSteps + 1} of ${act.totalSteps}"
+                               else "${act.categoryName} • ${act.totalSteps} Steps",
+                        fontSize = 12.sp,
+                        color = if (act.completedSteps > 0 && !act.isCompleted) Color(0xFFEA580C) else SelforaTextSecondary
+                    )
                 }
             }
-            IconButton(onClick = onClick) {
-                Icon(Icons.Default.PlayCircleFilled, contentDescription = "Start", tint = ChildGreenPlay, modifier = Modifier.size(36.dp))
+            Surface(
+                shape = RoundedCornerShape(12.dp),
+                color = ctaBg,
+                modifier = Modifier.clickable(onClick = onClick)
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Text(ctaText, fontWeight = FontWeight.Bold, fontSize = 12.sp, color = ctaColor)
+                    Icon(
+                        imageVector = if (act.isCompleted) Icons.Default.Refresh else Icons.Default.PlayArrow,
+                        contentDescription = ctaText,
+                        tint = ctaColor,
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
             }
         }
     }

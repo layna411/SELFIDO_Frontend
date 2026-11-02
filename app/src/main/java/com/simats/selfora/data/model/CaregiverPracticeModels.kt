@@ -9,6 +9,7 @@ data class StepResultItemDto(
 )
 
 data class SubmitPracticeRequest(
+    val clientSessionId: String? = null,
     val homeProgramId: Long,
     val childId: Long = 1L,
     val activityId: Long = 1L,
@@ -20,6 +21,7 @@ data class SubmitPracticeRequest(
 
 data class CaregiverPracticeSessionResponse(
     val id: Long,
+    val clientSessionId: String? = null,
     val homeProgramId: Long,
     val homeProgramTitle: String,
     val childId: Long,

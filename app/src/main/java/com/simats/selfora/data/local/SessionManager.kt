@@ -20,6 +20,8 @@ object SessionManager {
     private const val KEY_ACTIVE_CHILD_GENDER = "active_child_gender"
     private const val KEY_IS_CHILD_MODE_ACTIVE = "is_child_mode_active"
     private const val KEY_PARENT_ADULT_ROLE = "parent_adult_role"
+    private const val KEY_ADULT_EXIT_PIN = "adult_exit_pin"
+    const val DEFAULT_ADULT_EXIT_PIN = "1234"
 
     private lateinit var prefs: SharedPreferences
 
@@ -160,6 +162,21 @@ object SessionManager {
     fun isChildModeActive(): Boolean {
         if (!::prefs.isInitialized) return false
         return prefs.getBoolean(KEY_IS_CHILD_MODE_ACTIVE, false)
+    }
+
+    fun getAdultExitPin(): String {
+        if (!::prefs.isInitialized) return DEFAULT_ADULT_EXIT_PIN
+        return prefs.getString(KEY_ADULT_EXIT_PIN, DEFAULT_ADULT_EXIT_PIN) ?: DEFAULT_ADULT_EXIT_PIN
+    }
+
+    fun setAdultExitPin(pin: String) {
+        if (!::prefs.isInitialized) return
+        prefs.edit().putString(KEY_ADULT_EXIT_PIN, pin.trim()).apply()
+    }
+
+    fun validateAdultExitPin(pin: String): Boolean {
+        if (pin.isBlank()) return false
+        return pin.trim() == getAdultExitPin().trim()
     }
 
     fun clearSession() {

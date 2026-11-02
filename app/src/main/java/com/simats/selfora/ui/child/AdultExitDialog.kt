@@ -20,6 +20,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.simats.selfora.data.local.SessionManager
 import com.simats.selfora.ui.components.glass.GlassTextField
 import com.simats.selfora.ui.theme.*
 
@@ -32,10 +33,10 @@ fun AdultExitDialog(
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
     val handleConfirm = {
-        if (pinText.isBlank() || pinText == "1234") {
+        if (SessionManager.validateAdultExitPin(pinText)) {
             onConfirmExit()
         } else {
-            errorMessage = "Incorrect PIN. Default is 1234"
+            errorMessage = "Incorrect PIN. Please enter the valid 4-digit PIN (default: 1234)."
         }
     }
 

@@ -1,6 +1,10 @@
 package com.simats.selfora.data.repository
 
+import android.content.Context
+import android.content.SharedPreferences
+import com.google.gson.Gson
 import com.simats.selfora.data.model.CaregiverPracticeSessionResponse
+import com.simats.selfora.data.model.StepProgressResponse
 import com.simats.selfora.data.model.StepResultItemDto
 import com.simats.selfora.data.model.SubmitPracticeRequest
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -9,6 +13,16 @@ import kotlinx.coroutines.flow.asStateFlow
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
+
+data class ActivePracticeSession(
+    val childId: Long,
+    val activityId: Long,
+    val currentStepIndex: Int,
+    val completedSteps: Int,
+    val totalSteps: Int,
+    val sessionStatus: String = "IN_PROGRESS", // IN_PROGRESS, COMPLETED, PENDING_SYNC
+    val lastUpdatedTimestamp: Long = System.currentTimeMillis()
+)
 
 data class PracticeRecordEntry(
     val sessionId: Long,
@@ -93,5 +107,69 @@ object PracticeSessionStore {
     fun isActivityPracticedToday(activityId: Long): Boolean {
         val today = LocalDate.now().toString()
         return _records.value.any { it.activityId == activityId && it.practiceDate == today }
+    }
+
+    private var _lastStepProgress: StepProgressResponse? = null
+
+    fun setLastStepProgress(res: StepProgressResponse?) {
+        _lastStepProgress = res
+    }
+
+    fun getLastStepProgress(): StepProgressResponse? = _lastStepProgress
+
+    // =========================================================================
+    // Durable Active Practice Session Persistence & Recovery (Survives Process Death)
+    // =========================================================================
+    private var prefs: SharedPreferences? = null
+    private val gson = Gson()
+
+    fun init(context: Context) {
+        if (prefs == null) {
+            prefs = context.applicationContext.getSharedPreferences("selfora_practice_sessions", Context.MODE_PRIVATE)
+        }
+    }
+
+    fun saveActivePracticeSession(session: ActivePracticeSession) {
+        val sp = prefs ?: return
+        val key = "active_session_${session.childId}_${session.activityId}"
+        val json = gson.toJson(session)
+        sp.edit()
+            .putString(key, json)
+            .putLong("last_active_activity_${session.childId}", session.activityId)
+            .apply()
+    }
+
+    fun getActivePracticeSession(childId: Long, activityId: Long): ActivePracticeSession? {
+        val sp = prefs ?: return null
+        val key = "active_session_${childId}_$activityId"
+        val json = sp.getString(key, null) ?: return null
+        return try {
+            gson.fromJson(json, ActivePracticeSession::class.java)
+        } catch (_: Exception) {
+            null
+        }
+    }
+
+    fun clearActivePracticeSession(childId: Long, activityId: Long) {
+        val sp = prefs ?: return
+        val key = "active_session_${childId}_$activityId"
+        sp.edit().remove(key).apply()
+    }
+
+    fun getPendingSyncSessions(childId: Long): List<ActivePracticeSession> {
+        val sp = prefs ?: return emptyList()
+        val all = sp.all
+        val list = mutableListOf<ActivePracticeSession>()
+        for ((key, value) in all) {
+            if (key.startsWith("active_session_${childId}_") && value is String) {
+                try {
+                    val s = gson.fromJson(value, ActivePracticeSession::class.java)
+                    if (s.sessionStatus == "PENDING_SYNC") {
+                        list.add(s)
+                    }
+                } catch (_: Exception) {}
+            }
+        }
+        return list
     }
 }

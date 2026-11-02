@@ -59,6 +59,10 @@ fun CaregiverDashboardScreen(
                         selectedChild = linkedChildren.first()
                     }
                 }
+                val hpRes = ApiClient.apiService.getTodayHomePrograms()
+                if (hpRes.isSuccessful && hpRes.body() != null) {
+                    homePrograms = hpRes.body()!!
+                }
             } catch (_: Exception) {
             } finally {
                 isLoading = false
@@ -102,6 +106,7 @@ fun CaregiverDashboardScreen(
             ) {
                 // Greeting Hero Banner (Image 2 Screen 2)
                 item {
+                    val caregiverName = SessionManager.getUsername().ifBlank { "Caregiver" }
                     GlassCard(
                         modifier = Modifier.fillMaxWidth(),
                         cornerRadius = 22.dp,
@@ -114,7 +119,7 @@ fun CaregiverDashboardScreen(
                         ) {
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
-                                    text = "Hello, Meena!",
+                                    text = "Hello, $caregiverName!",
                                     fontSize = 20.sp,
                                     fontWeight = FontWeight.ExtraBold,
                                     color = SelforaTextPrimary
@@ -141,8 +146,11 @@ fun CaregiverDashboardScreen(
                     }
                 }
 
-                // Today's Home Program Section (Image 2 Screen 2)
+                // Today's Home Program Section
                 item {
+                    val todayDateStr = remember {
+                        java.time.LocalDate.now().format(java.time.format.DateTimeFormatter.ofPattern("dd MMM yyyy"))
+                    }
                     Column {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
@@ -156,7 +164,7 @@ fun CaregiverDashboardScreen(
                                 color = SelforaTextPrimary
                             )
                             Text(
-                                "12 May 2025",
+                                todayDateStr,
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.SemiBold,
                                 color = SelforaTextSecondary
@@ -165,58 +173,73 @@ fun CaregiverDashboardScreen(
 
                         Spacer(modifier = Modifier.height(10.dp))
 
-                        // Tooth Brushing Primary Home Program Card
-                        GlassCard(
-                            modifier = Modifier.fillMaxWidth(),
-                            cornerRadius = 20.dp,
-                            backgroundColor = Color.White.copy(alpha = 0.95f),
-                            borderColor = SelforaPrimary.copy(alpha = 0.3f),
-                            elevation = 4.dp
-                        ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Surface(
-                                    shape = RoundedCornerShape(14.dp),
-                                    color = SelforaPrimary.copy(alpha = 0.12f),
-                                    modifier = Modifier.size(50.dp)
+                        if (homePrograms.isEmpty()) {
+                            GlassCard(modifier = Modifier.fillMaxWidth()) {
+                                Column(
+                                    modifier = Modifier.padding(16.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally
                                 ) {
-                                    Box(contentAlignment = Alignment.Center) {
-                                        Text("🪥", fontSize = 26.sp)
-                                    }
-                                }
-                                Spacer(modifier = Modifier.width(14.dp))
-                                Column {
-                                    Text(
-                                        "Tooth Brushing",
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 17.sp,
-                                        color = SelforaTextPrimary
-                                    )
-                                    Spacer(modifier = Modifier.height(2.dp))
-                                    Text(
-                                        "Brush all around teeth",
-                                        fontSize = 13.sp,
-                                        color = SelforaTextSecondary
-                                    )
-                                    Text(
-                                        "1 time at night",
-                                        fontSize = 12.sp,
-                                        color = SelforaPrimary,
-                                        fontWeight = FontWeight.SemiBold
-                                    )
+                                    Text("✨", fontSize = 32.sp)
+                                    Spacer(modifier = Modifier.height(6.dp))
+                                    Text("No Practice Scheduled for Today", fontWeight = FontWeight.Bold, fontSize = 15.sp, color = SelforaTextPrimary)
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Text("Great job staying on track! Your therapist will assign new routines as goals progress.", fontSize = 12.sp, color = SelforaTextSecondary, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
                                 }
                             }
+                        } else {
+                            val primaryProg = homePrograms.first()
+                            GlassCard(
+                                modifier = Modifier.fillMaxWidth(),
+                                cornerRadius = 20.dp,
+                                backgroundColor = Color.White.copy(alpha = 0.95f),
+                                borderColor = SelforaPrimary.copy(alpha = 0.3f),
+                                elevation = 4.dp
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Surface(
+                                        shape = RoundedCornerShape(14.dp),
+                                        color = SelforaPrimary.copy(alpha = 0.12f),
+                                        modifier = Modifier.size(50.dp)
+                                    ) {
+                                        Box(contentAlignment = Alignment.Center) {
+                                            Text("👕", fontSize = 26.sp)
+                                        }
+                                    }
+                                    Spacer(modifier = Modifier.width(14.dp))
+                                    Column {
+                                        Text(
+                                            primaryProg.title ?: "Home Practice",
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 17.sp,
+                                            color = SelforaTextPrimary
+                                        )
+                                        Spacer(modifier = Modifier.height(2.dp))
+                                        Text(
+                                            primaryProg.description ?: "Assigned ADL practice",
+                                            fontSize = 13.sp,
+                                            color = SelforaTextSecondary
+                                        )
+                                        Text(
+                                            "${primaryProg.frequencyPerWeek} times per week",
+                                            fontSize = 12.sp,
+                                            color = SelforaPrimary,
+                                            fontWeight = FontWeight.SemiBold
+                                        )
+                                    }
+                                }
 
-                            Spacer(modifier = Modifier.height(16.dp))
+                                Spacer(modifier = Modifier.height(16.dp))
 
-                            GlassButton(
-                                text = "Start Activity",
-                                icon = Icons.Default.PlayArrow,
-                                onClick = { onStartPractice(1L, "tooth_brushing_activity") },
-                                gradient = listOf(SelforaPrimary, Color(0xFF6D28D9)),
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(46.dp)
-                            )
+                                GlassButton(
+                                    text = "Start Practice Session",
+                                    icon = Icons.Default.PlayArrow,
+                                    onClick = { onStartPractice(primaryProg.id, "boy_tshirt_activity") },
+                                    gradient = listOf(SelforaPrimary, Color(0xFF6D28D9)),
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(46.dp)
+                                )
+                            }
                         }
                     }
                 }

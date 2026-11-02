@@ -10,8 +10,10 @@ data class ChildDashboardResponse(
     val continueActivity: ChildActivitySummaryDto? = null,
     val allActivities: List<ChildActivitySummaryDto> = emptyList(),
     val earnedRewards: List<ChildRewardDto> = emptyList(),
+    val allBadges: List<ChildRewardDto> = emptyList(),
     val totalStars: Int = 0,
     val completedCount: Int = 0,
+    val currentStreak: Int = 0,
     val preferences: ChildModePreferenceDto? = null
 )
 
@@ -41,7 +43,25 @@ data class ChildRewardDto(
     val badgeType: String = "",
     val badgeTitle: String = "",
     val badgeIcon: String? = null,
+    val description: String = "",
+    val isUnlocked: Boolean = true,
     val earnedAt: String? = null
+)
+
+data class StepProgressResponse(
+    val id: Long = 0,
+    val childId: Long = 0,
+    val activityId: Long = 0,
+    val activityTitle: String = "",
+    val lastStepNumber: Int = 1,
+    val totalStepsCompleted: Int = 0,
+    val isCompleted: Boolean = false,
+    val starsEarned: Int = 0,
+    val starsAwarded: Int = 0,
+    val totalStars: Int = 0,
+    val newlyUnlockedBadge: String? = null,
+    val newlyUnlockedBadgeIcon: String? = null,
+    val lastPracticedAt: String? = null
 )
 
 data class ChildModePreferenceDto(

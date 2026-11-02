@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -29,12 +30,15 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.simats.selfora.data.api.ApiClient
 import com.simats.selfora.data.model.*
+import com.simats.selfora.data.repository.PracticeSessionStore
 import com.simats.selfora.ui.components.VisualStepGuidanceCard
 import com.simats.selfora.ui.components.glass.*
 import com.simats.selfora.ui.components.progress.ActivityStepProgress
+import com.simats.selfora.ui.components.progress.SelforaLinearProgress
 import com.simats.selfora.ui.therapist.*
 import com.simats.selfora.ui.theme.*
 import kotlinx.coroutines.launch
+import java.time.LocalDate
 import java.util.*
 
 enum class CaregiverPracticeStage {
@@ -49,7 +53,7 @@ enum class CaregiverPracticeStage {
 @Composable
 fun HomePracticeScreen(
     programId: Long = 1L,
-    activityCode: String = "tooth_brushing_activity",
+    activityCode: String = "boy_tshirt_activity",
     onPracticeCompleted: () -> Unit,
     onBack: () -> Unit
 ) {
@@ -57,15 +61,22 @@ fun HomePracticeScreen(
     val scope = rememberCoroutineScope()
 
     var stage by remember { mutableStateOf(CaregiverPracticeStage.ACTIVITY_DETAILS) }
+    var program by remember { mutableStateOf<HomeProgramResponse?>(null) }
     var steps by remember { mutableStateOf<List<TaskStepResponse>>(emptyList()) }
     var currentStepIndex by remember { mutableStateOf(0) }
-    var activeSessionId by remember { mutableStateOf<Long?>(null) }
     var isLoading by remember { mutableStateOf(true) }
+    var isSubmitting by remember { mutableStateOf(false) }
+    var submissionError by remember { mutableStateOf<String?>(null) }
 
-    // Observation outcome per step
-    var selectedAssistance by remember { mutableStateOf("VERBAL") } // INDEPENDENT, VERBAL, VISUAL, PHYSICAL, UNABLE
+    // Idempotent Client Session ID
+    val clientSessionId = remember { UUID.randomUUID().toString() }
+
+    // Recorded step outcomes: Step ID -> (Outcome, Observation)
+    val stepResultsMap = remember { mutableStateMapOf<Long, StepResultItemDto>() }
+    var selectedOutcome by remember { mutableStateOf("INDEPENDENT") }
     var stepNoteText by remember { mutableStateOf("") }
-    var isAudioPlaying by remember { mutableStateOf(false) }
+    var sessionDurationMinutes by remember { mutableStateOf(15) }
+    var overallCaregiverNotes by remember { mutableStateOf("") }
 
     // TTS
     var tts by remember { mutableStateOf<TextToSpeech?>(null) }
@@ -83,25 +94,111 @@ fun HomePracticeScreen(
         }
     }
 
-    LaunchedEffect(activityCode) {
+    // Load Program & Task Steps from backend
+    LaunchedEffect(programId) {
         isLoading = true
-        steps = when (activityCode) {
-            "eating_spoon_activity" -> getSampleEatingSteps()
-            "shoes_socks_activity" -> getSampleShoesSteps()
-            "girl_frock_activity" -> getSampleGirlFrockSteps()
-            "boy_tshirt_activity" -> getSampleTShirtSteps()
-            else -> getSampleToothBrushingSteps()
+        submissionError = null
+        try {
+            val progRes = ApiClient.apiService.getHomeProgramById(programId)
+            if (progRes.isSuccessful && progRes.body() != null) {
+                program = progRes.body()!!
+                val actId = program!!.activityId
+                val stepRes = ApiClient.apiService.getTaskSteps(actId)
+                if (stepRes.isSuccessful && !stepRes.body().isNullOrEmpty()) {
+                    steps = stepRes.body()!!
+                } else {
+                    steps = getSampleTShirtSteps()
+                }
+            } else {
+                // Fallback to active program or sample
+                val todayRes = ApiClient.apiService.getTodayHomePrograms()
+                val found = todayRes.body()?.firstOrNull { it.id == programId }
+                if (found != null) {
+                    program = found
+                    val stepRes = ApiClient.apiService.getTaskSteps(found.activityId)
+                    steps = if (stepRes.isSuccessful && !stepRes.body().isNullOrEmpty()) stepRes.body()!! else getSampleTShirtSteps()
+                } else {
+                    steps = getSampleTShirtSteps()
+                }
+            }
+        } catch (e: Exception) {
+            steps = getSampleTShirtSteps()
+        } finally {
+            isLoading = false
         }
-        activeSessionId = 1L
-        isLoading = false
     }
 
-    val activityTitle = when (activityCode) {
-        "eating_spoon_activity" -> "Eating with Spoon"
-        "shoes_socks_activity" -> "Shoes & Socks"
-        "girl_frock_activity" -> "Girl Frock Dressing"
-        "boy_tshirt_activity" -> "Wearing T-Shirt"
-        else -> "Tooth Brushing"
+    val activityTitle = program?.title ?: "Home Practice Session"
+
+    // Five Clinical Caregiver Outcomes
+    val caregiverOutcomes = listOf(
+        Triple("INDEPENDENT", "Completed Independently", "Child did this step with no assistance"),
+        Triple("LITTLE_HELP", "Completed with a Little Help", "Needed gentle prompt or small gesture"),
+        Triple("LOT_HELP", "Completed with a Lot of Help", "Needed hands-on guidance or full physical help"),
+        Triple("COULD_NOT_COMPLETE", "Could Not Complete", "Child tried but could not finish this step"),
+        Triple("NOT_PRACTISED", "Not Practised", "Skipped this step today")
+    )
+
+    fun submitPracticeSession() {
+        val prog = program
+        val childId = prog?.childId ?: 1L
+        val actId = prog?.activityId ?: 1L
+
+        val resultsList = steps.map { s ->
+            stepResultsMap[s.id] ?: StepResultItemDto(
+                stepId = s.id,
+                stepNumber = s.stepNumber,
+                stepTitle = s.title,
+                outcome = "INDEPENDENT",
+                observation = "Completed"
+            )
+        }
+
+        val request = SubmitPracticeRequest(
+            clientSessionId = clientSessionId,
+            homeProgramId = programId,
+            childId = childId,
+            activityId = actId,
+            practiceDate = LocalDate.now().toString(),
+            durationMinutes = sessionDurationMinutes,
+            caregiverNotes = overallCaregiverNotes.ifBlank { "Home practice completed successfully." },
+            stepResults = resultsList
+        )
+
+        isSubmitting = true
+        submissionError = null
+
+        scope.launch {
+            try {
+                val res = ApiClient.apiService.submitPractice(request)
+                if (res.isSuccessful && res.body() != null) {
+                    val saved = res.body()!!
+                    // Update client store with verified response
+                    val indep = resultsList.count { it.outcome == "INDEPENDENT" }
+                    val help = resultsList.count { it.outcome == "LITTLE_HELP" || it.outcome == "LOT_HELP" }
+                    PracticeSessionStore.addPracticeRecord(
+                        programId = programId,
+                        childId = childId,
+                        activityId = actId,
+                        activityTitle = prog?.title ?: "Home Practice",
+                        durationMinutes = sessionDurationMinutes,
+                        caregiverNotes = overallCaregiverNotes,
+                        totalSteps = steps.size,
+                        independentCount = indep,
+                        neededHelpCount = help,
+                        stepResults = resultsList
+                    )
+                    stage = CaregiverPracticeStage.TODAY_SUMMARY
+                    Toast.makeText(context, "Practice submitted to therapist!", Toast.LENGTH_SHORT).show()
+                } else {
+                    submissionError = "Server rejected submission (${res.code()}). Please try again."
+                }
+            } catch (e: Exception) {
+                submissionError = "Connection error: ${e.localizedMessage}"
+            } finally {
+                isSubmitting = false
+            }
+        }
     }
 
     Scaffold(
@@ -114,8 +211,8 @@ fun HomePracticeScreen(
                             CaregiverPracticeStage.ACTIVITY_DETAILS -> "Activity Details"
                             CaregiverPracticeStage.CAREGIVER_GUIDANCE -> "Caregiver Guidance"
                             CaregiverPracticeStage.STEP_VIEW -> activityTitle
-                            CaregiverPracticeStage.RECORD_PERFORMANCE -> "Record Performance"
-                            CaregiverPracticeStage.TODAY_SUMMARY -> "Today's Summary"
+                            CaregiverPracticeStage.RECORD_PERFORMANCE -> "Record Step Outcome"
+                            CaregiverPracticeStage.TODAY_SUMMARY -> "Practice Summary"
                         },
                         fontWeight = FontWeight.Bold,
                         fontSize = 18.sp,
@@ -129,16 +226,15 @@ fun HomePracticeScreen(
                             CaregiverPracticeStage.CAREGIVER_GUIDANCE -> stage = CaregiverPracticeStage.ACTIVITY_DETAILS
                             CaregiverPracticeStage.STEP_VIEW -> {
                                 if (currentStepIndex > 0) currentStepIndex--
-                                else stage = CaregiverPracticeStage.ACTIVITY_DETAILS
+                                else stage = CaregiverPracticeStage.CAREGIVER_GUIDANCE
                             }
                             CaregiverPracticeStage.RECORD_PERFORMANCE -> stage = CaregiverPracticeStage.STEP_VIEW
                             CaregiverPracticeStage.TODAY_SUMMARY -> onPracticeCompleted()
                         }
                     }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = SelforaTextPrimary)
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = SelforaPrimary)
                     }
                 },
-                modifier = Modifier.statusBarsPadding(),
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = SelforaSurface)
             )
         }
@@ -149,271 +245,163 @@ fun HomePracticeScreen(
                 .padding(padding)
                 .background(SelforaBackground)
         ) {
-            if (isLoading || steps.isEmpty()) {
+            if (isLoading) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(color = SelforaSecondary)
+                    CircularProgressIndicator(color = SelforaPrimary)
                 }
             } else {
                 when (stage) {
-                    // STAGE 1: ACTIVITY DETAILS (Image 2 Screen 3)
+                    // STAGE 1: ACTIVITY DETAILS
                     CaregiverPracticeStage.ACTIVITY_DETAILS -> {
                         Column(
                             modifier = Modifier
                                 .fillMaxSize()
-                                .padding(16.dp)
-                                .verticalScroll(rememberScrollState()),
-                            verticalArrangement = Arrangement.spacedBy(16.dp)
+                                .verticalScroll(rememberScrollState())
+                                .padding(16.dp),
+                            verticalArrangement = Arrangement.SpaceBetween
                         ) {
-                            GlassCard(modifier = Modifier.fillMaxWidth()) {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Text(activityTitle, fontSize = 20.sp, fontWeight = FontWeight.Bold, color = SelforaTextPrimary)
-                                    Surface(shape = RoundedCornerShape(10.dp), color = SelforaPrimary.copy(alpha = 0.12f)) {
-                                        Text("Assigned by Therapist", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = SelforaPrimary, modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp))
-                                    }
-                                }
-
-                                Spacer(modifier = Modifier.height(14.dp))
-
-                                Text("Focus Step", fontSize = 12.sp, color = SelforaTextSecondary, fontWeight = FontWeight.Medium)
-                                Text("Brush all around teeth", fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = SelforaTextPrimary)
-
-                                Spacer(modifier = Modifier.height(16.dp))
-
+                            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                                 Surface(
-                                    shape = RoundedCornerShape(16.dp),
-                                    color = SelforaSecondary.copy(alpha = 0.06f),
-                                    border = androidx.compose.foundation.BorderStroke(1.dp, SelforaSecondary.copy(alpha = 0.15f)),
-                                    modifier = Modifier.fillMaxWidth()
-                                ) {
-                                    Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                        Text("Practice Plan", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = SelforaSecondary)
-
-                                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                            Text("🕒 When", fontSize = 12.sp, color = SelforaTextSecondary)
-                                            Text("At night", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = SelforaTextPrimary)
-                                        }
-                                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                            Text("🔄 How many times", fontSize = 12.sp, color = SelforaTextSecondary)
-                                            Text("1 time", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = SelforaTextPrimary)
-                                        }
-                                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                            Text("💬 Prompt to use", fontSize = 12.sp, color = SelforaTextSecondary)
-                                            Text("Verbal Prompt", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = SelforaPrimary)
-                                        }
-                                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                            Text("🎯 Goal", fontSize = 12.sp, color = SelforaTextSecondary)
-                                            Text("Complete 5 of ${steps.size} steps", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = SelforaSuccess)
-                                        }
-                                    }
-                                }
-
-                                Spacer(modifier = Modifier.height(16.dp))
-
-                                Text("Therapist Instruction", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = SelforaTextPrimary)
-                                Spacer(modifier = Modifier.height(6.dp))
-
-                                Surface(
-                                    onClick = {
-                                        isAudioPlaying = !isAudioPlaying
-                                        if (isAudioPlaying) {
-                                            tts?.speak("Please guide your child to brush all teeth surfaces with gentle reminders.", TextToSpeech.QUEUE_FLUSH, null, null)
-                                        } else {
-                                            tts?.stop()
-                                        }
-                                    },
-                                    shape = RoundedCornerShape(14.dp),
-                                    color = Color.White.copy(alpha = 0.9f),
+                                    shape = RoundedCornerShape(20.dp),
+                                    color = Color.White,
                                     border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                                    shadowElevation = 2.dp,
                                     modifier = Modifier.fillMaxWidth()
                                 ) {
-                                    Row(
-                                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.SpaceBetween
+                                    Column(
+                                        modifier = Modifier.padding(20.dp),
+                                        horizontalAlignment = Alignment.CenterHorizontally
                                     ) {
-                                        Row(verticalAlignment = Alignment.CenterVertically) {
-                                            Icon(
-                                                if (isAudioPlaying) Icons.Default.PauseCircle else Icons.Default.PlayCircle,
-                                                contentDescription = null,
-                                                tint = SelforaPrimary,
-                                                modifier = Modifier.size(26.dp)
-                                            )
-                                            Spacer(modifier = Modifier.width(10.dp))
-                                            Text(
-                                                if (isAudioPlaying) "Playing audio instruction..." else "Tap to play instruction",
-                                                fontSize = 13.sp,
-                                                fontWeight = FontWeight.Medium,
-                                                color = SelforaTextPrimary
-                                            )
+                                        Text("👕", fontSize = 56.sp)
+                                        Spacer(modifier = Modifier.height(10.dp))
+                                        Text(activityTitle, fontSize = 20.sp, fontWeight = FontWeight.Bold, color = SelforaTextPrimary)
+                                        Spacer(modifier = Modifier.height(4.dp))
+                                        Text(
+                                            program?.description ?: "Practice daily to build independence.",
+                                            fontSize = 13.sp,
+                                            color = SelforaTextSecondary,
+                                            textAlign = TextAlign.Center
+                                        )
+
+                                        Spacer(modifier = Modifier.height(16.dp))
+
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.SpaceEvenly
+                                        ) {
+                                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                                Text("Total Steps", fontSize = 11.sp, color = SelforaTextSecondary)
+                                                Text("${steps.size}", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = SelforaPrimary)
+                                            }
+                                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                                Text("Est. Duration", fontSize = 11.sp, color = SelforaTextSecondary)
+                                                Text("${program?.targetDurationMinutes ?: 15} mins", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = SelforaPrimary)
+                                            }
+                                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                                Text("Frequency", fontSize = 11.sp, color = SelforaTextSecondary)
+                                                Text("${program?.frequencyPerWeek ?: 3}x / week", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = SelforaPrimary)
+                                            }
                                         }
-                                        Text("00:35", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = SelforaTextSecondary)
+                                    }
+                                }
+
+                                if (!program?.caregiverInstructions.isNullOrBlank()) {
+                                    GlassCard(modifier = Modifier.fillMaxWidth()) {
+                                        Text("Therapist Guidance:", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = SelforaPrimary)
+                                        Spacer(modifier = Modifier.height(4.dp))
+                                        Text("\"${program!!.caregiverInstructions}\"", fontSize = 13.sp, color = SelforaTextPrimary)
                                     }
                                 }
                             }
 
-                            GlassOutlinedButton(
-                                text = "Caregiver Guidance (DO / AVOID / PROMPT)",
-                                icon = Icons.Default.MenuBook,
-                                onClick = { stage = CaregiverPracticeStage.CAREGIVER_GUIDANCE },
-                                modifier = Modifier.fillMaxWidth()
-                            )
+                            Spacer(modifier = Modifier.height(24.dp))
 
                             GlassButton(
-                                text = "Start Practice →",
-                                onClick = { stage = CaregiverPracticeStage.STEP_VIEW },
-                                modifier = Modifier.fillMaxWidth()
+                                text = "Start Guided Practice →",
+                                onClick = { stage = CaregiverPracticeStage.CAREGIVER_GUIDANCE },
+                                modifier = Modifier.fillMaxWidth().height(52.dp)
                             )
                         }
                     }
 
-                    // STAGE 2: CAREGIVER GUIDANCE (Image 2 Screen 5)
+                    // STAGE 2: CAREGIVER GUIDANCE
                     CaregiverPracticeStage.CAREGIVER_GUIDANCE -> {
                         Column(
                             modifier = Modifier
                                 .fillMaxSize()
-                                .padding(16.dp)
-                                .verticalScroll(rememberScrollState()),
-                            verticalArrangement = Arrangement.spacedBy(14.dp)
+                                .verticalScroll(rememberScrollState())
+                                .padding(16.dp),
+                            verticalArrangement = Arrangement.SpaceBetween
                         ) {
-                            // DO Card
-                            Surface(
-                                shape = RoundedCornerShape(16.dp),
-                                color = Color(0xFFF0FDF4),
-                                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF86EFAC)),
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Column(modifier = Modifier.padding(16.dp)) {
-                                    Text("DO ✓", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Color(0xFF16A34A))
-                                    Spacer(modifier = Modifier.height(8.dp))
-                                    Text("• Allow your child to try each step first.", fontSize = 13.sp, color = Color(0xFF166534))
-                                    Text("• Use verbal prompt only when needed.", fontSize = 13.sp, color = Color(0xFF166534))
-                                    Text("• Praise every successful attempt.", fontSize = 13.sp, color = Color(0xFF166534))
+                            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                                Text("Caregiver Instructions", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = SelforaTextPrimary)
+
+                                Surface(
+                                    shape = RoundedCornerShape(16.dp),
+                                    color = Color.White,
+                                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Column(modifier = Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                                        Text("💡 Practice Tips:", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = SelforaPrimary)
+                                        Text("• Allow your child to initiate each step before offering help.", fontSize = 13.sp, color = SelforaTextPrimary)
+                                        Text("• Use short, clear verbal cues rather than taking over.", fontSize = 13.sp, color = SelforaTextPrimary)
+                                        Text("• Offer enthusiastic praise when your child completes a step!", fontSize = 13.sp, color = SelforaTextPrimary)
+                                    }
+                                }
+
+                                if (!program?.safetyConsiderations.isNullOrBlank()) {
+                                    Surface(
+                                        shape = RoundedCornerShape(16.dp),
+                                        color = Color(0xFFFFFBEB),
+                                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFFDE68A)),
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Column(modifier = Modifier.padding(16.dp)) {
+                                            Text("⚠️ Safety Considerations:", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = Color(0xFFB45309))
+                                            Spacer(modifier = Modifier.height(4.dp))
+                                            Text(program!!.safetyConsiderations!!, fontSize = 12.sp, color = Color(0xFF92400E))
+                                        }
+                                    }
                                 }
                             }
 
-                            // AVOID Card
-                            Surface(
-                                shape = RoundedCornerShape(16.dp),
-                                color = Color(0xFFFEF2F2),
-                                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFFCA5A5)),
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Column(modifier = Modifier.padding(16.dp)) {
-                                    Text("AVOID ✕", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Color(0xFFDC2626))
-                                    Spacer(modifier = Modifier.height(8.dp))
-                                    Text("• Do not give physical help unless child is unable.", fontSize = 13.sp, color = Color(0xFF991B1B))
-                                    Text("• Avoid doing the activity for the child.", fontSize = 13.sp, color = Color(0xFF991B1B))
-                                }
-                            }
-
-                            // PROMPT Card
-                            Surface(
-                                shape = RoundedCornerShape(16.dp),
-                                color = Color(0xFFEFF6FF),
-                                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF93C5FD)),
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Column(modifier = Modifier.padding(16.dp)) {
-                                    Text("PROMPT →", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Color(0xFF2563EB))
-                                    Spacer(modifier = Modifier.height(8.dp))
-                                    Text("• Use VERBAL prompt first.", fontSize = 13.sp, color = Color(0xFF1E40AF))
-                                    Text("• If needed, use VISUAL prompt.", fontSize = 13.sp, color = Color(0xFF1E40AF))
-                                    Text("• Reduce prompt as child improves.", fontSize = 13.sp, color = Color(0xFF1E40AF))
-                                }
-                            }
-
-                            // Motivational Banner
-                            Surface(
-                                shape = RoundedCornerShape(16.dp),
-                                color = Color(0xFFFAF5FF),
-                                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFD8B4FE)),
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Column(modifier = Modifier.padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                                    Text("Encourage independence", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = Color(0xFF7E22CE))
-                                    Spacer(modifier = Modifier.height(2.dp))
-                                    Text("Small steps today, big progress tomorrow!", fontSize = 12.sp, color = Color(0xFF6B21A8))
-                                }
-                            }
-
-                            Spacer(modifier = Modifier.height(8.dp))
+                            Spacer(modifier = Modifier.height(24.dp))
 
                             GlassButton(
-                                text = "Start Practice Now →",
-                                onClick = { stage = CaregiverPracticeStage.STEP_VIEW },
-                                modifier = Modifier.fillMaxWidth()
+                                text = "Begin Step 1 →",
+                                onClick = {
+                                    currentStepIndex = 0
+                                    stage = CaregiverPracticeStage.STEP_VIEW
+                                },
+                                modifier = Modifier.fillMaxWidth().height(52.dp)
                             )
                         }
                     }
 
-                    // STAGE 3: STEP-BY-STEP GUIDE (Image 2 Screen 4)
+                    // STAGE 3: STEP VIEW (Visual Guidance + TTS)
                     CaregiverPracticeStage.STEP_VIEW -> {
                         val currentStep = steps[currentStepIndex]
                         Column(
                             modifier = Modifier
                                 .fillMaxSize()
-                                .padding(16.dp)
-                                .verticalScroll(rememberScrollState()),
+                                .verticalScroll(rememberScrollState())
+                                .padding(16.dp),
                             verticalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Text(
-                                    text = "Step ${currentStepIndex + 1} of ${steps.size}",
-                                    fontSize = 13.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = SelforaPrimary
-                                )
-                                Spacer(modifier = Modifier.height(4.dp))
-                                Text(
-                                    text = currentStep.title,
-                                    fontSize = 18.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = SelforaTextPrimary,
-                                    textAlign = TextAlign.Center
-                                )
-
-                                Spacer(modifier = Modifier.height(16.dp))
-
-                                // Image Card
-                                Surface(
-                                    shape = RoundedCornerShape(24.dp),
-                                    color = Color.White,
-                                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0)),
-                                    shadowElevation = 3.dp,
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .height(200.dp)
-                                ) {
-                                    Box(contentAlignment = Alignment.Center) {
-                                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                            Text(
-                                                text = when (activityCode) {
-                                                    "eating_spoon_activity" -> "🥣"
-                                                    "shoes_socks_activity" -> "👟"
-                                                    "boy_tshirt_activity" -> "👕"
-                                                    else -> "🪥"
-                                                },
-                                                fontSize = 64.sp
-                                            )
-                                            Spacer(modifier = Modifier.height(10.dp))
-                                            Text(
-                                                text = currentStep.instructionText ?: currentStep.title,
-                                                fontSize = 13.sp,
-                                                color = SelforaTextSecondary,
-                                                textAlign = TextAlign.Center,
-                                                modifier = Modifier.padding(horizontal = 16.dp)
-                                            )
-                                        }
+                            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                                VisualStepGuidanceCard(
+                                    stepNumber = currentStep.stepNumber,
+                                    totalSteps = steps.size,
+                                    stepTitle = currentStep.title,
+                                    childInstruction = currentStep.instructionText ?: currentStep.childInstruction ?: currentStep.title,
+                                    gender = "BOY",
+                                    onSpeakInstruction = {
+                                        val text = currentStep.instructionText ?: currentStep.childInstruction ?: currentStep.title
+                                        tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, null)
                                     }
-                                }
+                                )
 
-                                Spacer(modifier = Modifier.height(16.dp))
-
-                                // Modern Activity Step Progress
                                 ActivityStepProgress(
                                     currentStep = currentStepIndex + 1,
                                     totalSteps = steps.size,
@@ -431,20 +419,25 @@ fun HomePracticeScreen(
                                     text = "Back",
                                     onClick = {
                                         if (currentStepIndex > 0) currentStepIndex--
-                                        else stage = CaregiverPracticeStage.ACTIVITY_DETAILS
+                                        else stage = CaregiverPracticeStage.CAREGIVER_GUIDANCE
                                     },
                                     modifier = Modifier.weight(1f)
                                 )
                                 GlassButton(
-                                    text = "Record Step →",
-                                    onClick = { stage = CaregiverPracticeStage.RECORD_PERFORMANCE },
-                                    modifier = Modifier.weight(1f)
+                                    text = "Record Outcome →",
+                                    onClick = {
+                                        val existing = stepResultsMap[currentStep.id]
+                                        selectedOutcome = existing?.outcome ?: "INDEPENDENT"
+                                        stepNoteText = existing?.observation ?: ""
+                                        stage = CaregiverPracticeStage.RECORD_PERFORMANCE
+                                    },
+                                    modifier = Modifier.weight(1.5f)
                                 )
                             }
                         }
                     }
 
-                    // STAGE 4: RECORD PERFORMANCE (Image 2 Screen 6)
+                    // STAGE 4: RECORD PERFORMANCE (5 Caregiver Outcomes)
                     CaregiverPracticeStage.RECORD_PERFORMANCE -> {
                         val currentStep = steps[currentStepIndex]
                         Column(
@@ -453,35 +446,27 @@ fun HomePracticeScreen(
                                 .imePadding()
                                 .verticalScroll(rememberScrollState())
                                 .padding(16.dp),
-                            verticalArrangement = Arrangement.spacedBy(16.dp)
+                            verticalArrangement = Arrangement.spacedBy(14.dp)
                         ) {
                             Column {
                                 Text("Step ${currentStepIndex + 1} of ${steps.size}", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = SelforaPrimary)
                                 Spacer(modifier = Modifier.height(2.dp))
                                 Text(currentStep.title, fontSize = 18.sp, fontWeight = FontWeight.Bold, color = SelforaTextPrimary)
                                 Spacer(modifier = Modifier.height(4.dp))
-                                Text("How did your child perform this step?", fontSize = 13.sp, color = SelforaTextSecondary)
+                                Text("Select the outcome that best describes your child's effort:", fontSize = 13.sp, color = SelforaTextSecondary)
                             }
 
-                            // Assistance Options
-                            val assistanceLevels = listOf(
-                                Triple("INDEPENDENT", "Independent", "No help needed"),
-                                Triple("VERBAL", "Verbal Prompt", "Spoken reminder"),
-                                Triple("VISUAL", "Visual Prompt", "Shown picture / gesture"),
-                                Triple("PHYSICAL", "Physical Assistance", "Helped physically"),
-                                Triple("UNABLE", "Unable", "Could not do")
-                            )
-
+                            // 5 Caregiver Outcomes
                             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                assistanceLevels.forEach { (code, title, desc) ->
-                                    val isSelected = selectedAssistance == code
+                                caregiverOutcomes.forEach { (code, title, desc) ->
+                                    val isSelected = selectedOutcome == code
                                     Surface(
-                                        onClick = { selectedAssistance = code },
-                                        shape = RoundedCornerShape(16.dp),
+                                        onClick = { selectedOutcome = code },
+                                        shape = RoundedCornerShape(14.dp),
                                         color = if (isSelected) Color(0xFFF0FDF4) else Color.White,
                                         border = androidx.compose.foundation.BorderStroke(
-                                            1.dp,
-                                            if (isSelected) SelforaSuccess else Color(0xFFE2E8F0)
+                                            width = if (isSelected) 2.dp else 1.dp,
+                                            color = if (isSelected) SelforaSuccess else Color(0xFFE2E8F0)
                                         ),
                                         shadowElevation = if (isSelected) 2.dp else 1.dp,
                                         modifier = Modifier.fillMaxWidth()
@@ -492,7 +477,7 @@ fun HomePracticeScreen(
                                         ) {
                                             RadioButton(
                                                 selected = isSelected,
-                                                onClick = { selectedAssistance = code },
+                                                onClick = { selectedOutcome = code },
                                                 colors = RadioButtonDefaults.colors(selectedColor = SelforaSuccess)
                                             )
                                             Spacer(modifier = Modifier.width(8.dp))
@@ -505,35 +490,54 @@ fun HomePracticeScreen(
                                 }
                             }
 
-                            // Notes (optional)
+                            // Optional Observation Notes
                             GlassTextField(
                                 value = stepNoteText,
                                 onValueChange = { stepNoteText = it },
-                                label = "Notes (optional)",
-                                placeholder = "Write any observations or notes...",
+                                label = "Observation Note (Optional)",
+                                placeholder = "e.g. Needed encouragement, tried twice...",
                                 singleLine = false,
-                                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                                modifier = Modifier.fillMaxWidth()
+                                leadingIcon = Icons.Default.EditNote
                             )
 
+                            if (submissionError != null) {
+                                Text(submissionError!!, fontSize = 12.sp, color = SelforaError, fontWeight = FontWeight.Medium)
+                            }
+
+                            Spacer(modifier = Modifier.height(10.dp))
+
                             GlassButton(
-                                text = "Save & Continue →",
+                                text = if (currentStepIndex == steps.size - 1) {
+                                    if (isSubmitting) "Submitting Practice..." else "Complete & Submit Session ✓"
+                                } else "Save & Next Step →",
                                 onClick = {
-                                    stepNoteText = ""
+                                    stepResultsMap[currentStep.id] = StepResultItemDto(
+                                        stepId = currentStep.id,
+                                        stepNumber = currentStep.stepNumber,
+                                        stepTitle = currentStep.title,
+                                        outcome = selectedOutcome,
+                                        observation = stepNoteText.trim()
+                                    )
+
                                     if (currentStepIndex < steps.size - 1) {
                                         currentStepIndex++
                                         stage = CaregiverPracticeStage.STEP_VIEW
                                     } else {
-                                        stage = CaregiverPracticeStage.TODAY_SUMMARY
+                                        // Final Step: Submit session
+                                        submitPracticeSession()
                                     }
                                 },
-                                modifier = Modifier.fillMaxWidth()
+                                modifier = Modifier.fillMaxWidth().height(52.dp)
                             )
                         }
                     }
 
-                    // STAGE 5: TODAY'S SUMMARY (Image 2 Screen 7)
+                    // STAGE 5: TODAY'S SUMMARY (Live Persisted Outcome)
                     CaregiverPracticeStage.TODAY_SUMMARY -> {
+                        val indepCount = stepResultsMap.values.count { it.outcome == "INDEPENDENT" }
+                        val helpCount = stepResultsMap.values.count { it.outcome == "LITTLE_HELP" || it.outcome == "LOT_HELP" }
+                        val couldNotCount = stepResultsMap.values.count { it.outcome == "COULD_NOT_COMPLETE" }
+
                         Column(
                             modifier = Modifier
                                 .fillMaxSize()
@@ -555,29 +559,31 @@ fun HomePracticeScreen(
                                 ) {
                                     Text("⭐", fontSize = 48.sp)
                                     Spacer(modifier = Modifier.height(10.dp))
-                                    Text("Great effort today!", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = SelforaTextPrimary)
-                                    Text("Keep it up!", fontSize = 14.sp, color = SelforaSuccess, fontWeight = FontWeight.SemiBold)
+                                    Text("Great Job Today!", fontSize = 20.sp, fontWeight = FontWeight.ExtraBold, color = SelforaTextPrimary)
+                                    Text("Practice record submitted for therapist review.", fontSize = 13.sp, color = SelforaSuccess, fontWeight = FontWeight.SemiBold)
 
                                     Spacer(modifier = Modifier.height(20.dp))
 
                                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                        Text("Activities Completed", fontSize = 13.sp, color = SelforaTextSecondary)
-                                        Text("2 / 3", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = SelforaTextPrimary)
-                                    }
-                                    Spacer(modifier = Modifier.height(8.dp))
-                                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                        Text("Steps Completed", fontSize = 13.sp, color = SelforaTextSecondary)
+                                        Text("Steps Practised", fontSize = 13.sp, color = SelforaTextSecondary)
                                         Text("${steps.size} / ${steps.size}", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = SelforaTextPrimary)
                                     }
                                     Spacer(modifier = Modifier.height(8.dp))
                                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                        Text("Prompt Used Mostly", fontSize = 13.sp, color = SelforaTextSecondary)
-                                        Text("Verbal Prompt", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = SelforaPrimary)
+                                        Text("Independent Steps", fontSize = 13.sp, color = SelforaTextSecondary)
+                                        Text("$indepCount", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = SelforaSuccess)
                                     }
                                     Spacer(modifier = Modifier.height(8.dp))
                                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                        Text("Child Response", fontSize = 13.sp, color = SelforaTextSecondary)
-                                        Text("Good 😊", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = SelforaSuccess)
+                                        Text("Assisted Steps", fontSize = 13.sp, color = SelforaTextSecondary)
+                                        Text("$helpCount", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = SelforaPrimary)
+                                    }
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                        Text("Review Status", fontSize = 13.sp, color = SelforaTextSecondary)
+                                        Surface(shape = RoundedCornerShape(8.dp), color = SelforaWarning.copy(alpha = 0.15f)) {
+                                            Text("Pending Review", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = SelforaWarning, modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp))
+                                        }
                                     }
                                 }
                             }
@@ -585,9 +591,9 @@ fun HomePracticeScreen(
                             Spacer(modifier = Modifier.height(8.dp))
 
                             GlassButton(
-                                text = "View Details / Done",
+                                text = "Return to Dashboard",
                                 onClick = onPracticeCompleted,
-                                modifier = Modifier.fillMaxWidth()
+                                modifier = Modifier.fillMaxWidth().height(52.dp)
                             )
                         }
                     }

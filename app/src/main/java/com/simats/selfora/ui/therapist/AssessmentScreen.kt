@@ -67,10 +67,25 @@ fun AssessmentScreen(
     var showNotAssessedDialog by remember { mutableStateOf(false) }
     var notAssessedReasonInput by remember { mutableStateOf("") }
     var showConfirmationDialog by remember { mutableStateOf(false) }
+    var childDto by remember { mutableStateOf<ChildDto?>(null) }
+    var childLoading by remember { mutableStateOf(true) }
 
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
     val currentDate = remember { LocalDate.now().toString() }
+
+    LaunchedEffect(childId) {
+        childLoading = true
+        try {
+            val res = ApiClient.apiService.getChildById(childId)
+            if (res.isSuccessful && res.body() != null) {
+                childDto = res.body()
+            }
+        } catch (_: Exception) {}
+        finally {
+            childLoading = false
+        }
+    }
 
     // Prompt Hierarchy Definitions
     val promptHierarchy = listOf(
@@ -138,9 +153,19 @@ fun AssessmentScreen(
                         }
                         Spacer(modifier = Modifier.width(12.dp))
                         Column {
-                            Text("Arjun Kumar", fontSize = 17.sp, fontWeight = FontWeight.Bold, color = SelforaTextPrimary)
-                            Text("Child ID: #$childId • Age: 8 yrs • Gender: BOY", fontSize = 12.sp, color = SelforaTextSecondary)
-                            Text("Assigned Doctor: Dr. Sarah Jenkins", fontSize = 11.sp, color = SelforaPrimary, fontWeight = FontWeight.SemiBold)
+                            val displayName = childDto?.let { "${it.firstName} ${it.lastName ?: ""}".trim() } ?: "Child #$childId"
+                            val displayGender = childDto?.gender ?: "BOY"
+                            val displayAge = childDto?.dateOfBirth?.let {
+                                try {
+                                    val birth = LocalDate.parse(it)
+                                    java.time.Period.between(birth, LocalDate.now()).years
+                                } catch (_: Exception) { 7 }
+                            } ?: 7
+                            val doctorName = childDto?.therapistName ?: "Assigned Occupational Therapist"
+
+                            Text(displayName, fontSize = 17.sp, fontWeight = FontWeight.Bold, color = SelforaTextPrimary)
+                            Text("Child ID: #$childId • Age: $displayAge yrs • Gender: $displayGender", fontSize = 12.sp, color = SelforaTextSecondary)
+                            Text("Assigned Doctor: $doctorName", fontSize = 11.sp, color = SelforaPrimary, fontWeight = FontWeight.SemiBold)
                         }
                     }
                 }
@@ -441,7 +466,8 @@ fun AssessmentScreen(
             title = { Text("Complete Assessment Submission", fontWeight = FontWeight.Bold) },
             text = {
                 Column {
-                    Text("Review assessment summary for Arjun Kumar:", fontSize = 13.sp, color = SelforaTextSecondary)
+                    val targetName = childDto?.let { "${it.firstName} ${it.lastName ?: ""}".trim() } ?: "Child #$childId"
+                    Text("Review assessment summary for $targetName:", fontSize = 13.sp, color = SelforaTextSecondary)
                     Spacer(modifier = Modifier.height(10.dp))
                     Text("• Total Steps: ${stepStates.size}", fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
                     Text("• Independent Steps: $independentCount", fontSize = 13.sp, color = SelforaSuccess, fontWeight = FontWeight.Bold)

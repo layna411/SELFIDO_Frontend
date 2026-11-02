@@ -21,6 +21,7 @@ import androidx.compose.ui.unit.sp
 import com.simats.selfora.data.api.ApiClient
 import com.simats.selfora.data.local.SessionManager
 import com.simats.selfora.data.model.TaskStepResponse
+import com.simats.selfora.data.repository.PracticeSessionStore
 import com.simats.selfora.ui.components.VisualStepGuidanceCard
 import com.simats.selfora.ui.theme.*
 import com.simats.selfora.ui.therapist.getSampleEatingSteps
@@ -39,11 +40,14 @@ fun ChildActivityStepScreen(
     var steps by remember { mutableStateOf<List<TaskStepResponse>>(emptyList()) }
     var currentStepIndex by remember { mutableStateOf(0) }
     var isLoading by remember { mutableStateOf(true) }
+    var isSubmitting by remember { mutableStateOf(false) }
+    var submitError by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
 
     val context = LocalContext.current
     val ttsManager = remember { TtsManager(context) }
     val gender = remember { SessionManager.getActiveChildGender().ifBlank { "BOY" } }
+    val activeChildId = remember { SessionManager.getActiveChildId() }
 
     DisposableEffect(Unit) {
         onDispose {
@@ -53,6 +57,7 @@ fun ChildActivityStepScreen(
 
     LaunchedEffect(activityId) {
         isLoading = true
+        PracticeSessionStore.init(context)
         val fallbackSteps = when (activityId) {
             13L -> getSampleEatingSteps()
             9L -> getSampleShoesSteps()
@@ -62,18 +67,41 @@ fun ChildActivityStepScreen(
         try {
             val res = ApiClient.apiService.getTaskSteps(activityId)
             steps = if (res.isSuccessful && res.body() != null && res.body()!!.isNotEmpty()) res.body()!! else fallbackSteps
+            
+            // Durable Session Recovery: check if saved progress exists for this child & activity
+            val savedSession = PracticeSessionStore.getActivePracticeSession(activeChildId, activityId)
+            if (savedSession != null && savedSession.currentStepIndex in steps.indices) {
+                currentStepIndex = savedSession.currentStepIndex
+            }
         } catch (e: Exception) {
             steps = fallbackSteps
+            val savedSession = PracticeSessionStore.getActivePracticeSession(activeChildId, activityId)
+            if (savedSession != null && savedSession.currentStepIndex in steps.indices) {
+                currentStepIndex = savedSession.currentStepIndex
+            }
         } finally {
             isLoading = false
         }
     }
 
-    // Auto-speak instruction on step navigation
+    // Auto-save active progress on step change and auto-speak instruction
     LaunchedEffect(currentStepIndex, steps) {
-        if (steps.isNotEmpty() && currentStepIndex < steps.size) {
+        if (steps.isNotEmpty() && currentStepIndex in steps.indices) {
             val instruction = steps[currentStepIndex].childInstruction
             ttsManager.speak(instruction)
+
+            if (activeChildId > 0) {
+                PracticeSessionStore.saveActivePracticeSession(
+                    com.simats.selfora.data.repository.ActivePracticeSession(
+                        childId = activeChildId,
+                        activityId = activityId,
+                        currentStepIndex = currentStepIndex,
+                        completedSteps = currentStepIndex,
+                        totalSteps = steps.size,
+                        sessionStatus = "IN_PROGRESS"
+                    )
+                )
+            }
         }
     }
 
@@ -159,44 +187,111 @@ fun ChildActivityStepScreen(
 
                     Button(
                         onClick = {
-                            val activeChildId = SessionManager.getActiveChildId()
+                            if (isSubmitting) return@Button
                             val isCompleted = currentStepIndex == steps.size - 1
-                            if (activeChildId > 0) {
-                                scope.launch {
-                                    try {
-                                        ApiClient.apiService.recordChildStepProgress(
-                                            com.simats.selfora.data.model.RecordStepProgressRequest(
-                                                childId = activeChildId,
-                                                activityId = activityId,
-                                                stepNumber = currentStepIndex + 1,
-                                                isActivityCompleted = isCompleted
-                                            )
-                                        )
-                                    } catch (_: Exception) {}
-                                }
-                            }
 
-                            if (currentStepIndex < steps.size - 1) {
-                                currentStepIndex++
+                            if (isCompleted) {
+                                isSubmitting = true
+                                submitError = null
+                                scope.launch {
+                                    if (activeChildId > 0) {
+                                        try {
+                                            val response = ApiClient.apiService.recordChildStepProgress(
+                                                com.simats.selfora.data.model.RecordStepProgressRequest(
+                                                    childId = activeChildId,
+                                                    activityId = activityId,
+                                                    stepNumber = steps.size,
+                                                    isActivityCompleted = true
+                                                )
+                                            )
+                                            if (response.isSuccessful && response.body() != null) {
+                                                PracticeSessionStore.setLastStepProgress(response.body())
+                                                PracticeSessionStore.clearActivePracticeSession(activeChildId, activityId)
+                                                isSubmitting = false
+                                                onFinished()
+                                                return@launch
+                                            } else {
+                                                PracticeSessionStore.saveActivePracticeSession(
+                                                    com.simats.selfora.data.repository.ActivePracticeSession(
+                                                        childId = activeChildId,
+                                                        activityId = activityId,
+                                                        currentStepIndex = steps.size - 1,
+                                                        completedSteps = steps.size,
+                                                        totalSteps = steps.size,
+                                                        sessionStatus = "PENDING_SYNC"
+                                                    )
+                                                )
+                                                submitError = "Progress safely saved offline! Tap to retry sending."
+                                            }
+                                        } catch (e: Exception) {
+                                            PracticeSessionStore.saveActivePracticeSession(
+                                                com.simats.selfora.data.repository.ActivePracticeSession(
+                                                    childId = activeChildId,
+                                                    activityId = activityId,
+                                                    currentStepIndex = steps.size - 1,
+                                                    completedSteps = steps.size,
+                                                    totalSteps = steps.size,
+                                                    sessionStatus = "PENDING_SYNC"
+                                                )
+                                            )
+                                            submitError = "Connection paused. Progress safely saved! Tap to retry."
+                                        }
+                                    }
+                                    isSubmitting = false
+                                }
                             } else {
-                                onFinished()
+                                submitError = null
+                                if (activeChildId > 0) {
+                                    scope.launch {
+                                        try {
+                                            ApiClient.apiService.recordChildStepProgress(
+                                                com.simats.selfora.data.model.RecordStepProgressRequest(
+                                                    childId = activeChildId,
+                                                    activityId = activityId,
+                                                    stepNumber = currentStepIndex + 1,
+                                                    isActivityCompleted = false
+                                                )
+                                            )
+                                        } catch (_: Exception) {}
+                                    }
+                                }
+                                currentStepIndex++
                             }
                         },
                         modifier = Modifier
                             .weight(1f)
                             .height(60.dp),
                         shape = RoundedCornerShape(18.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = ChildGreenPlay)
+                        colors = ButtonDefaults.buttonColors(containerColor = ChildGreenPlay),
+                        enabled = !isSubmitting
                     ) {
-                        Text(
-                            if (currentStepIndex == steps.size - 1) "I DID IT! 🎉" else "NEXT STEP",
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 17.sp,
-                            color = Color.White
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Icon(Icons.Default.ArrowForward, contentDescription = null, tint = Color.White)
+                        if (isSubmitting) {
+                            CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.White, strokeWidth = 3.dp)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Saving... ✨", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Color.White)
+                        } else {
+                            Text(
+                                if (currentStepIndex == steps.size - 1) "I DID IT! 🎉" else "NEXT STEP",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 17.sp,
+                                color = Color.White
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Icon(Icons.Default.ArrowForward, contentDescription = null, tint = Color.White)
+                        }
                     }
+                }
+
+                if (submitError != null) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = submitError!!,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = SelforaError,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)
+                    )
                 }
             }
         }

@@ -63,6 +63,48 @@ fun ChildProfileScreen(
 
     val tabs = listOf("Overview", "Analyze & Adapt", "Prompt Fading", "ADL Goals", "Assessments", "Sessions", "Home Programmes", "Progress")
 
+    var assessmentsList by remember { mutableStateOf<List<com.simats.selfora.data.model.AssessmentResponse>>(emptyList()) }
+    var sessionsList by remember { mutableStateOf<List<com.simats.selfora.data.model.SessionResponse>>(emptyList()) }
+    var homeProgramsList by remember { mutableStateOf<List<com.simats.selfora.data.model.HomeProgramResponse>>(emptyList()) }
+    var isTabDataLoading by remember { mutableStateOf(false) }
+
+    fun loadTabData(tab: String) {
+        scope.launch {
+            isTabDataLoading = true
+            try {
+                when (tab) {
+                    "Assessments" -> {
+                        val res = ApiClient.apiService.getAssessmentsForChild(childId)
+                        if (res.isSuccessful && res.body() != null) {
+                            assessmentsList = res.body()!!
+                        }
+                    }
+                    "Sessions" -> {
+                        val res = ApiClient.apiService.getSessionsForChild(childId)
+                        if (res.isSuccessful && res.body() != null) {
+                            sessionsList = res.body()!!
+                        }
+                    }
+                    "Home Programmes" -> {
+                        val res = ApiClient.apiService.getAllHomeProgramsForChild(childId)
+                        if (res.isSuccessful && res.body() != null) {
+                            homeProgramsList = res.body()!!
+                        }
+                    }
+                }
+            } catch (_: Exception) {}
+            finally {
+                isTabDataLoading = false
+            }
+        }
+    }
+
+    LaunchedEffect(selectedTab) {
+        if (selectedTab in listOf("Assessments", "Sessions", "Home Programmes")) {
+            loadTabData(selectedTab)
+        }
+    }
+
     LaunchedEffect(childId) {
         isLoading = true
         errorMessage = null
@@ -467,24 +509,47 @@ fun ChildProfileScreen(
                 // 3. Assessments Tab
                 "Assessments" -> {
                     Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                        GlassCard(modifier = Modifier.fillMaxWidth()) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text("CLINICAL BASELINE ASSESSMENT", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = SelforaTextPrimary)
-                                Surface(shape = RoundedCornerShape(10.dp), color = SelforaSuccess.copy(alpha = 0.15f)) {
-                                    Text("Evaluated", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = SelforaSuccess, modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp))
+                        if (isTabDataLoading) {
+                            Box(modifier = Modifier.fillMaxWidth().height(100.dp), contentAlignment = Alignment.Center) {
+                                CircularProgressIndicator(color = SelforaPrimary, modifier = Modifier.size(28.dp))
+                            }
+                        } else if (assessmentsList.isEmpty()) {
+                            GlassCard(modifier = Modifier.fillMaxWidth()) {
+                                Column(
+                                    modifier = Modifier.padding(16.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally
+                                ) {
+                                    Text("📋", fontSize = 32.sp)
+                                    Spacer(modifier = Modifier.height(6.dp))
+                                    Text("No Clinical Assessments Yet", fontWeight = FontWeight.Bold, fontSize = 15.sp, color = SelforaTextPrimary)
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Text("Conduct a baseline assessment to evaluate this child's initial prompt levels.", fontSize = 12.sp, color = SelforaTextSecondary, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
                                 }
                             }
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Text("Evaluation Date: Sep 15, 2026 • Evaluator: $therapistName", fontSize = 12.sp, color = SelforaTextSecondary)
-                            Spacer(modifier = Modifier.height(10.dp))
-                            Text("Assessed Baseline Prompt Levels:", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = SelforaPrimary)
-                            Text("• Dressing: Visual Prompt needed for neck insertion", fontSize = 12.sp, color = SelforaTextSecondary)
-                            Text("• Eating: Verbal Prompt needed for spoon angle", fontSize = 12.sp, color = SelforaTextSecondary)
-                            Text("• Shoes: Independent on Velcro closure", fontSize = 12.sp, color = SelforaTextSecondary)
+                        } else {
+                            assessmentsList.forEach { a ->
+                                GlassCard(modifier = Modifier.fillMaxWidth()) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(a.activityTitle, fontSize = 15.sp, fontWeight = FontWeight.Bold, color = SelforaTextPrimary)
+                                        Surface(shape = RoundedCornerShape(10.dp), color = SelforaSuccess.copy(alpha = 0.15f)) {
+                                            Text("Completed", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = SelforaSuccess, modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp))
+                                        }
+                                    }
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Text("Date: ${a.assessmentDate.take(10)} • Evaluator: ${a.therapistName}", fontSize = 12.sp, color = SelforaTextSecondary)
+                                    if (!a.notes.isNullOrBlank()) {
+                                        Spacer(modifier = Modifier.height(6.dp))
+                                        Text("Clinical Notes: ${a.notes}", fontSize = 12.sp, color = SelforaTextPrimary)
+                                    }
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    val independentSteps = a.stepResults.count { it.outcome == "COMPLETED" && it.promptLevelId == 0 }
+                                    Text("• Assessed Steps: ${a.stepResults.size} ($independentSteps Independent)", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = SelforaPrimary)
+                                }
+                            }
                         }
 
                         GlassButton(
@@ -499,27 +564,90 @@ fun ChildProfileScreen(
                 // 4. Sessions Tab
                 "Sessions" -> {
                     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        GlassSessionHistoryCard("Oct 02, 2026", "Boy T-Shirt Dressing Practice", "18 mins", "COMPLETED", 78)
-                        GlassSessionHistoryCard("Sep 29, 2026", "Spoon Feeding Training", "15 mins", "COMPLETED", 70)
-                        GlassSessionHistoryCard("Sep 25, 2026", "Velcro Shoe Fastening", "20 mins", "COMPLETED", 85)
+                        if (isTabDataLoading) {
+                            Box(modifier = Modifier.fillMaxWidth().height(100.dp), contentAlignment = Alignment.Center) {
+                                CircularProgressIndicator(color = SelforaPrimary, modifier = Modifier.size(28.dp))
+                            }
+                        } else if (sessionsList.isEmpty()) {
+                            GlassCard(modifier = Modifier.fillMaxWidth()) {
+                                Column(
+                                    modifier = Modifier.padding(16.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally
+                                ) {
+                                    Text("🎯", fontSize = 32.sp)
+                                    Spacer(modifier = Modifier.height(6.dp))
+                                    Text("No Therapy Sessions Recorded", fontWeight = FontWeight.Bold, fontSize = 15.sp, color = SelforaTextPrimary)
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Text("Sessions conducted with this child will appear here.", fontSize = 12.sp, color = SelforaTextSecondary)
+                                }
+                            }
+                        } else {
+                            sessionsList.forEach { s ->
+                                val dateStr = s.startTime?.take(10) ?: "Recent"
+                                val durationStr = s.totalDurationSeconds?.let { "${it / 60} mins" } ?: "15 mins"
+                                GlassSessionHistoryCard(
+                                    date = dateStr,
+                                    activityName = s.activityTitle,
+                                    duration = durationStr,
+                                    status = if (s.endTime != null) "COMPLETED" else "IN PROGRESS",
+                                    independencePercentage = 75
+                                )
+                            }
+                        }
                     }
                 }
 
                 // 5. Home Programmes Tab
                 "Home Programmes" -> {
                     Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                        GlassCard(modifier = Modifier.fillMaxWidth()) {
-                            Text("ACTIVE HOME PROGRAMME", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = SelforaPrimary)
-                            Spacer(modifier = Modifier.height(10.dp))
-                            Text("Boy T-Shirt Dressing Practice", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = SelforaTextPrimary)
-                            Text("Assigned: Sep 20, 2026 • Frequency: 4 times/week", fontSize = 12.sp, color = SelforaTextSecondary)
-                            Spacer(modifier = Modifier.height(10.dp))
-                            Text("Caregiver Practice Instructions:", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = SelforaTextPrimary)
-                            Text("\"Provide visual cue for neck insertion before offering verbal assistance.\"", fontSize = 12.sp, color = SelforaTextSecondary)
-                            Spacer(modifier = Modifier.height(12.dp))
-                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                Text("Caregiver Compliance: 85%", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = SelforaSuccess)
-                                Text("Pending Reviews: 1", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = SelforaWarning)
+                        if (isTabDataLoading) {
+                            Box(modifier = Modifier.fillMaxWidth().height(100.dp), contentAlignment = Alignment.Center) {
+                                CircularProgressIndicator(color = SelforaPrimary, modifier = Modifier.size(28.dp))
+                            }
+                        } else if (homeProgramsList.isEmpty()) {
+                            GlassCard(modifier = Modifier.fillMaxWidth()) {
+                                Column(
+                                    modifier = Modifier.padding(16.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally
+                                ) {
+                                    Text("🏠", fontSize = 32.sp)
+                                    Spacer(modifier = Modifier.height(6.dp))
+                                    Text("No Active Home Programmes", fontWeight = FontWeight.Bold, fontSize = 15.sp, color = SelforaTextPrimary)
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Text("Assign a home programme to guide caregiver practice routines.", fontSize = 12.sp, color = SelforaTextSecondary)
+                                }
+                            }
+                        } else {
+                            homeProgramsList.forEach { hp ->
+                                GlassCard(modifier = Modifier.fillMaxWidth()) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(hp.title ?: "Home Practice", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = SelforaTextPrimary)
+                                        Surface(
+                                            shape = RoundedCornerShape(10.dp),
+                                            color = if (hp.isActive) SelforaSuccess.copy(alpha = 0.15f) else Color.Gray.copy(alpha = 0.15f)
+                                        ) {
+                                            Text(
+                                                if (hp.isActive) "ACTIVE" else "INACTIVE",
+                                                fontSize = 10.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = if (hp.isActive) SelforaSuccess else Color.Gray,
+                                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                                            )
+                                        }
+                                    }
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    val startStr = hp.startDate?.take(10) ?: "Recent"
+                                    Text("Assigned: $startStr • Frequency: ${hp.frequencyPerWeek} times/week", fontSize = 12.sp, color = SelforaTextSecondary)
+                                    if (!hp.caregiverInstructions.isNullOrBlank()) {
+                                        Spacer(modifier = Modifier.height(8.dp))
+                                        Text("Caregiver Instructions:", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = SelforaPrimary)
+                                        Text("\"${hp.caregiverInstructions}\"", fontSize = 12.sp, color = SelforaTextSecondary)
+                                    }
+                                }
                             }
                         }
 

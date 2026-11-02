@@ -1403,7 +1403,7 @@ fun MilestoneCard(
 fun ChildRewardProgress(
     starsEarned: Int,
     totalStars: Int = 5,
-    currentStreak: Int = 3,
+    currentStreak: Int = 0,
     modifier: Modifier = Modifier
 ) {
     Surface(
@@ -1419,7 +1419,7 @@ fun ChildRewardProgress(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Column {
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = "Awesome Effort! ⭐",
                     fontSize = 16.sp,
@@ -1428,21 +1428,40 @@ fun ChildRewardProgress(
                 )
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
-                    text = "$currentStreak Day Practice Streak 🔥",
-                    fontSize = 11.5.sp,
+                    text = if (currentStreak > 0) "$currentStreak Day Practice Streak 🔥" else "Start your practice streak today! 🔥",
+                    fontSize = 12.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color(0xFFD97706)
                 )
             }
 
-            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                for (i in 1..totalStars) {
-                    val isEarned = i <= starsEarned
+            Surface(
+                shape = RoundedCornerShape(16.dp),
+                color = Color(0xFFFEF3C7),
+                border = androidx.compose.foundation.BorderStroke(1.5.dp, Color(0xFFF59E0B))
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
                     Icon(
-                        imageVector = if (isEarned) Icons.Default.Star else Icons.Default.StarBorder,
-                        contentDescription = "Star",
-                        tint = if (isEarned) SelforaProgressAmber else Color(0xFFCBD5E1),
-                        modifier = Modifier.size(24.dp)
+                        imageVector = Icons.Default.Star,
+                        contentDescription = "Total Stars",
+                        tint = Color(0xFFF59E0B),
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Text(
+                        text = "$starsEarned",
+                        fontWeight = FontWeight.ExtraBold,
+                        fontSize = 16.sp,
+                        color = Color(0xFF92400E)
+                    )
+                    Text(
+                        text = "Stars",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 12.sp,
+                        color = Color(0xFFB45309)
                     )
                 }
             }

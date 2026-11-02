@@ -42,32 +42,22 @@ fun ChildActivityCompletionScreen(
 ) {
     val context = LocalContext.current
     val ttsManager = remember { TtsManager(context) }
-    val scope = rememberCoroutineScope()
+    val lastProgress = remember { com.simats.selfora.data.repository.PracticeSessionStore.getLastStepProgress() }
 
-    var isSubmitting by remember { mutableStateOf(false) }
+    val displayTitle = lastProgress?.activityTitle?.ifBlank { activityTitle } ?: activityTitle
+    val starsAwarded = lastProgress?.starsAwarded ?: 5
+    val totalStars = lastProgress?.totalStars ?: 5
+    val newBadge = lastProgress?.newlyUnlockedBadge
 
     LaunchedEffect(activityId) {
-        ttsManager.speak("Awesome job! You completed $activityTitle! You earned 5 stars!")
-        
-        val childId = SessionManager.getActiveChildId()
-        if (childId > 0) {
-            scope.launch {
-                try {
-                    isSubmitting = true
-                    ApiClient.apiService.recordChildStepProgress(
-                        RecordStepProgressRequest(
-                            childId = childId,
-                            activityId = activityId,
-                            isActivityCompleted = true
-                        )
-                    )
-                } catch (e: Exception) {
-                    // Ignore network failure on local child completion display
-                } finally {
-                    isSubmitting = false
-                }
-            }
+        val ttsMessage = if (newBadge != null) {
+            "Awesome job! You completed $displayTitle! And you unlocked a new badge: $newBadge!"
+        } else if (starsAwarded > 0) {
+            "Awesome job! You completed $displayTitle! You earned 5 stars!"
+        } else {
+            "Awesome job! You completed $displayTitle practice again!"
         }
+        ttsManager.speak(ttsMessage)
     }
 
     DisposableEffect(Unit) {
@@ -77,10 +67,10 @@ fun ChildActivityCompletionScreen(
     // Celebration pulse animation
     val infiniteTransition = rememberInfiniteTransition(label = "celebration")
     val starScale by infiniteTransition.animateFloat(
-        initialValue = 0.9f,
-        targetValue = 1.15f,
+        initialValue = 0.95f,
+        targetValue = 1.08f,
         animationSpec = infiniteRepeatable(
-            animation = tween(600, easing = FastOutSlowInEasing),
+            animation = tween(800, easing = FastOutSlowInEasing),
             repeatMode = RepeatMode.Reverse
         ),
         label = "star_scale"
@@ -100,75 +90,106 @@ fun ChildActivityCompletionScreen(
             verticalArrangement = Arrangement.Center,
             modifier = Modifier.fillMaxWidth()
         ) {
-            // 3D Avatar Celebration Pose (Matching Screen 8 Reference Design)
+            // 3D Avatar Celebration Pose
             val isGirl = SessionManager.getActiveChildGender().equals("GIRL", ignoreCase = true)
             ChildAvatar(
                 avatarType = if (isGirl) ChildAvatarType.GIRL else ChildAvatarType.BOY,
-                avatarSize = 160.dp,
+                avatarSize = 140.dp,
                 avatarPose = AvatarPose.CELEBRATION,
                 backgroundStyle = AvatarBackgroundStyle.NONE
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
             Text(
                 text = "Great Job! 🎉",
-                fontSize = 32.sp,
+                fontSize = 30.sp,
                 fontWeight = FontWeight.ExtraBold,
                 color = SelforaTextPrimary,
                 textAlign = TextAlign.Center
             )
 
-            Spacer(modifier = Modifier.height(6.dp))
+            Spacer(modifier = Modifier.height(4.dp))
 
             Text(
-                text = "You completed $activityTitle!",
-                fontSize = 18.sp,
+                text = "You completed $displayTitle!",
+                fontSize = 17.sp,
                 fontWeight = FontWeight.Bold,
                 color = SelforaPrimary,
                 textAlign = TextAlign.Center
             )
 
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
-            Spacer(modifier = Modifier.height(20.dp))
+            // Newly Unlocked Badge Celebration Banner
+            if (newBadge != null) {
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(20.dp),
+                    color = Color(0xFFFEF3C7),
+                    border = androidx.compose.foundation.BorderStroke(2.dp, Color(0xFFF59E0B)),
+                    shadowElevation = 6.dp
+                ) {
+                    Row(
+                        modifier = Modifier.padding(14.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("🏆", fontSize = 36.sp)
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column {
+                            Text("NEW BADGE UNLOCKED! ✨", fontWeight = FontWeight.ExtraBold, fontSize = 12.sp, color = Color(0xFFB45309))
+                            Text(newBadge, fontWeight = FontWeight.Bold, fontSize = 17.sp, color = SelforaTextPrimary)
+                        }
+                    }
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+            }
 
             // Earned Rewards Child Progress Component
             com.simats.selfora.ui.components.progress.ChildRewardProgress(
-                starsEarned = 5,
-                totalStars = 5,
-                currentStreak = 4
+                starsEarned = totalStars,
+                totalStars = maxOf(10, totalStars),
+                currentStreak = 1
             )
 
-            Spacer(modifier = Modifier.height(36.dp))
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Text(
+                text = if (starsAwarded > 0) "+5 Super Stars Added to Balance! ⭐" else "Activity Mastered! Replay Practice Complete! 🌟",
+                fontSize = 14.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = if (starsAwarded > 0) Color(0xFFD97706) else SelforaTextSecondary
+            )
+
+            Spacer(modifier = Modifier.height(28.dp))
 
             // Action Buttons
             Button(
                 onClick = onReplay,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(60.dp),
+                    .height(58.dp),
                 shape = RoundedCornerShape(20.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = SelforaPrimary)
             ) {
                 Icon(Icons.Default.Refresh, contentDescription = null)
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Practise Again 🔄", fontWeight = FontWeight.Bold, fontSize = 17.sp)
+                Text("Practise Again 🔄", fontWeight = FontWeight.Bold, fontSize = 16.sp)
             }
 
-            Spacer(modifier = Modifier.height(14.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
             Button(
                 onClick = onGoHome,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(60.dp),
+                    .height(58.dp),
                 shape = RoundedCornerShape(20.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = ChildGreenPlay)
             ) {
                 Icon(Icons.Default.Home, contentDescription = null, tint = Color.White)
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Back to Fun Home 🏠", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = Color.White)
+                Text("Back to Fun Home 🏠", fontWeight = FontWeight.Bold, fontSize = 17.sp, color = Color.White)
             }
         }
     }
