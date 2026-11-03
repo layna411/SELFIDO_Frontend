@@ -10,5 +10,9 @@ data class ChildDto(
     val diagnosisNotes: String? = null,
     val isActive: Boolean? = true,
     val caregiverName: String? = null,
-    val therapistName: String? = null
+    val therapistName: String? = null,
+    val caregiverId: Long? = null,
+    val caregiverEmail: String? = null,
+    val caregiverPhone: String? = null,
+    val caregiverActive: Boolean? = true
 )

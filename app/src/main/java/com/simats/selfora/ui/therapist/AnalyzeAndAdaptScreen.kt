@@ -49,11 +49,12 @@ fun AnalyzeAndAdaptScreen(
     var targetStepText by remember { mutableStateOf("Step 4: Sleeve Placement") }
     var currentPromptText by remember { mutableStateOf("Verbal Prompt (L3)") }
     var targetPromptText by remember { mutableStateOf("Visual Prompt (L1)") }
-    var clinicalNotesText by remember { mutableStateOf("Child performed step 1-3 independently. Fading from Verbal to Visual prompts for sleeve insertion.") }
+    var clinicalNotesText by remember { mutableStateOf("Child performed step independently. Progressing prompt fading as per clinical evaluation.") }
     var reviewDateText by remember { mutableStateOf("2026-10-15") }
     var planStatus by remember { mutableStateOf("Approved") }
     var isSavingPlan by remember { mutableStateOf(false) }
     var statusMessage by remember { mutableStateOf<String?>(null) }
+    var loadErrorMessage by remember { mutableStateOf<String?>(null) }
 
     val adlCategories = listOf(
         "Dressing" to 1L,
@@ -64,16 +65,20 @@ fun AnalyzeAndAdaptScreen(
 
     fun loadDashboard(actId: Long) {
         isLoading = true
+        loadErrorMessage = null
         scope.launch {
             try {
                 val res = ApiClient.apiService.getAnalyzeAndAdaptDashboard(childId, actId)
                 if (res.isSuccessful && res.body() != null) {
                     dashboardData = res.body()
                 } else {
-                    dashboardData = createMockDashboardData(childId, actId, selectedCategory)
+                    dashboardData = null
+                    val code = res.code()
+                    loadErrorMessage = if (code == 403) "Access Denied: You are not authorized to view this child's analytics." else "Unable to load adaptive dashboard (HTTP $code)"
                 }
             } catch (e: Exception) {
-                dashboardData = createMockDashboardData(childId, actId, selectedCategory)
+                dashboardData = null
+                loadErrorMessage = "Network error: ${e.localizedMessage}"
             } finally {
                 isLoading = false
             }
@@ -84,7 +89,7 @@ fun AnalyzeAndAdaptScreen(
         loadDashboard(activityId)
     }
 
-    val childName = dashboardData?.childName ?: if (childId == 2L) "Ananya Reddy" else "Arjun Kumar"
+    val childName = dashboardData?.childName ?: "Child #$childId"
 
     Scaffold(
         topBar = {
@@ -188,6 +193,42 @@ fun AnalyzeAndAdaptScreen(
             if (isLoading) {
                 Box(modifier = Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator(color = SelforaPrimary)
+                }
+            } else if (loadErrorMessage != null || dashboardData == null) {
+                GlassCard(modifier = Modifier.fillMaxWidth()) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.padding(20.dp).fillMaxWidth()
+                    ) {
+                        Icon(
+                            Icons.Default.Info,
+                            contentDescription = null,
+                            tint = SelforaPrimary,
+                            modifier = Modifier.size(40.dp)
+                        )
+                        Spacer(modifier = Modifier.height(10.dp))
+                        Text(
+                            "Adaptive Analytics Unavailable",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 16.sp,
+                            color = SelforaTextPrimary
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            loadErrorMessage ?: "Unable to fetch Analyze & Adapt data for this child.",
+                            color = SelforaTextSecondary,
+                            fontSize = 12.sp,
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                        )
+                        Spacer(modifier = Modifier.height(14.dp))
+                        Button(
+                            onClick = { loadDashboard(activityId) },
+                            colors = ButtonDefaults.buttonColors(containerColor = SelforaPrimary),
+                            shape = RoundedCornerShape(10.dp)
+                        ) {
+                            Text("Retry")
+                        }
+                    }
                 }
             } else {
                 val data = dashboardData!!
@@ -315,11 +356,15 @@ fun AnalyzeAndAdaptScreen(
                         }
                         Spacer(modifier = Modifier.height(10.dp))
 
-                        data.difficultSteps.forEach { d ->
-                            Column(modifier = Modifier.padding(bottom = 8.dp)) {
-                                Text("Step ${d.stepNumber}: ${d.stepTitle}", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = SelforaTextPrimary)
-                                Text("Level: ${d.mainAssistanceLevel}", fontSize = 10.sp, color = SelforaOrangeWarning)
-                                Text(d.reasonDescription, fontSize = 10.sp, color = SelforaTextSecondary)
+                        if (data.difficultSteps.isEmpty()) {
+                            Text("No difficult steps identified for this activity.", fontSize = 11.sp, color = SelforaTextSecondary)
+                        } else {
+                            data.difficultSteps.forEach { d ->
+                                Column(modifier = Modifier.padding(bottom = 8.dp)) {
+                                    Text("Step ${d.stepNumber}: ${d.stepTitle}", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = SelforaTextPrimary)
+                                    Text("Level: ${d.mainAssistanceLevel}", fontSize = 10.sp, color = SelforaOrangeWarning)
+                                    Text(d.reasonDescription, fontSize = 10.sp, color = SelforaTextSecondary)
+                                }
                             }
                         }
                     }
@@ -333,11 +378,15 @@ fun AnalyzeAndAdaptScreen(
                         }
                         Spacer(modifier = Modifier.height(10.dp))
 
-                        data.independentSteps.forEach { ind ->
-                            Column(modifier = Modifier.padding(bottom = 8.dp)) {
-                                Text("Step ${ind.stepNumber}: ${ind.stepTitle}", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = SelforaTextPrimary)
-                                Text("Independent in ${ind.consecutiveIndependentSessions} sessions", fontSize = 10.sp, color = SelforaSuccess)
-                                Text(ind.generalizationReadiness, fontSize = 10.sp, color = SelforaTextSecondary)
+                        if (data.independentSteps.isEmpty()) {
+                            Text("No consistently independent steps yet.", fontSize = 11.sp, color = SelforaTextSecondary)
+                        } else {
+                            data.independentSteps.forEach { ind ->
+                                Column(modifier = Modifier.padding(bottom = 8.dp)) {
+                                    Text("Step ${ind.stepNumber}: ${ind.stepTitle}", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = SelforaTextPrimary)
+                                    Text("Independent in ${ind.consecutiveIndependentSessions} sessions", fontSize = 10.sp, color = SelforaSuccess)
+                                    Text(ind.generalizationReadiness, fontSize = 10.sp, color = SelforaTextSecondary)
+                                }
                             }
                         }
                     }
@@ -379,8 +428,13 @@ fun AnalyzeAndAdaptScreen(
                         )
 
                         Spacer(modifier = Modifier.height(10.dp))
-                        Text("• Improved Steps: ${comp.improvedSteps.joinToString(", ")}", fontSize = 11.sp, color = SelforaSuccess)
-                        Text("• Unchanged Steps: ${comp.unchangedSteps.joinToString(", ")}", fontSize = 11.sp, color = SelforaTextSecondary)
+                        val impStr = if (comp.improvedSteps.isNotEmpty()) comp.improvedSteps.joinToString(", ") else "None"
+                        val unchStr = if (comp.unchangedSteps.isNotEmpty()) comp.unchangedSteps.joinToString(", ") else "None"
+                        Text("• Improved Steps: $impStr", fontSize = 11.sp, color = SelforaSuccess)
+                        Text("• Unchanged Steps: $unchStr", fontSize = 11.sp, color = SelforaTextSecondary)
+                        if (comp.regressedSteps.isNotEmpty()) {
+                            Text("• Regressed Steps: ${comp.regressedSteps.joinToString(", ")}", fontSize = 11.sp, color = SelforaError)
+                        }
                     }
                 }
 
@@ -396,10 +450,14 @@ fun AnalyzeAndAdaptScreen(
                     Text("Calculated directly from actual persisted session records", fontSize = 11.sp, color = SelforaTextSecondary)
                     Spacer(modifier = Modifier.height(10.dp))
 
-                    data.factualObservations.forEach { obs ->
-                        Row(modifier = Modifier.padding(vertical = 3.dp), verticalAlignment = Alignment.Top) {
-                            Text("• ", fontWeight = FontWeight.Bold, color = SelforaPrimary)
-                            Text(obs, fontSize = 12.sp, color = SelforaTextPrimary)
+                    if (data.factualObservations.isEmpty()) {
+                        Text("No clinical observations recorded yet.", fontSize = 12.sp, color = SelforaTextSecondary)
+                    } else {
+                        data.factualObservations.forEach { obs ->
+                            Row(modifier = Modifier.padding(vertical = 3.dp), verticalAlignment = Alignment.Top) {
+                                Text("• ", fontWeight = FontWeight.Bold, color = SelforaPrimary)
+                                Text(obs, fontSize = 12.sp, color = SelforaTextPrimary)
+                            }
                         }
                     }
                 }
@@ -416,18 +474,22 @@ fun AnalyzeAndAdaptScreen(
                     Text("System-generated suggestions for therapist consideration (Explainable deterministic rules)", fontSize = 11.sp, color = SelforaTextSecondary)
                     Spacer(modifier = Modifier.height(12.dp))
 
-                    data.recommendations.forEach { rec ->
-                        Surface(
-                            shape = RoundedCornerShape(14.dp),
-                            color = SelforaSurface.copy(alpha = 0.6f),
-                            border = androidx.compose.foundation.BorderStroke(1.dp, SelforaBorder),
-                            modifier = Modifier.fillMaxWidth().padding(bottom = 10.dp)
-                        ) {
-                            Column(modifier = Modifier.padding(12.dp)) {
-                                Text("Trigger: ${rec.triggeringEvidence}", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = SelforaPrimary)
-                                Text("Relevant Activity / Step: ${rec.activityTitle} • ${rec.stepTitle} (${rec.sessionDates})", fontSize = 10.sp, color = SelforaTextSecondary)
-                                Spacer(modifier = Modifier.height(4.dp))
-                                Text("Suggested Action: ${rec.suggestedTherapistAction}", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = SelforaTextPrimary)
+                    if (data.recommendations.isEmpty()) {
+                        Text("No adaptation recommendations at this time. Performance is stable.", fontSize = 12.sp, color = SelforaTextSecondary)
+                    } else {
+                        data.recommendations.forEach { rec ->
+                            Surface(
+                                shape = RoundedCornerShape(14.dp),
+                                color = SelforaSurface.copy(alpha = 0.6f),
+                                border = androidx.compose.foundation.BorderStroke(1.dp, SelforaBorder),
+                                modifier = Modifier.fillMaxWidth().padding(bottom = 10.dp)
+                            ) {
+                                Column(modifier = Modifier.padding(12.dp)) {
+                                    Text("Trigger: ${rec.triggeringEvidence}", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = SelforaPrimary)
+                                    Text("Relevant Activity / Step: ${rec.activityTitle} • ${rec.stepTitle} (${rec.sessionDates})", fontSize = 10.sp, color = SelforaTextSecondary)
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Text("Suggested Action: ${rec.suggestedTherapistAction}", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = SelforaTextPrimary)
+                                }
                             }
                         }
                     }
@@ -593,54 +655,4 @@ fun AnalyzeAndAdaptScreen(
             }
         )
     }
-}
-
-private fun createMockDashboardData(childId: Long, activityId: Long, selectedCategory: String): AnalyzeAndAdaptDashboardResponse {
-    val childName = if (childId == 2L) "Ananya Reddy" else "Arjun Kumar"
-    return AnalyzeAndAdaptDashboardResponse(
-        childId = childId,
-        childName = childName,
-        selectedActivityId = activityId,
-        selectedActivityTitle = "$selectedCategory ADL Sequence",
-        totalRecordedSessions = 8,
-        latestAssessmentDate = "2026-10-02",
-        previousAssessmentDate = "2026-09-25",
-        currentIndependencePercentage = 78.0,
-        previousIndependencePercentage = 70.0,
-        overallTrend = "IMPROVING",
-        activityCards = listOf(
-            ActivityPerformanceCardDto("Dressing", 78.0, 70.0, "IMPROVING", 8),
-            ActivityPerformanceCardDto("Eating", 65.0, 60.0, "IMPROVING", 6),
-            ActivityPerformanceCardDto("Grooming", 60.0, 58.0, "STABLE", 5),
-            ActivityPerformanceCardDto("Shoes & Socks", 80.0, 75.0, "IMPROVING", 7)
-        ),
-        difficultSteps = listOf(
-            DifficultStepDto(4L, 4, "Right Sleeve Insertion", "Boy T-Shirt Dressing", "Verbal Prompt (L3)", 1, 4, 0, "Required verbal prompt in 4 of last 5 sessions."),
-            DifficultStepDto(10L, 10, "Hem Pull Down", "Boy T-Shirt Dressing", "Partial Physical (L5)", 2, 2, 1, "Exhibited physical resistance during hem positioning.")
-        ),
-        independentSteps = listOf(
-            IndependentStepDto(1L, 1, "Garment Orientation", "Boy T-Shirt Dressing", 4, "Ready for Generalization Assessment"),
-            IndependentStepDto(7L, 7, "Head Insertion", "Boy T-Shirt Dressing", 3, "Ready for Prompt Fading Review")
-        ),
-        sessionComparison = SessionComparisonDto(
-            currentSessionDate = "2026-10-02",
-            previousSessionDate = "2026-09-25",
-            currentIndependencePercentage = 78.0,
-            previousIndependencePercentage = 70.0,
-            improvedSteps = listOf("Step 7: Head insertion", "Step 1: Orient shirt"),
-            regressedSteps = emptyList(),
-            unchangedSteps = listOf("Step 4: Sleeve placement")
-        ),
-        factualObservations = listOf(
-            "Step 4 required Verbal Prompt (L3) in 4 of the last 5 assessed sessions.",
-            "Step 1 and Step 2 were completed independently (L0) across 3 consecutive sessions.",
-            "No 'Unable' outcomes recorded in the most recent session."
-        ),
-        recommendations = listOf(
-            RecommendationDto("Repeated physical assistance on Step 10", "Last 3 sessions", "Dressing", "Step 10: Hem Pull Down", "Review task breakdown and teaching approach."),
-            RecommendationDto("Consistent independent performance on Step 7", "Last 3 sessions", "Dressing", "Step 7: Head Insertion", "Review readiness for prompt fading from Visual to Independent."),
-            RecommendationDto("Inconsistent prompt level on Step 4", "Across 4 sessions", "Dressing", "Step 4: Sleeve Placement", "Additional observation across sessions recommended.")
-        ),
-        caregiverProgressSummary = CaregiverProgressSummaryDto(12, 4, "Completed 12 sessions at home.", "4x/week", true)
-    )
 }

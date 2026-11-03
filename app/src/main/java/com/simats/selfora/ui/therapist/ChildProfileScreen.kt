@@ -66,6 +66,7 @@ fun ChildProfileScreen(
     var assessmentsList by remember { mutableStateOf<List<com.simats.selfora.data.model.AssessmentResponse>>(emptyList()) }
     var sessionsList by remember { mutableStateOf<List<com.simats.selfora.data.model.SessionResponse>>(emptyList()) }
     var homeProgramsList by remember { mutableStateOf<List<com.simats.selfora.data.model.HomeProgramResponse>>(emptyList()) }
+    var dashboardData by remember { mutableStateOf<com.simats.selfora.data.model.AnalyzeAndAdaptDashboardResponse?>(null) }
     var isTabDataLoading by remember { mutableStateOf(false) }
 
     fun loadTabData(tab: String) {
@@ -112,9 +113,43 @@ fun ChildProfileScreen(
             val response = ApiClient.apiService.getChildById(childId)
             if (response.isSuccessful && response.body() != null) {
                 childDto = response.body()
+                caregiverAccountActive = childDto?.caregiverActive ?: true
             } else {
                 val code = response.code()
                 errorMessage = if (code == 403) "Access Denied: You are not authorized to view this child record." else "Child profile unavailable (HTTP $code)"
+            }
+            // Fetch child profile related data in parallel
+            launch {
+                try {
+                    val sRes = ApiClient.apiService.getSessionsForChild(childId)
+                    if (sRes.isSuccessful && sRes.body() != null) {
+                        sessionsList = sRes.body()!!
+                    }
+                } catch (_: Exception) {}
+            }
+            launch {
+                try {
+                    val aRes = ApiClient.apiService.getAssessmentsForChild(childId)
+                    if (aRes.isSuccessful && aRes.body() != null) {
+                        assessmentsList = aRes.body()!!
+                    }
+                } catch (_: Exception) {}
+            }
+            launch {
+                try {
+                    val hpRes = ApiClient.apiService.getAllHomeProgramsForChild(childId)
+                    if (hpRes.isSuccessful && hpRes.body() != null) {
+                        homeProgramsList = hpRes.body()!!
+                    }
+                } catch (_: Exception) {}
+            }
+            launch {
+                try {
+                    val dRes = ApiClient.apiService.getAnalyzeAndAdaptDashboard(childId)
+                    if (dRes.isSuccessful && dRes.body() != null) {
+                        dashboardData = dRes.body()
+                    }
+                } catch (_: Exception) {}
             }
         } catch (e: Exception) {
             errorMessage = "Network error: ${e.localizedMessage}"
@@ -123,38 +158,27 @@ fun ChildProfileScreen(
         }
     }
 
-    val isDemo = childId >= 100L
-    val childName = childDto?.let { "${it.firstName} ${it.lastName ?: ""}".trim() } ?: when (childId) {
-        1L -> "Rohan S."
-        2L -> "Aarav M."
-        3L -> "Vihaan K."
-        4L -> "Ishita P."
-        101L -> "Rohan S."
-        102L -> "Ananya Reddy"
-        else -> "Rohan S."
-    }
-    val gender = childDto?.gender ?: when (childId) {
-        4L, 102L, 2L -> "GIRL"
-        else -> "BOY"
-    }
-    val age = 7
-    val caregiverName = childDto?.caregiverName ?: when (childId) {
-        102L, 2L -> "Suresh Reddy"
-        else -> "Sunita Sharma"
-    }
-    val caregiverEmail = when (childId) {
-        102L, 2L -> "suresh@example.com" else -> "sunita.sharma@example.com"
-    }
-    val caregiverPhone = "+91 9876543210"
-    val therapistName = childDto?.therapistName ?: "Dr. Priya OT"
+    val childName = childDto?.let { "${it.firstName} ${it.lastName ?: ""}".trim() } ?: "Child Profile"
+    val gender = (childDto?.gender ?: "BOY").uppercase()
+    val age = childDto?.dateOfBirth?.let { dobStr ->
+        try {
+            val birthDate = java.time.LocalDate.parse(dobStr)
+            java.time.Period.between(birthDate, java.time.LocalDate.now()).years
+        } catch (_: Exception) { 7 }
+    } ?: 7
+    val caregiverName = childDto?.caregiverName ?: "Unassigned"
+    val caregiverEmail = childDto?.caregiverEmail ?: "Not provided"
+    val caregiverPhone = childDto?.caregiverPhone ?: "Not provided"
+    val caregiverId = childDto?.caregiverId
+    val therapistName = childDto?.therapistName ?: "Unassigned"
 
-    var selectedAvatarId by remember { mutableStateOf(if (gender == "GIRL") "ananya_girl" else "aarav_boy") }
+    var selectedAvatarId by remember { mutableStateOf(childDto?.avatarUrl ?: if (gender == "GIRL") "ananya_girl" else "aarav_boy") }
 
     Scaffold(
         topBar = {
             GlassTopBar(
                 title = "$childName - Profile",
-                subtitle = "Age $age • ${if (gender == "GIRL") "Female" else "Male"} • ASD • ID: ASD-0001",
+                subtitle = "Age $age • ${if (gender == "GIRL") "Female" else "Male"} • ASD",
                 onBackClick = onBack,
                 accentColor = SelforaPrimary,
                 actions = {
@@ -166,13 +190,68 @@ fun ChildProfileScreen(
         },
         containerColor = SelforaBackground
     ) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .verticalScroll(rememberScrollState())
-                .padding(16.dp)
-        ) {
+        if (isLoading) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator(color = SelforaPrimary)
+            }
+        } else if (errorMessage != null || childDto == null) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .padding(24.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                GlassCard(modifier = Modifier.fillMaxWidth()) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.padding(20.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.Lock,
+                            contentDescription = null,
+                            tint = Color(0xFFEF4444),
+                            modifier = Modifier.size(48.dp)
+                        )
+                        Spacer(modifier = Modifier.height(14.dp))
+                        Text(
+                            "Access Restricted",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 17.sp,
+                            color = SelforaTextPrimary
+                        )
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            errorMessage ?: "You do not have authorization to view this child profile.",
+                            color = SelforaTextSecondary,
+                            fontSize = 13.sp,
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                            lineHeight = 18.sp
+                        )
+                        Spacer(modifier = Modifier.height(20.dp))
+                        Button(
+                            onClick = onBack,
+                            colors = ButtonDefaults.buttonColors(containerColor = SelforaPrimary),
+                            shape = RoundedCornerShape(10.dp)
+                        ) {
+                            Text("Back to Children List")
+                        }
+                    }
+                }
+            }
+        } else {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .verticalScroll(rememberScrollState())
+                    .padding(16.dp)
+            ) {
             // A. Profile Header Glass Card (Matching Prototype Screen 4)
             GlassCard(modifier = Modifier.fillMaxWidth()) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -194,7 +273,7 @@ fun ChildProfileScreen(
                                 color = SelforaPrimary.copy(alpha = 0.15f)
                             ) {
                                 Text(
-                                    text = "ASD-0001",
+                                    text = "CHILD-#${childDto?.id ?: childId}",
                                     fontSize = 11.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = SelforaPrimary,
@@ -228,19 +307,19 @@ fun ChildProfileScreen(
                     )
                 }
                 Spacer(modifier = Modifier.height(10.dp))
-                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("• ", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = SelforaPrimary)
-                        Text("Improve tooth brushing independence", fontSize = 13.sp, color = SelforaTextPrimary)
+                val activeGoals = homeProgramsList.filter { it.isActive }.ifEmpty { homeProgramsList }.take(3)
+                if (activeGoals.isNotEmpty()) {
+                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        activeGoals.forEach { hp ->
+                            val titleText = hp.goalStatement?.ifBlank { null } ?: hp.title ?: hp.activityTitle
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text("• ", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = SelforaPrimary)
+                                Text(titleText, fontSize = 13.sp, color = SelforaTextPrimary)
+                            }
+                        }
                     }
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("• ", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = SelforaPrimary)
-                        Text("Wear t-shirt independently", fontSize = 13.sp, color = SelforaTextPrimary)
-                    }
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("• ", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = SelforaPrimary)
-                        Text("Eat with spoon independently", fontSize = 13.sp, color = SelforaTextPrimary)
-                    }
+                } else {
+                    Text("No active goals assigned yet.", fontSize = 13.sp, color = SelforaTextSecondary)
                 }
             }
 
@@ -251,22 +330,20 @@ fun ChildProfileScreen(
                 Text("Recent Sessions", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = SelforaTextPrimary)
                 Spacer(modifier = Modifier.height(12.dp))
 
-                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    RecentSessionItem(
-                        date = "12 May 2025",
-                        activityName = "Tooth Brushing",
-                        promptLevel = "Verbal Prompt"
-                    )
-                    RecentSessionItem(
-                        date = "10 May 2026",
-                        activityName = "Wearing T-Shirt",
-                        promptLevel = "Physical Prompt"
-                    )
-                    RecentSessionItem(
-                        date = "08 May 2025",
-                        activityName = "Eating with Spoon",
-                        promptLevel = "Visual Prompt"
-                    )
+                if (sessionsList.isNotEmpty()) {
+                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        sessionsList.take(3).forEach { s ->
+                            val dateStr = s.startTime?.take(10) ?: "Recent"
+                            val promptStr = s.performanceRecords.firstOrNull()?.promptLevelName ?: "Clinic Session"
+                            RecentSessionItem(
+                                date = dateStr,
+                                activityName = s.activityTitle,
+                                promptLevel = promptStr
+                            )
+                        }
+                    }
+                } else {
+                    Text("No therapy sessions recorded yet.", fontSize = 13.sp, color = SelforaTextSecondary)
                 }
             }
 
@@ -346,18 +423,20 @@ fun ChildProfileScreen(
                     GlassCard(modifier = Modifier.fillMaxWidth()) {
                         Text("CLINICAL OVERVIEW", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = SelforaPrimary)
                         Spacer(modifier = Modifier.height(10.dp))
+                        val initialAssessmentDate = assessmentsList.minByOrNull { it.assessmentDate }?.assessmentDate?.take(10) ?: "Not Assessed"
+                        val recentSessionDate = sessionsList.maxByOrNull { it.startTime }?.startTime?.take(10) ?: "None"
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                             Column {
                                 Text("Initial Assessment:", fontSize = 11.sp, color = SelforaTextSecondary)
-                                Text("Sep 15, 2026", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = SelforaTextPrimary)
+                                Text(initialAssessmentDate, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = SelforaTextPrimary)
                             }
                             Column {
                                 Text("Total Therapy Sessions:", fontSize = 11.sp, color = SelforaTextSecondary)
-                                Text("14 Recorded", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = SelforaTextPrimary)
+                                Text("${sessionsList.size} Recorded", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = SelforaTextPrimary)
                             }
                             Column {
                                 Text("Recent Session:", fontSize = 11.sp, color = SelforaTextSecondary)
-                                Text("Oct 02, 2026", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = SelforaTextPrimary)
+                                Text(recentSessionDate, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = SelforaTextPrimary)
                             }
                         }
                     }
@@ -369,11 +448,16 @@ fun ChildProfileScreen(
                         Text("ADL PERFORMANCE METRICS", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = SelforaPrimary)
                         Spacer(modifier = Modifier.height(12.dp))
 
+                        val dressingCard = dashboardData?.activityCards?.find { it.categoryName.contains("Dressing", ignoreCase = true) }
+                        val eatingCard = dashboardData?.activityCards?.find { it.categoryName.contains("Eating", ignoreCase = true) }
+                        val groomingCard = dashboardData?.activityCards?.find { it.categoryName.contains("Grooming", ignoreCase = true) }
+                        val shoesCard = dashboardData?.activityCards?.find { it.categoryName.contains("Shoes", ignoreCase = true) }
+
                         SelforaAdlCategoryGrid(
-                            dressingPct = 72,
-                            eatingPct = 65,
-                            groomingPct = 60,
-                            shoesPct = 80
+                            dressingPct = dressingCard?.currentIndependencePct?.toInt() ?: 0,
+                            eatingPct = eatingCard?.currentIndependencePct?.toInt() ?: 0,
+                            groomingPct = groomingCard?.currentIndependencePct?.toInt() ?: 0,
+                            shoesPct = shoesCard?.currentIndependencePct?.toInt() ?: 0
                         )
                     }
 
@@ -421,27 +505,25 @@ fun ChildProfileScreen(
                                 text = "Reset Password",
                                 icon = Icons.Default.LockReset,
                                 onClick = {
-                                    isResettingPassword = true
-                                    scope.launch {
-                                        try {
-                                            val resp = ApiClient.apiService.resetCaregiverPassword(201L)
-                                            if (resp.isSuccessful && resp.body() != null) {
-                                                resetPasswordResult = resp.body()!!
-                                            } else {
-                                                val newPass = "SELF-" + UUID.randomUUID().toString().take(4).uppercase() + "-" + UUID.randomUUID().toString().take(4).uppercase()
-                                                resetPasswordResult = ResetPasswordResultResponse(
-                                                    201L, caregiverEmail, newPass, "New temporary password generated successfully."
-                                                )
+                                    if (caregiverId != null) {
+                                        isResettingPassword = true
+                                        scope.launch {
+                                            try {
+                                                val resp = ApiClient.apiService.resetCaregiverPassword(caregiverId)
+                                                if (resp.isSuccessful && resp.body() != null) {
+                                                    resetPasswordResult = resp.body()!!
+                                                    showResetPasswordDialog = true
+                                                } else {
+                                                    Toast.makeText(context, "Password reset failed (HTTP ${resp.code()})", Toast.LENGTH_SHORT).show()
+                                                }
+                                            } catch (e: Exception) {
+                                                Toast.makeText(context, "Network error: ${e.localizedMessage}", Toast.LENGTH_SHORT).show()
+                                            } finally {
+                                                isResettingPassword = false
                                             }
-                                        } catch (_: Exception) {
-                                            val newPass = "SELF-" + UUID.randomUUID().toString().take(4).uppercase() + "-" + UUID.randomUUID().toString().take(4).uppercase()
-                                            resetPasswordResult = ResetPasswordResultResponse(
-                                                201L, caregiverEmail, newPass, "New temporary password generated successfully."
-                                            )
-                                        } finally {
-                                            isResettingPassword = false
-                                            showResetPasswordDialog = true
                                         }
+                                    } else {
+                                        Toast.makeText(context, "No linked caregiver account to reset.", Toast.LENGTH_SHORT).show()
                                     }
                                 },
                                 modifier = Modifier.weight(1f)
@@ -452,8 +534,24 @@ fun ChildProfileScreen(
                                 icon = if (caregiverAccountActive) Icons.Default.Block else Icons.Default.CheckCircle,
                                 accentColor = if (caregiverAccountActive) SelforaError else SelforaSuccess,
                                 onClick = {
-                                    caregiverAccountActive = !caregiverAccountActive
-                                    Toast.makeText(context, if (caregiverAccountActive) "Caregiver account activated" else "Caregiver account disabled", Toast.LENGTH_SHORT).show()
+                                    if (caregiverId != null) {
+                                        scope.launch {
+                                            try {
+                                                val newStatus = !caregiverAccountActive
+                                                val resp = ApiClient.apiService.toggleCaregiverStatus(caregiverId, newStatus)
+                                                if (resp.isSuccessful) {
+                                                    caregiverAccountActive = newStatus
+                                                    Toast.makeText(context, if (caregiverAccountActive) "Caregiver account activated" else "Caregiver account disabled", Toast.LENGTH_SHORT).show()
+                                                } else {
+                                                    Toast.makeText(context, "Failed to update account status", Toast.LENGTH_SHORT).show()
+                                                }
+                                            } catch (e: Exception) {
+                                                Toast.makeText(context, "Network error: ${e.localizedMessage}", Toast.LENGTH_SHORT).show()
+                                            }
+                                        }
+                                    } else {
+                                        Toast.makeText(context, "No linked caregiver account to manage.", Toast.LENGTH_SHORT).show()
+                                    }
                                 },
                                 modifier = Modifier.weight(1f)
                             )
@@ -464,45 +562,39 @@ fun ChildProfileScreen(
                 // 2. ADL Goals Tab
                 "ADL Goals" -> {
                     Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                        GlassGoalCategoryCard(
-                            category = "👕 Dressing",
-                            activityName = "Boy T-Shirt Dressing Practice",
-                            targetSteps = "Head Insertion → Arm Placement → Hem Pulling",
-                            currentAssistance = "Visual Prompt",
-                            progressPercentage = 72,
-                            lastUpdated = "Oct 02, 2026",
-                            accentColor = SelforaPrimary
-                        )
-
-                        GlassGoalCategoryCard(
-                            category = "🥄 Eating",
-                            activityName = "Independent Spoon Feeding",
-                            targetSteps = "Grip Spoon → Scoop Food → Mouth Transport",
-                            currentAssistance = "Verbal Prompt",
-                            progressPercentage = 65,
-                            lastUpdated = "Oct 01, 2026",
-                            accentColor = SelforaSecondary
-                        )
-
-                        GlassGoalCategoryCard(
-                            category = "🧼 Grooming",
-                            activityName = "Hand Washing Sequence",
-                            targetSteps = "Turn Tap → Apply Soap → Rub Palms → Rinse",
-                            currentAssistance = "Physical Prompt",
-                            progressPercentage = 60,
-                            lastUpdated = "Sep 28, 2026",
-                            accentColor = SelforaSuccess
-                        )
-
-                        GlassGoalCategoryCard(
-                            category = "👟 Shoes & Socks",
-                            activityName = "Velcro Shoe Fastening",
-                            targetSteps = "Insert Foot → Align Tongue → Tighten Strap",
-                            currentAssistance = "Independent",
-                            progressPercentage = 80,
-                            lastUpdated = "Sep 30, 2026",
-                            accentColor = SelforaWarning
-                        )
+                        if (homeProgramsList.isEmpty()) {
+                            GlassCard(modifier = Modifier.fillMaxWidth()) {
+                                Column(
+                                    modifier = Modifier.padding(16.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally
+                                ) {
+                                    Text("🎯", fontSize = 32.sp)
+                                    Spacer(modifier = Modifier.height(6.dp))
+                                    Text("No Active ADL Goals", fontWeight = FontWeight.Bold, fontSize = 15.sp, color = SelforaTextPrimary)
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Text("Assign a Home Programme or conduct an Assessment to establish ADL goals.", fontSize = 12.sp, color = SelforaTextSecondary, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                                }
+                            }
+                        } else {
+                            homeProgramsList.forEach { hp ->
+                                val targetStepsStr = if (hp.targetSteps.isNotEmpty()) {
+                                    hp.targetSteps.joinToString(" → ") { it.title }
+                                } else {
+                                    hp.goalStatement?.ifBlank { null } ?: "ADL Task Steps"
+                                }
+                                val targetAssistance = hp.targetPromptLevelName.ifBlank { "Independent" }
+                                val assignedDate = hp.startDate?.take(10) ?: hp.createdAt.take(10).ifBlank { "Recent" }
+                                GlassGoalCategoryCard(
+                                    category = hp.activityTitle,
+                                    activityName = hp.title ?: hp.activityTitle,
+                                    targetSteps = targetStepsStr,
+                                    currentAssistance = targetAssistance,
+                                    progressPercentage = if (hp.isActive) 100 else 50,
+                                    lastUpdated = assignedDate,
+                                    accentColor = SelforaPrimary
+                                )
+                            }
+                        }
                     }
                 }
 
@@ -585,12 +677,15 @@ fun ChildProfileScreen(
                             sessionsList.forEach { s ->
                                 val dateStr = s.startTime?.take(10) ?: "Recent"
                                 val durationStr = s.totalDurationSeconds?.let { "${it / 60} mins" } ?: "15 mins"
+                                val totalRecords = s.performanceRecords.size
+                                val indepCount = s.performanceRecords.count { it.promptLevelId == 0 && it.outcome == "COMPLETED" }
+                                val indepPct = if (totalRecords > 0) (indepCount * 100) / totalRecords else 0
                                 GlassSessionHistoryCard(
                                     date = dateStr,
                                     activityName = s.activityTitle,
                                     duration = durationStr,
                                     status = if (s.endTime != null) "COMPLETED" else "IN PROGRESS",
-                                    independencePercentage = 75
+                                    independencePercentage = indepPct
                                 )
                             }
                         }
@@ -663,24 +758,45 @@ fun ChildProfileScreen(
                 // 6. Progress Tab
                 "Progress" -> {
                     Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                        val allPerformanceRecords = sessionsList.flatMap { it.performanceRecords }
+                        val totalAssessedSteps = allPerformanceRecords.size
+                        val indepSteps = allPerformanceRecords.count { it.promptLevelId == 0 }
+                        val visualSteps = allPerformanceRecords.count { it.promptLevelId == 1 }
+                        val verbalSteps = allPerformanceRecords.count { it.promptLevelId in listOf(2, 3, 4) }
+                        val physicalSteps = allPerformanceRecords.count { it.promptLevelId in listOf(5, 6) }
+
+                        val indepPct = if (totalAssessedSteps > 0) (indepSteps * 100) / totalAssessedSteps else 0
+                        val visualPct = if (totalAssessedSteps > 0) (visualSteps * 100) / totalAssessedSteps else 0
+                        val verbalPct = if (totalAssessedSteps > 0) (verbalSteps * 100) / totalAssessedSteps else 0
+                        val physicalPct = if (totalAssessedSteps > 0) (physicalSteps * 100) / totalAssessedSteps else 0
+
                         GlassCard(modifier = Modifier.fillMaxWidth()) {
                             Text("ASSISTANCE LEVEL DISTRIBUTION", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = SelforaPrimary)
                             Spacer(modifier = Modifier.height(12.dp))
 
-                            ChildMetricProgress("Independent Performance", 40, SelforaSuccess)
-                            Spacer(modifier = Modifier.height(8.dp))
-                            ChildMetricProgress("Visual Prompts Needed", 35, SelforaPrimary)
-                            Spacer(modifier = Modifier.height(8.dp))
-                            ChildMetricProgress("Verbal Prompts Needed", 15, SelforaSecondary)
-                            Spacer(modifier = Modifier.height(8.dp))
-                            ChildMetricProgress("Physical Assistance", 10, SelforaWarning)
+                            if (totalAssessedSteps > 0) {
+                                ChildMetricProgress("Independent Performance", indepPct, SelforaSuccess)
+                                Spacer(modifier = Modifier.height(8.dp))
+                                ChildMetricProgress("Visual Prompts Needed", visualPct, SelforaPrimary)
+                                Spacer(modifier = Modifier.height(8.dp))
+                                ChildMetricProgress("Verbal Prompts Needed", verbalPct, SelforaSecondary)
+                                Spacer(modifier = Modifier.height(8.dp))
+                                ChildMetricProgress("Physical Assistance", physicalPct, SelforaWarning)
+                            } else {
+                                Text("No clinical session performance records yet.", fontSize = 12.sp, color = SelforaTextSecondary)
+                            }
                         }
 
                         GlassCard(modifier = Modifier.fillMaxWidth()) {
                             Text("HOME PRACTICE PARTICIPATION", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = SelforaPrimary)
                             Spacer(modifier = Modifier.height(10.dp))
-                            Text("Completed Practices: 12 sessions in last 30 days", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = SelforaTextPrimary)
-                            Text("Overall Caregiver Engagement Rate: 85%", fontSize = 12.sp, color = SelforaSuccess)
+                            val cgSummary = dashboardData?.caregiverProgressSummary
+                            val subCount = cgSummary?.totalSubmissions ?: 0
+                            Text(cgSummary?.reportedOutcomeSummary ?: "No caregiver practice submissions recorded yet.", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = SelforaTextPrimary)
+                            if (subCount > 0) {
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text("Caregiver Practice Submissions: $subCount logged", fontSize = 12.sp, color = SelforaSuccess)
+                            }
                         }
 
                         GlassOutlinedButton(
@@ -695,6 +811,7 @@ fun ChildProfileScreen(
             Spacer(modifier = Modifier.height(110.dp))
         }
     }
+}
 
     // Reset Password Success Dialog
     if (showResetPasswordDialog && resetPasswordResult != null) {

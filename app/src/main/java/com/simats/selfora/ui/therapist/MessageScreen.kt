@@ -59,27 +59,52 @@ fun MessageScreen(
 
     val scope = rememberCoroutineScope()
 
-    val caregiverContacts = remember {
-        listOf(
-            CaregiverContact(201L, "Priya Kumar", "Mother", 1L, "Arjun Kumar", "👩", "Thank you Doctor! He did great with the visual prompt picture today.", "10:15 AM", 1),
-            CaregiverContact(202L, "Suresh Reddy", "Father", 2L, "Ananya Reddy", "👨", "Ananya tried putting her arms in the sleeves today!", "Yesterday", 0),
-            CaregiverContact(203L, "Meera Patel", "Mother", 3L, "Kavya Patel", "👩", "Should we practice spoon eating before or after lunch?", "Sep 28", 2),
-            CaregiverContact(204L, "Sunita Sharma", "Mother", 4L, "Rohan Sharma", "👩", "Rohan finished all 10 steps for shoe dressing!", "Sep 25", 0)
-        )
+    var caregiverContacts by remember { mutableStateOf<List<CaregiverContact>>(emptyList()) }
+    var isLoadingContacts by remember { mutableStateOf(true) }
+
+    LaunchedEffect(Unit) {
+        isLoadingContacts = true
+        try {
+            val res = ApiClient.apiService.getTherapistCaregivers()
+            if (res.isSuccessful && res.body() != null) {
+                val list = res.body()!!.map {
+                    CaregiverContact(
+                        caregiverId = it.id,
+                        caregiverName = it.fullName,
+                        relationship = it.relationship,
+                        childId = it.childId,
+                        childName = it.childName,
+                        avatarEmoji = if (it.relationship.equals("Father", ignoreCase = true)) "👨" else "👩",
+                        lastMessage = "Active Home Programs: ${it.activeHomeProgramsCount}",
+                        lastMessageTime = "Recent",
+                        unreadCount = it.pendingPracticeReviewsCount
+                    )
+                }
+                caregiverContacts = list
+                selectedCaregiver = list.find { it.childId == childId } ?: list.firstOrNull()
+            }
+        } catch (_: Exception) {}
+        finally {
+            isLoadingContacts = false
+        }
     }
 
     fun loadConversation(cId: Long) {
+        if (cId <= 0L) {
+            messages = emptyList()
+            return
+        }
         scope.launch {
             isLoading = true
             try {
                 val res = ApiClient.apiService.getConversation(cId)
-                if (res.isSuccessful && res.body() != null && res.body()!!.isNotEmpty()) {
+                if (res.isSuccessful && res.body() != null) {
                     messages = res.body()!!
                 } else {
-                    messages = getSampleMessagesForCaregiver(selectedCaregiver?.caregiverName ?: "Caregiver")
+                    messages = emptyList()
                 }
             } catch (e: Exception) {
-                messages = getSampleMessagesForCaregiver(selectedCaregiver?.caregiverName ?: "Caregiver")
+                messages = emptyList()
             } finally {
                 isLoading = false
             }

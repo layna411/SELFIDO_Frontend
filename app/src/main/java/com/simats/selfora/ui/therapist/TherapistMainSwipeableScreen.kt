@@ -7,6 +7,7 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import com.simats.selfora.data.api.ApiClient
 import com.simats.selfora.ui.components.glass.GlassNavigationBar
 import com.simats.selfora.ui.components.glass.TherapistTab
 import com.simats.selfora.ui.theme.SelforaBackground
@@ -28,6 +29,16 @@ fun TherapistMainSwipeableScreen(
     val initialPageIndex = tabs.indexOf(initialTab).coerceAtLeast(0)
     val pagerState = rememberPagerState(initialPage = initialPageIndex, pageCount = { tabs.size })
     val coroutineScope = rememberCoroutineScope()
+    var activeChildId by remember { mutableStateOf<Long?>(null) }
+
+    LaunchedEffect(Unit) {
+        try {
+            val res = ApiClient.apiService.getTherapistChildren()
+            if (res.isSuccessful && !res.body().isNullOrEmpty()) {
+                activeChildId = res.body()!!.first().id
+            }
+        } catch (_: Exception) {}
+    }
 
     Box(
         modifier = Modifier
@@ -44,11 +55,14 @@ fun TherapistMainSwipeableScreen(
                     onNavigateToChildren = {
                         coroutineScope.launch { pagerState.animateScrollToPage(1) }
                     },
-                    onNavigateToChildProfile = onNavigateToChildProfile,
+                    onNavigateToChildProfile = { id ->
+                        activeChildId = id
+                        onNavigateToChildProfile(id)
+                    },
                     onNavigateToAssessment = {
                         coroutineScope.launch { pagerState.animateScrollToPage(2) }
                     },
-                    onNavigateToHomePrograms = { onNavigateToHomePrograms(1L) },
+                    onNavigateToHomePrograms = { onNavigateToHomePrograms(activeChildId ?: 0L) },
                     onNavigateToProgress = {
                         coroutineScope.launch { pagerState.animateScrollToPage(3) }
                     },
@@ -60,7 +74,10 @@ fun TherapistMainSwipeableScreen(
                 )
 
                 TherapistTab.CHILDREN -> ChildListScreen(
-                    onChildSelected = onNavigateToChildProfile,
+                    onChildSelected = { id ->
+                        activeChildId = id
+                        onNavigateToChildProfile(id)
+                    },
                     onAddChildClick = onNavigateToAddChildWorkflow,
                     onBack = {
                         coroutineScope.launch { pagerState.animateScrollToPage(0) }
@@ -68,7 +85,7 @@ fun TherapistMainSwipeableScreen(
                 )
 
                 TherapistTab.ASSESSMENTS -> AssessmentScreen(
-                    childId = 1L,
+                    childId = activeChildId ?: 0L,
                     onAssessmentSaved = {
                         coroutineScope.launch { pagerState.animateScrollToPage(3) }
                     },
@@ -78,14 +95,14 @@ fun TherapistMainSwipeableScreen(
                 )
 
                 TherapistTab.PROGRESS -> TherapistProgressScreen(
-                    childId = 1L,
+                    childId = activeChildId ?: 0L,
                     onBack = {
                         coroutineScope.launch { pagerState.animateScrollToPage(0) }
                     }
                 )
 
                 TherapistTab.MESSAGES -> MessageScreen(
-                    childId = 1L,
+                    childId = activeChildId ?: 0L,
                     onBack = {
                         coroutineScope.launch { pagerState.animateScrollToPage(0) }
                     }

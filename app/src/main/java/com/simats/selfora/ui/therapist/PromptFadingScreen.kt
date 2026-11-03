@@ -66,18 +66,18 @@ fun PromptFadingScreen(
                 if (planRes.isSuccessful && planRes.body() != null) {
                     fadingPlans = planRes.body()!!
                 } else {
-                    fadingPlans = createMockPlans(childId)
+                    fadingPlans = emptyList()
                 }
 
                 val histRes = ApiClient.apiService.getPromptFadingHistoryForChild(childId)
                 if (histRes.isSuccessful && histRes.body() != null) {
                     fadingHistory = histRes.body()!!
                 } else {
-                    fadingHistory = createMockHistory(childId)
+                    fadingHistory = emptyList()
                 }
             } catch (e: Exception) {
-                fadingPlans = createMockPlans(childId)
-                fadingHistory = createMockHistory(childId)
+                fadingPlans = emptyList()
+                fadingHistory = emptyList()
             } finally {
                 isLoading = false
             }
@@ -271,7 +271,63 @@ fun PromptFadingScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // 3. PROMPT FADING HISTORY TIMELINE (AUDIT TRAIL)
+            // 3. ACTIVE PROMPT FADING PLANS
+            GlassCard(modifier = Modifier.fillMaxWidth()) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.TrendingDown, contentDescription = null, tint = SelforaPrimary, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("ACTIVE PROMPT FADING PLANS", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = SelforaPrimary)
+                }
+                Text("Current step-wise fading targets for this child", fontSize = 11.sp, color = SelforaTextSecondary)
+                Spacer(modifier = Modifier.height(14.dp))
+
+                if (fadingPlans.isEmpty()) {
+                    Text("No active prompt fading plans for this child.", fontSize = 12.sp, color = SelforaTextMuted)
+                } else {
+                    fadingPlans.forEach { p ->
+                        Surface(
+                            shape = RoundedCornerShape(14.dp),
+                            color = SelforaSurface.copy(alpha = 0.5f),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, SelforaBorder),
+                            modifier = Modifier.fillMaxWidth().padding(bottom = 10.dp)
+                        ) {
+                            Column(modifier = Modifier.padding(12.dp)) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text("Step ${p.stepNumber}: ${p.stepTitle}", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = SelforaTextPrimary)
+                                    Surface(shape = RoundedCornerShape(6.dp), color = SelforaPrimary.copy(alpha = 0.15f)) {
+                                        Text(p.status, fontSize = 10.sp, fontWeight = FontWeight.Bold, color = SelforaPrimary, modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp))
+                                    }
+                                }
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Surface(shape = RoundedCornerShape(6.dp), color = SelforaOrangeWarning.copy(alpha = 0.15f)) {
+                                        Text(p.currentPromptLevelName, fontSize = 10.sp, fontWeight = FontWeight.Bold, color = SelforaOrangeWarning, modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp))
+                                    }
+                                    Text(" ➔ ", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = SelforaPrimary)
+                                    Surface(shape = RoundedCornerShape(6.dp), color = SelforaGreenSuccess.copy(alpha = 0.15f)) {
+                                        Text(p.targetPromptLevelName, fontSize = 10.sp, fontWeight = FontWeight.Bold, color = SelforaGreenSuccess, modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp))
+                                    }
+                                }
+                                if (!p.clinicalReason.isNullOrBlank()) {
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Text("Rationale: ${p.clinicalReason}", fontSize = 11.sp, color = SelforaTextSecondary)
+                                }
+                                if (!p.reviewCriteria.isNullOrBlank()) {
+                                    Text("Criteria: ${p.reviewCriteria}", fontSize = 11.sp, color = SelforaTextSecondary)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // 4. PROMPT FADING HISTORY TIMELINE (AUDIT TRAIL)
             GlassCard(modifier = Modifier.fillMaxWidth()) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Default.History, contentDescription = null, tint = SelforaPrimary, modifier = Modifier.size(18.dp))
@@ -325,34 +381,4 @@ fun PromptFadingScreen(
             Spacer(modifier = Modifier.height(110.dp))
         }
     }
-}
-
-private fun createMockPlans(childId: Long): List<PromptFadingPlanResponse> {
-    return listOf(
-        PromptFadingPlanResponse(
-            id = 1L, childId = childId, childName = "Arjun Kumar", activityId = 1L, activityTitle = "Boy T-Shirt Dressing",
-            stepId = 7L, stepNumber = 7, stepTitle = "Put head through neck opening",
-            currentPromptLevelId = 3, currentPromptLevelName = "Verbal Prompt",
-            targetPromptLevelId = 1, targetPromptLevelName = "Visual Prompt",
-            clinicalReason = "Child consistently responds to visual cues.", reviewCriteria = "3 clinic sessions",
-            notes = "Reinforce at home", status = "APPROVED", approvedByTherapistName = "Dr. Sarah Jenkins", approvedAt = "2026-10-01"
-        )
-    )
-}
-
-private fun createMockHistory(childId: Long): List<PromptFadingHistoryItemResponse> {
-    return listOf(
-        PromptFadingHistoryItemResponse(
-            id = 1L, childId = childId, stepId = 7L, stepNumber = 7, stepTitle = "Put head through neck opening",
-            approvedByTherapistName = "Dr. Sarah Jenkins", previousPromptLevelName = "Verbal Prompt",
-            newPromptLevelName = "Visual Prompt", changeDate = "2026-10-01", reason = "Consistently accurate with visual card cue.",
-            subsequentPerformanceNotes = "Observed 100% independence in subsequent session!"
-        ),
-        PromptFadingHistoryItemResponse(
-            id = 2L, childId = childId, stepId = 1L, stepNumber = 1, stepTitle = "Garment orientation",
-            approvedByTherapistName = "Dr. Sarah Jenkins", previousPromptLevelName = "Visual Prompt",
-            newPromptLevelName = "Independent", changeDate = "2026-09-20", reason = "Mastered orientation independently.",
-            subsequentPerformanceNotes = "Mastery sustained across 4 consecutive sessions."
-        )
-    )
 }

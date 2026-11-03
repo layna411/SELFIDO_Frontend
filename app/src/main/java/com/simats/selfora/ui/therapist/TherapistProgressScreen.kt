@@ -36,19 +36,25 @@ fun TherapistProgressScreen(
     onNavigateToPromptFading: (Long) -> Unit = {},
     onBack: () -> Unit = {}
 ) {
-    val availableChildren = remember {
-        listOf(
-            ChildSummaryItem(id = 1L, name = "Arjun Kumar", age = 8, gender = "BOY", caregiverName = "Priya Kumar", caregiverRelationship = "Mother", dressingPercentage = 78, eatingPercentage = 65, shoesPercentage = 80, hasPendingAssessment = true, hasActiveHomeProgram = true),
-            ChildSummaryItem(id = 2L, name = "Ananya Reddy", age = 6, gender = "GIRL", caregiverName = "Suresh Reddy", caregiverRelationship = "Father", dressingPercentage = 85, eatingPercentage = 90, shoesPercentage = 78, hasPendingAssessment = false, hasActiveHomeProgram = true),
-            ChildSummaryItem(id = 3L, name = "Kavya Patel", age = 7, gender = "GIRL", caregiverName = "Meera Patel", caregiverRelationship = "Mother", dressingPercentage = 45, eatingPercentage = 50, shoesPercentage = 60, hasPendingAssessment = true, hasActiveHomeProgram = false),
-            ChildSummaryItem(id = 4L, name = "Rohan Sharma", age = 9, gender = "BOY", caregiverName = "Sunita Sharma", caregiverRelationship = "Mother", dressingPercentage = 92, eatingPercentage = 88, shoesPercentage = 95, hasPendingAssessment = false, hasActiveHomeProgram = true)
-        )
-    }
-
-    var selectedChild by remember {
-        mutableStateOf(availableChildren.find { it.id == childId } ?: availableChildren.first())
-    }
+    var availableChildren by remember { mutableStateOf<List<ChildSummaryItem>>(emptyList()) }
+    var isLoadingChildren by remember { mutableStateOf(true) }
+    var selectedChild by remember { mutableStateOf<ChildSummaryItem?>(null) }
     var selectedTab by remember { mutableStateOf("Longitudinal Trends") }
+
+    LaunchedEffect(Unit) {
+        isLoadingChildren = true
+        try {
+            val response = ApiClient.apiService.getTherapistChildren()
+            if (response.isSuccessful && response.body() != null) {
+                val list = response.body()!!
+                availableChildren = list
+                selectedChild = list.find { it.id == childId } ?: list.firstOrNull()
+            }
+        } catch (_: Exception) {}
+        finally {
+            isLoadingChildren = false
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -56,7 +62,12 @@ fun TherapistProgressScreen(
                 title = {
                     Column {
                         Text("Longitudinal Progress Monitoring", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = SelforaTextPrimary)
-                        Text("Selected Child: ${selectedChild.name}", fontSize = 12.sp, color = SelforaPrimary, fontWeight = FontWeight.SemiBold)
+                        Text(
+                            text = if (selectedChild != null) "Selected Child: ${selectedChild!!.name}" else "No child selected",
+                            fontSize = 12.sp,
+                            color = SelforaPrimary,
+                            fontWeight = FontWeight.SemiBold
+                        )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = SelforaSurface)
@@ -64,69 +75,115 @@ fun TherapistProgressScreen(
         },
         containerColor = SelforaBackground
     ) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .verticalScroll(rememberScrollState())
-                .padding(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 120.dp)
-        ) {
-            // STEP 1: CHILD SELECTOR BAR
-            GlassCard(modifier = Modifier.fillMaxWidth()) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.PersonSearch, contentDescription = null, tint = SelforaPrimary, modifier = Modifier.size(20.dp))
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("SELECT CHILD TO MONITOR PROGRESS", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = SelforaPrimary)
-                }
-
-                Spacer(modifier = Modifier.height(10.dp))
-
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .horizontalScroll(rememberScrollState()),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    availableChildren.forEach { child ->
-                        val isSelected = selectedChild.id == child.id
-                        Box(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(18.dp))
-                                .background(if (isSelected) SelforaPrimary else Color.White)
-                                .border(1.dp, if (isSelected) Color.White else SelforaBorder, RoundedCornerShape(18.dp))
-                                .clickable { selectedChild = child }
-                                .padding(horizontal = 14.dp, vertical = 8.dp)
+        if (isLoadingChildren) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator(color = SelforaPrimary)
+            }
+        } else if (availableChildren.isEmpty() || selectedChild == null) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .padding(24.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                GlassCard(modifier = Modifier.fillMaxWidth()) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.padding(24.dp)
+                    ) {
+                        Surface(
+                            shape = CircleShape,
+                            color = SelforaPrimary.copy(alpha = 0.12f),
+                            modifier = Modifier.size(64.dp)
                         ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(if (child.gender == "GIRL") "👧" else "👦", fontSize = 16.sp)
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Column {
-                                    Text(child.name, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = if (isSelected) Color.White else SelforaTextPrimary)
-                                    Text("Caregiver: ${child.caregiverName}", fontSize = 10.sp, color = if (isSelected) Color.White.copy(alpha = 0.85f) else SelforaTextSecondary)
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(Icons.Default.ChildCare, contentDescription = null, tint = SelforaPrimary, modifier = Modifier.size(32.dp))
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(14.dp))
+                        Text("No Children Assigned", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = SelforaTextPrimary)
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            "You do not have any children assigned to your clinical account. When children are enrolled or assigned by your administrator, their longitudinal progress and prompt fading trends will appear here.",
+                            color = SelforaTextSecondary,
+                            fontSize = 13.sp,
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                            lineHeight = 18.sp
+                        )
+                    }
+                }
+            }
+        } else {
+            val currentChild = selectedChild!!
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .verticalScroll(rememberScrollState())
+                    .padding(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 120.dp)
+            ) {
+                // STEP 1: CHILD SELECTOR BAR
+                GlassCard(modifier = Modifier.fillMaxWidth()) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.PersonSearch, contentDescription = null, tint = SelforaPrimary, modifier = Modifier.size(20.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("SELECT CHILD TO MONITOR PROGRESS", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = SelforaPrimary)
+                    }
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        availableChildren.forEach { child ->
+                            val isSelected = currentChild.id == child.id
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(18.dp))
+                                    .background(if (isSelected) SelforaPrimary else Color.White)
+                                    .border(1.dp, if (isSelected) Color.White else SelforaBorder, RoundedCornerShape(18.dp))
+                                    .clickable { selectedChild = child }
+                                    .padding(horizontal = 14.dp, vertical = 8.dp)
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text(if (child.gender == "GIRL") "👧" else "👦", fontSize = 16.sp)
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Column {
+                                        Text(child.name, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = if (isSelected) Color.White else SelforaTextPrimary)
+                                        Text("Caregiver: ${child.caregiverName}", fontSize = 10.sp, color = if (isSelected) Color.White.copy(alpha = 0.85f) else SelforaTextSecondary)
+                                    }
                                 }
                             }
                         }
                     }
                 }
-            }
 
-            Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
-            // Quick Navigation Shortcuts to Stage 5 Modules
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                GlassButton(
-                    text = "Analyze & Adapt Dashboard",
-                    onClick = { onNavigateToAnalyzeAndAdapt(selectedChild.id) },
-                    icon = Icons.Default.Analytics,
-                    modifier = Modifier.weight(1f)
-                )
-                GlassOutlinedButton(
-                    text = "Prompt Fading Hub",
-                    onClick = { onNavigateToPromptFading(selectedChild.id) },
-                    icon = Icons.Default.TrendingDown,
-                    modifier = Modifier.weight(1f)
-                )
-            }
+                // Quick Navigation Shortcuts to Stage 5 Modules
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    GlassButton(
+                        text = "Analyze & Adapt Dashboard",
+                        onClick = { onNavigateToAnalyzeAndAdapt(currentChild.id) },
+                        icon = Icons.Default.Analytics,
+                        modifier = Modifier.weight(1f)
+                    )
+                    GlassOutlinedButton(
+                        text = "Prompt Fading Hub",
+                        onClick = { onNavigateToPromptFading(currentChild.id) },
+                        icon = Icons.Default.TrendingDown,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
 
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -155,10 +212,10 @@ fun TherapistProgressScreen(
                             "Sep 20" to 68f,
                             "Sep 25" to 70f,
                             "Sep 29" to 75f,
-                            "Oct 02" to selectedChild.dressingPercentage.toFloat()
+                            "Oct 02" to currentChild.dressingPercentage.toFloat()
                         ),
                         title = "Longitudinal Independence Trend",
-                        subtitle = "Clinical L0-L6 progression for ${selectedChild.name}"
+                        subtitle = "Clinical L0-L6 progression for ${currentChild.name}"
                     )
 
                     Spacer(modifier = Modifier.height(14.dp))
@@ -168,10 +225,10 @@ fun TherapistProgressScreen(
                     Spacer(modifier = Modifier.height(8.dp))
 
                     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                        ADLProgressCard("Dressing", selectedChild.dressingPercentage, sessionCount = 14, trendDelta = "+12%")
-                        ADLProgressCard("Eating", selectedChild.eatingPercentage, sessionCount = 10, trendDelta = "+8%")
+                        ADLProgressCard("Dressing", currentChild.dressingPercentage, sessionCount = 14, trendDelta = "+12%")
+                        ADLProgressCard("Eating", currentChild.eatingPercentage, sessionCount = 10, trendDelta = "+8%")
                         ADLProgressCard("Grooming", 60, sessionCount = 6, trendDelta = "+5%")
-                        ADLProgressCard("Shoes & Socks", selectedChild.shoesPercentage, sessionCount = 12, trendDelta = "+15%")
+                        ADLProgressCard("Shoes & Socks", currentChild.shoesPercentage, sessionCount = 12, trendDelta = "+15%")
                     }
 
                     Spacer(modifier = Modifier.height(14.dp))
@@ -246,7 +303,7 @@ fun TherapistProgressScreen(
                                 Text("Caregiver Logged", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = SelforaSecondary, modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp))
                             }
                         }
-                        Text("Log of practices submitted at home by ${selectedChild.caregiverName}", fontSize = 11.sp, color = SelforaTextSecondary)
+                        Text("Log of practices submitted at home by ${currentChild.caregiverName}", fontSize = 11.sp, color = SelforaTextSecondary)
                         Spacer(modifier = Modifier.height(14.dp))
 
                         // Explicit Data Separation Safeguard Note
@@ -299,10 +356,11 @@ fun TherapistProgressScreen(
                     }
                 }
             }
-
-            Spacer(modifier = Modifier.height(150.dp))
         }
+
+        Spacer(modifier = Modifier.height(150.dp))
     }
+}
 }
 
 @Composable

@@ -47,14 +47,6 @@ fun ChildListScreen(
     val filterOptions = listOf("All", "Active", "Assessment Pending", "Completed")
     val sortOptions = listOf("Name", "Recent Session")
 
-    // Default sample list matching Therapist Flow Prototype (Image 1 Screen 3)
-    val defaultChildren = listOf(
-        ChildSummaryItem(1L, "Rohan S.", 7, "BOY", "aarav_boy", "Meena S.", "Mother", "12 May 2025", "ACTIVE", 3, 65, 75, 70, 70, false, true),
-        ChildSummaryItem(101L, "Aarav M.", 6, "BOY", "aarav_boy", "Sunita M.", "Mother", "10 May 2025", "ACTIVE", 3, 80, 75, 70, 75, false, true),
-        ChildSummaryItem(103L, "Vihaan K.", 8, "BOY", "aarav_boy", "Priya K.", "Mother", "08 May 2025", "ACTIVE", 3, 70, 60, 65, 65, false, true),
-        ChildSummaryItem(102L, "Ishita P.", 7, "GIRL", "ananya_girl", "Meera P.", "Mother", "05 May 2025", "ACTIVE", 3, 85, 90, 78, 84, false, true)
-    )
-
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
     fun loadChildren() {
@@ -69,7 +61,7 @@ fun ChildListScreen(
                     else -> null
                 }
                 val response = ApiClient.apiService.getTherapistChildren(filterParam, searchQuery.ifBlank { null })
-                if (response.isSuccessful && !response.body().isNullOrEmpty()) {
+                if (response.isSuccessful && response.body() != null) {
                     var listToUse = response.body()!!
 
                     listToUse = listToUse.filter {
@@ -91,14 +83,13 @@ fun ChildListScreen(
 
                     childrenList = listToUse
                 } else {
-                    childrenList = defaultChildren.filter {
-                        searchQuery.isBlank() || it.name.contains(searchQuery, ignoreCase = true)
-                    }
+                    val code = response.code()
+                    childrenList = emptyList()
+                    errorMessage = "Failed to load assigned children (HTTP $code)"
                 }
             } catch (e: Exception) {
-                childrenList = defaultChildren.filter {
-                    searchQuery.isBlank() || it.name.contains(searchQuery, ignoreCase = true)
-                }
+                childrenList = emptyList()
+                errorMessage = "Network error: ${e.localizedMessage}. Tap Refresh to try again."
             } finally {
                 isLoading = false
             }
@@ -182,12 +173,67 @@ fun ChildListScreen(
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator(color = SelforaPrimary)
                 }
+            } else if (errorMessage != null) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    GlassCard(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            modifier = Modifier.padding(16.dp)
+                        ) {
+                            Icon(Icons.Default.ErrorOutline, contentDescription = null, tint = Color.Red, modifier = Modifier.size(48.dp))
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Text(errorMessage!!, color = SelforaTextSecondary, fontSize = 14.sp, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Button(onClick = { loadChildren() }, colors = ButtonDefaults.buttonColors(containerColor = SelforaPrimary)) {
+                                Text("Retry")
+                            }
+                        }
+                    }
+                }
             } else if (childrenList.isEmpty()) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(Icons.Default.FolderOpen, contentDescription = null, tint = SelforaTextSecondary, modifier = Modifier.size(48.dp))
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text("No children found matching search criteria", color = SelforaTextSecondary, fontSize = 14.sp)
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.padding(24.dp)
+                    ) {
+                        Surface(
+                            shape = CircleShape,
+                            color = SelforaPrimary.copy(alpha = 0.12f),
+                            modifier = Modifier.size(72.dp)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(Icons.Default.ChildCare, contentDescription = null, tint = SelforaPrimary, modifier = Modifier.size(36.dp))
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(16.dp))
+                        val isFiltered = searchQuery.isNotBlank() || selectedFilter != "All"
+                        Text(
+                            text = if (isFiltered) "No Matching Children Found" else "No Children Assigned",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 17.sp,
+                            color = SelforaTextPrimary
+                        )
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            text = if (isFiltered)
+                                "No children match your search criteria. Try clearing filters or search query."
+                            else
+                                "You do not have any pediatric cases assigned to your account yet. When assigned by the administrator or enrolled via workflow, they will appear here.",
+                            color = SelforaTextSecondary,
+                            fontSize = 13.sp,
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                            lineHeight = 18.sp
+                        )
+                        Spacer(modifier = Modifier.height(20.dp))
+                        Button(
+                            onClick = onAddChildClick,
+                            colors = ButtonDefaults.buttonColors(containerColor = SelforaPrimary),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Add Child & Caregiver", fontWeight = FontWeight.Bold)
+                        }
                     }
                 }
             } else {

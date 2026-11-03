@@ -21,6 +21,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.simats.selfora.data.api.ApiClient
+import com.simats.selfora.data.model.ChildSummaryItem
 import com.simats.selfora.data.model.PendingReviewItem
 import com.simats.selfora.data.model.ScheduledSessionItem
 import com.simats.selfora.data.model.TherapistDashboardSummaryResponse
@@ -43,6 +44,7 @@ fun TherapistDashboardScreen(
     onLogout: () -> Unit
 ) {
     var summary by remember { mutableStateOf(TherapistDashboardSummaryResponse()) }
+    var assignedChildren by remember { mutableStateOf<List<ChildSummaryItem>>(emptyList()) }
     var isLoading by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var showProfileDialog by remember { mutableStateOf(false) }
@@ -63,6 +65,10 @@ fun TherapistDashboardScreen(
                         return@launch
                     }
                     errorMessage = "Failed to load clinical dashboard (HTTP $code)"
+                }
+                val childrenResponse = ApiClient.apiService.getTherapistChildren()
+                if (childrenResponse.isSuccessful && childrenResponse.body() != null) {
+                    assignedChildren = childrenResponse.body()!!
                 }
             } catch (e: Exception) {
                 errorMessage = "Network error: ${e.localizedMessage}. Tap Refresh to try again."
@@ -299,115 +305,161 @@ fun TherapistDashboardScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Demo Pediatric Profiles Section (3D Avatars)
-            Text(
-                text = "DEMO PEDIATRIC PROFILES (3D AVATARS)",
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Bold,
-                color = SelforaPrimary,
-                letterSpacing = 1.sp
-            )
-            Spacer(modifier = Modifier.height(10.dp))
-
+            // Assigned Children Section
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                // Aarav Demo Profile
+                Text(
+                    text = "MY ASSIGNED CHILDREN",
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = SelforaPrimary,
+                    letterSpacing = 1.sp
+                )
+                if (assignedChildren.isNotEmpty()) {
+                    Text(
+                        text = "View All (${assignedChildren.size})",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = SelforaPrimary,
+                        modifier = Modifier.clickable { onNavigateToChildren() }
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.height(10.dp))
+
+            if (assignedChildren.isEmpty()) {
                 GlassCard(
-                    modifier = Modifier.weight(1f),
-                    elevation = 6.dp,
-                    onClick = { onNavigateToChildProfile(101L) }
+                    modifier = Modifier.fillMaxWidth(),
+                    elevation = 4.dp
                 ) {
                     Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Box(contentAlignment = Alignment.TopEnd) {
-                            ChildAvatarImage(avatarId = "aarav_boy", gender = "BOY", size = 58.dp)
-                            Surface(
-                                shape = RoundedCornerShape(4.dp),
-                                color = Color(0xFF2563EB)
-                            ) {
-                                Text(
-                                    "DEMO",
-                                    fontSize = 8.sp,
-                                    fontWeight = FontWeight.ExtraBold,
-                                    color = Color.White,
-                                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
-                                )
-                            }
-                        }
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text("Aarav", fontWeight = FontWeight.Bold, fontSize = 15.sp, color = SelforaTextPrimary)
-                        Text("7 yrs • Boy Avatar", fontSize = 11.sp, color = SelforaPrimary, fontWeight = FontWeight.SemiBold)
-                        Spacer(modifier = Modifier.height(6.dp))
-                        Row(
-                            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text("Progress", fontSize = 10.5.sp, color = SelforaTextSecondary)
-                            Text("80%", fontSize = 11.sp, color = SelforaSuccess, fontWeight = FontWeight.Bold)
-                        }
-                        Spacer(modifier = Modifier.height(3.dp))
-                        SelforaLinearProgress(
-                            progress = 0.80f,
-                            color = SelforaSuccess,
-                            height = 5.dp,
-                            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp)
+                        Icon(
+                            imageVector = Icons.Default.ChildCare,
+                            contentDescription = null,
+                            tint = SelforaPrimary,
+                            modifier = Modifier.size(40.dp)
                         )
-                        Spacer(modifier = Modifier.height(6.dp))
-                        Text("Assigned: Dressing, Eating", fontSize = 10.sp, color = SelforaTextSecondary)
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "No Children Assigned Yet",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 15.sp,
+                            color = SelforaTextPrimary
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "You currently have no pediatric cases assigned to your account. Use the button below to enroll a new child or contact your administrator.",
+                            fontSize = 12.sp,
+                            color = SelforaTextSecondary,
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                            lineHeight = 16.sp
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Button(
+                            onClick = onNavigateToAddChildWorkflow,
+                            colors = ButtonDefaults.buttonColors(containerColor = SelforaPrimary),
+                            shape = RoundedCornerShape(10.dp)
+                        ) {
+                            Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("Add Child & Caregiver", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        }
                     }
                 }
-
-                // Ananya Demo Profile
-                GlassCard(
-                    modifier = Modifier.weight(1f),
-                    elevation = 6.dp,
-                    onClick = { onNavigateToChildProfile(102L) }
+            } else {
+                val previewChildren = assignedChildren.take(2)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Box(contentAlignment = Alignment.TopEnd) {
-                            ChildAvatarImage(avatarId = "ananya_girl", gender = "GIRL", size = 58.dp)
-                            Surface(
-                                shape = RoundedCornerShape(4.dp),
-                                color = Color(0xFF9333EA)
+                    previewChildren.forEach { child ->
+                        GlassCard(
+                            modifier = Modifier.weight(1f),
+                            elevation = 6.dp,
+                            onClick = { onNavigateToChildProfile(child.id) }
+                        ) {
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                modifier = Modifier.fillMaxWidth()
                             ) {
+                                Box(contentAlignment = Alignment.TopEnd) {
+                                    ChildAvatarImage(
+                                        avatarId = child.avatarUrl,
+                                        gender = child.gender,
+                                        size = 58.dp
+                                    )
+                                    Surface(
+                                        shape = RoundedCornerShape(4.dp),
+                                        color = if (child.programmeStatus == "ACTIVE") SelforaSuccess else Color(0xFF2563EB)
+                                    ) {
+                                        Text(
+                                            text = if (child.programmeStatus == "ACTIVE") "ACTIVE" else "NEW",
+                                            fontSize = 8.sp,
+                                            fontWeight = FontWeight.ExtraBold,
+                                            color = Color.White,
+                                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
+                                        )
+                                    }
+                                }
+                                Spacer(modifier = Modifier.height(8.dp))
                                 Text(
-                                    "DEMO",
-                                    fontSize = 8.sp,
-                                    fontWeight = FontWeight.ExtraBold,
-                                    color = Color.White,
-                                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
+                                    text = child.name,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 15.sp,
+                                    color = SelforaTextPrimary,
+                                    maxLines = 1
+                                )
+                                Text(
+                                    text = "${child.age} yrs • ${if (child.gender.equals("GIRL", ignoreCase = true)) "Girl" else "Boy"}",
+                                    fontSize = 11.sp,
+                                    color = SelforaPrimary,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 8.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text("Progress", fontSize = 10.5.sp, color = SelforaTextSecondary)
+                                    Text(
+                                        "${child.overallProgressPercentage}%",
+                                        fontSize = 11.sp,
+                                        color = SelforaSuccess,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                                Spacer(modifier = Modifier.height(3.dp))
+                                SelforaLinearProgress(
+                                    progress = (child.overallProgressPercentage.coerceIn(0, 100)) / 100f,
+                                    color = SelforaSuccess,
+                                    height = 5.dp,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 8.dp)
+                                )
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Text(
+                                    text = "Caregiver: ${child.caregiverName}",
+                                    fontSize = 10.sp,
+                                    color = SelforaTextSecondary,
+                                    maxLines = 1
                                 )
                             }
                         }
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text("Ananya", fontWeight = FontWeight.Bold, fontSize = 15.sp, color = SelforaTextPrimary)
-                        Text("6 yrs • Girl Avatar", fontSize = 11.sp, color = Color(0xFF9333EA), fontWeight = FontWeight.SemiBold)
-                        Spacer(modifier = Modifier.height(6.dp))
-                        Row(
-                            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text("Progress", fontSize = 10.5.sp, color = SelforaTextSecondary)
-                            Text("85%", fontSize = 11.sp, color = SelforaSuccess, fontWeight = FontWeight.Bold)
-                        }
-                        Spacer(modifier = Modifier.height(3.dp))
-                        SelforaLinearProgress(
-                            progress = 0.85f,
-                            color = SelforaSuccess,
-                            height = 5.dp,
-                            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp)
-                        )
-                        Spacer(modifier = Modifier.height(6.dp))
-                        Text("Assigned: Dressing, Shoes", fontSize = 10.sp, color = SelforaTextSecondary)
+                    }
+                    if (previewChildren.size == 1) {
+                        Spacer(modifier = Modifier.weight(1f))
                     }
                 }
             }

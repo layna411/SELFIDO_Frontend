@@ -46,16 +46,16 @@ data class PendingReviewItem(
 )
 
 data class TherapistDashboardSummaryResponse(
-    val therapistName: String = "Dr. Priya OT",
+    val therapistName: String = "",
     val designation: String = "Occupational Therapist",
     val avatarUrl: String = "ic_therapist_default",
-    val activeChildrenCount: Int = 8,
-    val linkedCaregiversCount: Int = 8,
-    val pendingAssessmentsCount: Int = 3,
-    val activeHomeProgramsCount: Int = 12,
-    val todaySessionsCount: Int = 5,
-    val completedSessionsCount: Int = 3,
-    val pendingReviewsCount: Int = 7,
+    val activeChildrenCount: Int = 0,
+    val linkedCaregiversCount: Int = 0,
+    val pendingAssessmentsCount: Int = 0,
+    val activeHomeProgramsCount: Int = 0,
+    val todaySessionsCount: Int = 0,
+    val completedSessionsCount: Int = 0,
+    val pendingReviewsCount: Int = 0,
     val todaySchedule: List<ScheduledSessionItem> = emptyList(),
     val pendingReviews: List<PendingReviewItem> = emptyList()
 )

@@ -32,86 +32,88 @@ fun SessionSummaryScreen(
 ) {
     var summary by remember { mutableStateOf<SessionSummaryResponse?>(null) }
     var isLoading by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(sessionId) {
         isLoading = true
+        errorMessage = null
         try {
             val res = ApiClient.apiService.completeSession(sessionId)
             if (res.isSuccessful && res.body() != null) {
                 summary = res.body()
             } else {
-                summary = SessionSummaryResponse(
-                    sessionId = sessionId,
-                    sessionCode = "SESS-$sessionId",
-                    childName = "Rohan S.",
-                    activityTitle = "Tooth Brushing",
-                    totalSteps = 7,
-                    completedSteps = 5,
-                    independentSteps = 4,
-                    promptedSteps = 2,
-                    unableSteps = 1,
-                    independencePercentage = 65.0,
-                    totalDurationSeconds = 2700,
-                    suggestedNextPromptLevel = "VERBAL",
-                    suggestedFocusStepIds = listOf(3L, 4L)
-                )
+                val code = res.code()
+                errorMessage = "Failed to load session summary (HTTP $code)"
             }
         } catch (e: Exception) {
-            summary = SessionSummaryResponse(
-                sessionId = sessionId,
-                sessionCode = "SESS-$sessionId",
-                childName = "Rohan S.",
-                activityTitle = "Tooth Brushing",
-                totalSteps = 7,
-                completedSteps = 5,
-                independentSteps = 4,
-                promptedSteps = 2,
-                unableSteps = 1,
-                independencePercentage = 65.0,
-                totalDurationSeconds = 2700,
-                suggestedNextPromptLevel = "VERBAL",
-                suggestedFocusStepIds = listOf(3L, 4L)
-            )
+            errorMessage = "Network error: ${e.localizedMessage}"
         } finally {
             isLoading = false
         }
     }
 
-    val s = summary ?: SessionSummaryResponse(
-        sessionId = sessionId,
-        sessionCode = "SESS-$sessionId",
-        childName = "Rohan S.",
-        activityTitle = "Tooth Brushing",
-        totalSteps = 7,
-        completedSteps = 5,
-        independentSteps = 4,
-        promptedSteps = 2,
-        unableSteps = 1,
-        independencePercentage = 65.0,
-        totalDurationSeconds = 2700,
-        suggestedNextPromptLevel = "VERBAL",
-        suggestedFocusStepIds = listOf(3L, 4L)
-    )
-
     Scaffold(
         topBar = {
             GlassTopBar(
                 title = "Session Summary",
-                subtitle = "${s.activityTitle} • 12 May 2025 • 45 min",
+                subtitle = summary?.let { "${it.activityTitle} • ${it.sessionCode}" } ?: "Session #$sessionId",
                 onBackClick = onBackToDashboard,
                 accentColor = SelforaPrimary
             )
         },
         containerColor = SelforaBackground
     ) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .verticalScroll(rememberScrollState())
-                .padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
+        if (isLoading) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator(color = SelforaPrimary)
+            }
+        } else if (errorMessage != null || summary == null) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .padding(24.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                GlassCard(modifier = Modifier.fillMaxWidth()) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.padding(20.dp)
+                    ) {
+                        Icon(Icons.Default.ErrorOutline, contentDescription = null, tint = Color.Red, modifier = Modifier.size(48.dp))
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Text(
+                            errorMessage ?: "Session summary not available",
+                            color = SelforaTextSecondary,
+                            fontSize = 14.sp,
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Button(
+                            onClick = onBackToDashboard,
+                            colors = ButtonDefaults.buttonColors(containerColor = SelforaPrimary),
+                            shape = RoundedCornerShape(10.dp)
+                        ) {
+                            Text("Back to Dashboard")
+                        }
+                    }
+                }
+            }
+        } else {
+            val s = summary!!
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .verticalScroll(rememberScrollState())
+                    .padding(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
             Text(
                 text = s.activityTitle,
                 fontSize = 20.sp,
@@ -213,6 +215,7 @@ fun SessionSummaryScreen(
             Spacer(modifier = Modifier.height(110.dp))
         }
     }
+}
 }
 
 @Composable

@@ -75,6 +75,10 @@ fun AssessmentScreen(
     val currentDate = remember { LocalDate.now().toString() }
 
     LaunchedEffect(childId) {
+        if (childId <= 0L) {
+            childLoading = false
+            return@LaunchedEffect
+        }
         childLoading = true
         try {
             val res = ApiClient.apiService.getChildById(childId)
@@ -142,7 +146,41 @@ fun AssessmentScreen(
                 .verticalScroll(rememberScrollState())
                 .padding(16.dp)
         ) {
-            if (!isStarted) {
+            if (childId <= 0L) {
+                GlassCard(modifier = Modifier.fillMaxWidth()) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.padding(20.dp)
+                    ) {
+                        Surface(
+                            shape = CircleShape,
+                            color = SelforaPrimary.copy(alpha = 0.12f),
+                            modifier = Modifier.size(64.dp)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(Icons.Default.ChildCare, contentDescription = null, tint = SelforaPrimary, modifier = Modifier.size(32.dp))
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(14.dp))
+                        Text("No Child Selected for Assessment", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = SelforaTextPrimary)
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            "Please select an assigned child from 'My Children' or the Dashboard before starting a clinical assessment.",
+                            color = SelforaTextSecondary,
+                            fontSize = 13.sp,
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Button(
+                            onClick = onBack,
+                            colors = ButtonDefaults.buttonColors(containerColor = SelforaPrimary),
+                            shape = RoundedCornerShape(10.dp)
+                        ) {
+                            Text("Go to My Children")
+                        }
+                    }
+                }
+            } else if (!isStarted) {
                 // SECTION 2: Start New Assessment Screen Config
                 GlassCard(modifier = Modifier.fillMaxWidth()) {
                     Text("PEDIATRIC PATIENT DETAILS", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = SelforaPrimary)
@@ -310,8 +348,9 @@ fun AssessmentScreen(
                                             shape = RoundedCornerShape(14.dp)
                                         )
                                         .clickable {
-                                            currentStep.promptLevelId = levelId
-                                            currentStep.outcome = "COMPLETED"
+                                            stepStates = stepStates.toMutableList().also {
+                                                it[currentStepIndex] = currentStep.copy(promptLevelId = levelId, outcome = "COMPLETED")
+                                            }
                                         }
                                         .padding(vertical = 12.dp, horizontal = 14.dp),
                                     contentAlignment = Alignment.CenterStart
@@ -320,8 +359,9 @@ fun AssessmentScreen(
                                         RadioButton(
                                             selected = isSelected,
                                             onClick = {
-                                                currentStep.promptLevelId = levelId
-                                                currentStep.outcome = "COMPLETED"
+                                                stepStates = stepStates.toMutableList().also {
+                                                    it[currentStepIndex] = currentStep.copy(promptLevelId = levelId, outcome = "COMPLETED")
+                                                }
                                             },
                                             colors = RadioButtonDefaults.colors(selectedColor = if (isSelected) Color.White else SelforaPrimary)
                                         )
@@ -343,8 +383,9 @@ fun AssessmentScreen(
                                     text = if (isUnableSelected) "✓ Unable" else "Unable",
                                     accentColor = SelforaError,
                                     onClick = {
-                                        currentStep.outcome = "UNABLE"
-                                        currentStep.promptLevelId = null
+                                        stepStates = stepStates.toMutableList().also {
+                                            it[currentStepIndex] = currentStep.copy(outcome = "UNABLE", promptLevelId = 7)
+                                        }
                                     },
                                     modifier = Modifier.weight(1f)
                                 )
@@ -367,7 +408,11 @@ fun AssessmentScreen(
                         // Therapist Notes Input
                         GlassTextField(
                             value = currentStep.notes,
-                            onValueChange = { currentStep.notes = it },
+                            onValueChange = { newNotes ->
+                                stepStates = stepStates.toMutableList().also {
+                                    it[currentStepIndex] = currentStep.copy(notes = newNotes)
+                                }
+                            },
                             label = "Therapist Observation Notes (Optional)",
                             placeholder = "Record specific clinical observations for this step...",
                             singleLine = false,
@@ -413,10 +458,13 @@ fun AssessmentScreen(
     // Not Assessed Reason Dialog
     if (showNotAssessedDialog) {
         val confirmNotAssessed = {
-            val step = stepStates[currentStepIndex]
-            step.outcome = "NOT_ASSESSED"
-            step.promptLevelId = null
-            step.notAssessedReason = notAssessedReasonInput
+            stepStates = stepStates.toMutableList().also {
+                it[currentStepIndex] = it[currentStepIndex].copy(
+                    outcome = "NOT_ASSESSED",
+                    promptLevelId = 8,
+                    notAssessedReason = notAssessedReasonInput
+                )
+            }
             showNotAssessedDialog = false
         }
 

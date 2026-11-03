@@ -9,7 +9,7 @@ data class StartSessionRequest(
 
 data class RecordPerformanceRequest(
     val stepId: Long,
-    val promptLevelId: Int,
+    val promptLevelId: Int? = null,
     val outcome: String = "COMPLETED",
     val attempts: Int = 1,
     val durationSeconds: Int = 0,

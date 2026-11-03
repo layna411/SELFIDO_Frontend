@@ -181,7 +181,11 @@ object SessionManager {
 
     fun clearSession() {
         if (!::prefs.isInitialized) return
+        val savedBaseUrl = getCustomBaseUrl()
         prefs.edit().clear().apply()
+        if (savedBaseUrl != null) {
+            setCustomBaseUrl(savedBaseUrl)
+        }
         ApiClient.setJwtToken(null)
     }
 }
