@@ -15,6 +15,10 @@ import androidx.compose.material.icons.filled.Security
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
@@ -26,6 +30,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.simats.selfora.ui.theme.*
 import com.simats.selfora.ui.components.glass.GlassTextField
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -44,22 +49,43 @@ fun AdminSettingsScreen(
     var forceFirstLoginPasswordChange by remember { mutableStateOf(true) }
     var preventAdminDeletion by remember { mutableStateOf(true) }
 
-    val darkSlate = Color(0xFF0F172A)
-    val goldAccent = Color(0xFFD97706)
+    val darkSlate = SelforaTextPrimary
+    val goldAccent = SelforaPrimary
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("Super Admin Settings & Security", fontWeight = FontWeight.Bold) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                color = Color.White,
+                shadowElevation = 2.dp,
+                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0))
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .statusBarsPadding()
+                        .padding(horizontal = 16.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    IconButton(
+                        onClick = onBack,
+                        modifier = Modifier
+                            .size(38.dp)
+                            .clip(CircleShape)
+                            .background(Color(0xFFF8FAFC))
+                            .border(1.dp, Color(0xFFE2E8F0), CircleShape)
+                    ) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = SelforaPrimary, modifier = Modifier.size(19.dp))
                     }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
-            )
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column {
+                        Text("Settings & Security", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = SelforaTextPrimary)
+                        Text("Super Administrator Configuration", fontSize = 11.5.sp, color = SelforaTextSecondary)
+                    }
+                }
+            }
         },
-        containerColor = Color(0xFFF8FAFC)
+        containerColor = SelforaBackground
     ) { padding ->
         Column(
             modifier = Modifier
@@ -86,9 +112,10 @@ fun AdminSettingsScreen(
 
             Surface(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(24.dp),
+                shape = RoundedCornerShape(18.dp),
                 color = Color.White,
-                shadowElevation = 4.dp
+                shadowElevation = 1.5.dp,
+                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0))
             ) {
                 Column(modifier = Modifier.padding(20.dp)) {
                     Text("Change Super Admin Password", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = darkSlate)
@@ -145,11 +172,12 @@ fun AdminSettingsScreen(
 
                     Button(
                         onClick = { updatePasswordAction() },
-                        colors = ButtonDefaults.buttonColors(containerColor = darkSlate),
-                        shape = CircleShape,
-                        modifier = Modifier.fillMaxWidth()
+                        colors = ButtonDefaults.buttonColors(containerColor = SelforaPrimary),
+                        shape = RoundedCornerShape(14.dp),
+                        elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp),
+                        modifier = Modifier.fillMaxWidth().height(50.dp)
                     ) {
-                        Text("Update Admin Password", fontWeight = FontWeight.Bold)
+                        Text("Update Admin Password", fontWeight = FontWeight.Bold, fontSize = 15.sp)
                     }
                 }
             }
@@ -158,9 +186,10 @@ fun AdminSettingsScreen(
 
             Surface(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(24.dp),
+                shape = RoundedCornerShape(18.dp),
                 color = Color.White,
-                shadowElevation = 4.dp
+                shadowElevation = 1.5.dp,
+                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0))
             ) {
                 Column(modifier = Modifier.padding(20.dp)) {
                     Text("Security Policies & Audit Controls", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = darkSlate)

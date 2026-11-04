@@ -1,6 +1,8 @@
 package com.simats.selfora.ui.admin
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -19,6 +21,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.simats.selfora.ui.theme.*
 import com.simats.selfora.data.api.ApiClient
 import com.simats.selfora.data.model.AuditLogItem
 
@@ -56,21 +59,42 @@ fun AdminAuditLogsScreen(
         }
     }
 
-    val darkSlate = Color(0xFF0F172A)
+    val darkSlate = SelforaTextPrimary
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("System Activity & Audit Logs", fontWeight = FontWeight.Bold) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                color = Color.White,
+                shadowElevation = 2.dp,
+                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0))
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .statusBarsPadding()
+                        .padding(horizontal = 16.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    IconButton(
+                        onClick = onBack,
+                        modifier = Modifier
+                            .size(38.dp)
+                            .clip(CircleShape)
+                            .background(Color(0xFFF8FAFC))
+                            .border(1.dp, Color(0xFFE2E8F0), CircleShape)
+                    ) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = SelforaPrimary, modifier = Modifier.size(19.dp))
                     }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
-            )
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column {
+                        Text("System Activity & Audit Logs", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = SelforaTextPrimary)
+                        Text("Immutable Security & Compliance Trail", fontSize = 11.5.sp, color = SelforaTextSecondary)
+                    }
+                }
+            }
         },
-        containerColor = Color(0xFFF8FAFC)
+        containerColor = SelforaBackground
     ) { padding ->
         LazyColumn(
             modifier = Modifier
@@ -81,9 +105,10 @@ fun AdminAuditLogsScreen(
         ) {
             items(logs) { item ->
                 Surface(
-                    modifier = Modifier.fillMaxWidth().shadow(4.dp, RoundedCornerShape(20.dp)),
-                    shape = RoundedCornerShape(20.dp),
-                    color = Color.White
+                    modifier = Modifier.fillMaxWidth().shadow(1.5.dp, RoundedCornerShape(18.dp)),
+                    shape = RoundedCornerShape(18.dp),
+                    color = Color.White,
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0))
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Row(

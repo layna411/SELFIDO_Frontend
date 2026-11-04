@@ -22,6 +22,7 @@ import com.simats.selfora.data.api.ApiClient
 import com.simats.selfora.data.model.HomeProgramResponse
 import com.simats.selfora.data.repository.PracticeSessionStore
 import com.simats.selfora.ui.components.progress.SelforaLinearProgress
+import com.simats.selfora.ui.therapist.SelfidoCatalogue
 import com.simats.selfora.ui.theme.*
 import kotlinx.coroutines.launch
 
@@ -219,16 +220,9 @@ fun HomeProgrammeCard(
     val practiceRecords by PracticeSessionStore.records.collectAsState()
     val recordForThisAct = practiceRecords.firstOrNull { it.activityId == program.activityId }
 
-    val iconEmoji = when (program.activityId) {
-        13L -> "🥣"
-        9L -> "👟"
-        else -> "👕"
-    }
-    val totalSteps = when (program.activityId) {
-        13L -> 10
-        9L -> 10
-        else -> 18
-    }
+    val actDef = SelfidoCatalogue.getActivityById(program.activityId)
+    val iconEmoji = actDef?.icon ?: "🎯"
+    val totalSteps = actDef?.totalSteps ?: 15
     val completedCount = recordForThisAct?.independentCount ?: if (program.activityId == 1L) 7 else 0
     val isPracticedToday = PracticeSessionStore.isActivityPracticedToday(program.activityId)
 
@@ -372,6 +366,83 @@ fun HomeProgrammeCard(
                         color = SelforaTextPrimary,
                         lineHeight = 16.sp
                     )
+                    if (!program.targetPromptLevelName.isNullOrBlank()) {
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Surface(
+                            shape = RoundedCornerShape(6.dp),
+                            color = SelforaPrimary.copy(alpha = 0.12f)
+                        ) {
+                            Text(
+                                "Assistance: ${program.targetPromptLevelName}",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = SelforaPrimary,
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                            )
+                        }
+                    }
+                }
+            }
+
+            // Caregiver Instructions Callout
+            if (!program.caregiverInstructions.isNullOrBlank()) {
+                Spacer(modifier = Modifier.height(10.dp))
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = Color(0xFFF0FDF4),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFBBF7D0)),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.padding(12.dp)) {
+                        Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                            Text("💡", fontSize = 13.sp)
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                "PARENT PRACTICE GUIDANCE:",
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF166534)
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            program.caregiverInstructions!!,
+                            fontSize = 12.sp,
+                            color = Color(0xFF14532D),
+                            lineHeight = 16.sp
+                        )
+                    }
+                }
+            }
+
+            // Things to Avoid Callout
+            if (!program.thingsToAvoid.isNullOrBlank()) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = Color(0xFFFEF2F2),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFFECACA)),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.padding(10.dp)) {
+                        Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                            Text("⚠️", fontSize = 12.sp)
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                "THINGS TO AVOID:",
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF991B1B)
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            program.thingsToAvoid!!,
+                            fontSize = 11.5.sp,
+                            color = Color(0xFF7F1D1D),
+                            lineHeight = 15.sp
+                        )
+                    }
                 }
             }
 

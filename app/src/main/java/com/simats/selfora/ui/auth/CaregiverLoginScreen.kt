@@ -1,5 +1,7 @@
 package com.simats.selfora.ui.auth
 
+import com.simats.selfora.ui.components.LanguageTogglePill
+import androidx.compose.ui.res.stringResource
 import android.widget.Toast
 import androidx.compose.animation.*
 import androidx.compose.foundation.Image
@@ -40,6 +42,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.simats.selfora.R
+import com.simats.selfora.ui.theme.*
 import com.simats.selfora.data.api.ApiClient
 import com.simats.selfora.data.local.SessionManager
 import com.simats.selfora.data.model.LoginRequest
@@ -63,22 +66,14 @@ fun CaregiverLoginScreen(
     val scope = rememberCoroutineScope()
     val scrollState = rememberScrollState()
 
-    val purpleAccent = Color(0xFF7C3AED)
-    val textPrimary = Color(0xFF172033)
-    val textSecondary = Color(0xFF64748B)
+    val purpleAccent = SelforaSecondary
+    val textPrimary = SelforaTextPrimary
+    val textSecondary = SelforaTextSecondary
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(
-                Brush.verticalGradient(
-                    colors = listOf(
-                        Color(0xFFF3E8FF),
-                        Color(0xFFFAF5FF),
-                        Color(0xFFF5F7FC)
-                    )
-                )
-            )
+            .background(SelforaBackground)
     ) {
         // Bottom Home Decor Background
         Image(
@@ -107,6 +102,7 @@ fun CaregiverLoginScreen(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
+                LanguageTogglePill(isCompact = true)
                 IconButton(
                     onClick = onBack,
                     modifier = Modifier
@@ -156,14 +152,14 @@ fun CaregiverLoginScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Main Caregiver Glass Container
+            // Main Caregiver Card
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .shadow(12.dp, RoundedCornerShape(28.dp), clip = false),
-                shape = RoundedCornerShape(28.dp),
-                color = Color.White.copy(alpha = 0.92f),
-                border = androidx.compose.foundation.BorderStroke(1.5.dp, Color.White.copy(alpha = 0.8f))
+                    .shadow(2.dp, RoundedCornerShape(20.dp), clip = false),
+                shape = RoundedCornerShape(20.dp),
+                color = Color.White,
+                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0))
             ) {
                 Column(
                     modifier = Modifier.padding(24.dp),
@@ -187,7 +183,7 @@ fun CaregiverLoginScreen(
 
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = "Caregiver Login",
+                                text = stringResource(R.string.auth_caregiver_login_title),
                                 fontSize = 20.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = textPrimary
@@ -196,7 +192,7 @@ fun CaregiverLoginScreen(
                             Spacer(modifier = Modifier.height(4.dp))
 
                             Text(
-                                text = "Access your child's home programmes and practice activities.",
+                                text = stringResource(R.string.auth_caregiver_login_subtitle),
                                 fontSize = 12.sp,
                                 color = textSecondary,
                                 lineHeight = 16.sp
@@ -213,7 +209,7 @@ fun CaregiverLoginScreen(
                             email = it
                             errorMessage = null
                         },
-                        label = "Email address",
+                        label = stringResource(R.string.admin_email_address),
                         placeholder = "caregiver@selfido.com",
                         leadingIcon = Icons.Default.Email,
                         keyboardOptions = KeyboardOptions(
@@ -232,8 +228,8 @@ fun CaregiverLoginScreen(
                             password = it
                             errorMessage = null
                         },
-                        label = "Password",
-                        placeholder = "Enter your password",
+                        label = stringResource(R.string.auth_password),
+                        placeholder = stringResource(R.string.auth_password),
                         leadingIcon = Icons.Default.Lock,
                         visualTransformation = if (isPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                         trailingIcon = {
@@ -277,7 +273,7 @@ fun CaregiverLoginScreen(
                             )
                             Spacer(modifier = Modifier.width(4.dp))
                             Text(
-                                text = "Remember me",
+                                text = stringResource(R.string.auth_remember_me),
                                 fontSize = 12.sp,
                                 color = textSecondary,
                                 fontWeight = FontWeight.Medium
@@ -285,7 +281,7 @@ fun CaregiverLoginScreen(
                         }
 
                         Text(
-                            text = "Forgot Password?",
+                            text = stringResource(R.string.auth_forgot_password),
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Bold,
                             color = purpleAccent,
@@ -341,10 +337,10 @@ fun CaregiverLoginScreen(
                         },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(52.dp)
-                            .shadow(8.dp, CircleShape),
-                        shape = CircleShape,
-                        colors = ButtonDefaults.buttonColors(containerColor = purpleAccent)
+                            .height(50.dp),
+                        shape = RoundedCornerShape(14.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = purpleAccent),
+                        elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp)
                     ) {
                         if (isLoading) {
                             CircularProgressIndicator(
@@ -360,7 +356,7 @@ fun CaregiverLoginScreen(
                             ) {
                                 Spacer(modifier = Modifier.weight(1f))
                                 Text(
-                                    text = "Sign In",
+                                    text = stringResource(R.string.auth_sign_in_btn),
                                     fontSize = 16.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = Color.White

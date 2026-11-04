@@ -102,10 +102,10 @@ fun SelforaNavHost(
             navController = navController,
             startDestination = initialDestination,
             modifier = Modifier.fillMaxSize(),
-            enterTransition = { slideInHorizontally(initialOffsetX = { 400 }, animationSpec = tween(350, easing = androidx.compose.animation.core.FastOutSlowInEasing)) + fadeIn(animationSpec = tween(350)) },
-            exitTransition = { slideOutHorizontally(targetOffsetX = { -400 }, animationSpec = tween(350, easing = androidx.compose.animation.core.FastOutSlowInEasing)) + fadeOut(animationSpec = tween(350)) },
-            popEnterTransition = { slideInHorizontally(initialOffsetX = { -400 }, animationSpec = tween(350, easing = androidx.compose.animation.core.FastOutSlowInEasing)) + fadeIn(animationSpec = tween(350)) },
-            popExitTransition = { slideOutHorizontally(targetOffsetX = { 400 }, animationSpec = tween(350, easing = androidx.compose.animation.core.FastOutSlowInEasing)) + fadeOut(animationSpec = tween(350)) }
+            enterTransition = { slideInHorizontally(initialOffsetX = { fullWidth -> fullWidth / 4 }, animationSpec = tween(300, easing = androidx.compose.animation.core.FastOutSlowInEasing)) + fadeIn(animationSpec = tween(300)) },
+            exitTransition = { slideOutHorizontally(targetOffsetX = { fullWidth -> -fullWidth / 4 }, animationSpec = tween(260, easing = androidx.compose.animation.core.FastOutSlowInEasing)) + fadeOut(animationSpec = tween(220)) },
+            popEnterTransition = { slideInHorizontally(initialOffsetX = { fullWidth -> -fullWidth / 4 }, animationSpec = tween(300, easing = androidx.compose.animation.core.FastOutSlowInEasing)) + fadeIn(animationSpec = tween(300)) },
+            popExitTransition = { slideOutHorizontally(targetOffsetX = { fullWidth -> fullWidth / 4 }, animationSpec = tween(260, easing = androidx.compose.animation.core.FastOutSlowInEasing)) + fadeOut(animationSpec = tween(220)) }
         ) {
             // Auth
             val handleLoginSuccess: (String, Long) -> Unit = { role, _ ->
@@ -271,6 +271,7 @@ fun SelforaNavHost(
                     onNavigateToAddChildWorkflow = { navController.navigate(NavRoutes.AddChildWorkflow.route) },
                     onNavigateToChildProfile = { id -> navController.navigate(NavRoutes.ChildProfile.createRoute(id)) },
                     onNavigateToAssessment = { id -> navController.navigate(NavRoutes.Assessment.createRoute(id)) },
+                    onNavigateToSession = { id -> navController.navigate(NavRoutes.TherapySession.createRoute(id, 1L)) },
                     onNavigateToHomePrograms = { id -> navController.navigate(NavRoutes.HomeProgramReview.createRoute(id)) },
                     onNavigateToProgress = { id -> navController.navigate(NavRoutes.Progress.createRoute(id)) },
                     onNavigateToMessages = { id -> navController.navigate(NavRoutes.Messages.createRoute(id)) },
@@ -365,19 +366,29 @@ fun SelforaNavHost(
                 val sessionId = backStack.arguments?.getLong("sessionId") ?: 1L
                 SessionSummaryScreen(
                     sessionId = sessionId,
-                    onNavigateToAdaptation = { sId -> navController.navigate(NavRoutes.Adaptation.createRoute(sId)) },
+                    onNavigateToAdaptation = { sId, cId, aId ->
+                        navController.navigate(NavRoutes.Adaptation.createRoute(sId, cId, aId))
+                    },
                     onBackToDashboard = { navController.navigate(NavRoutes.TherapistDashboard.route) { popUpTo(NavRoutes.TherapistDashboard.route) { inclusive = true } } }
                 )
             }
 
             composable(
                 route = NavRoutes.Adaptation.route,
-                arguments = listOf(navArgument("sessionId") { type = NavType.LongType })
+                arguments = listOf(
+                    navArgument("sessionId") { type = NavType.LongType },
+                    navArgument("childId") { type = NavType.LongType },
+                    navArgument("activityId") { type = NavType.LongType }
+                )
             ) { backStack ->
                 val sessionId = backStack.arguments?.getLong("sessionId") ?: 1L
+                val childId = backStack.arguments?.getLong("childId") ?: 1L
+                val activityId = backStack.arguments?.getLong("activityId") ?: 5L
                 AdaptationScreen(
                     sessionId = sessionId,
-                    onAdaptationSaved = { navController.navigate(NavRoutes.HomeProgramCreate.createRoute(1L)) },
+                    childId = childId,
+                    activityId = activityId,
+                    onAdaptationSaved = { navController.navigate(NavRoutes.HomeProgramCreate.createRoute(childId)) },
                     onBack = { navController.popBackStack() }
                 )
             }

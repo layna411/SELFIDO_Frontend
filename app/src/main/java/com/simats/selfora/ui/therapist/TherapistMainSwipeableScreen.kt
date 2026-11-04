@@ -19,6 +19,7 @@ fun TherapistMainSwipeableScreen(
     onNavigateToAddChildWorkflow: () -> Unit,
     onNavigateToChildProfile: (Long) -> Unit,
     onNavigateToAssessment: (Long) -> Unit,
+    onNavigateToSession: (Long) -> Unit = {},
     onNavigateToHomePrograms: (Long) -> Unit,
     onNavigateToProgress: (Long) -> Unit,
     onNavigateToMessages: (Long) -> Unit,
@@ -77,6 +78,10 @@ fun TherapistMainSwipeableScreen(
                     onChildSelected = { id ->
                         activeChildId = id
                         onNavigateToChildProfile(id)
+                    },
+                    onStartSession = { id ->
+                        activeChildId = id
+                        onNavigateToSession(id)
                     },
                     onAddChildClick = onNavigateToAddChildWorkflow,
                     onBack = {

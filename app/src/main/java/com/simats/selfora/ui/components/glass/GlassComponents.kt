@@ -50,22 +50,22 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 // ============================================================================
-// 1. GLASS CARD
+// 1. GLASS CARD (Modern Clean Clinical Surface)
 // ============================================================================
 @Composable
 fun GlassCard(
     modifier: Modifier = Modifier,
-    cornerRadius: Dp = 24.dp,
-    backgroundColor: Color = Color.White.copy(alpha = 0.85f),
-    borderColor: Color = Color.White.copy(alpha = 0.70f),
-    elevation: Dp = 8.dp,
+    cornerRadius: Dp = 18.dp,
+    backgroundColor: Color = Color.White,
+    borderColor: Color = Color(0xFFE2E8F0),
+    elevation: Dp = 1.5.dp,
     contentPadding: PaddingValues = PaddingValues(16.dp),
     onClick: (() -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit
 ) {
     var isPressed by remember { mutableStateOf(false) }
     val scale by animateFloatAsState(
-        targetValue = if (isPressed && onClick != null) 0.98f else 1.0f,
+        targetValue = if (isPressed && onClick != null) 0.985f else 1.0f,
         animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow),
         label = "glassCardScale"
     )
@@ -93,27 +93,14 @@ fun GlassCard(
             .shadow(
                 elevation = elevation,
                 shape = RoundedCornerShape(cornerRadius),
-                ambientColor = Color(0x1A2563EB),
-                spotColor = Color(0x22172033)
+                ambientColor = Color(0x08172033),
+                spotColor = Color(0x12172033)
             )
             .clip(RoundedCornerShape(cornerRadius))
-            .background(
-                brush = Brush.verticalGradient(
-                    colors = listOf(
-                        backgroundColor,
-                        backgroundColor.copy(alpha = (backgroundColor.alpha * 0.92f))
-                    )
-                )
-            )
+            .background(backgroundColor)
             .border(
-                width = 1.2.dp,
-                brush = Brush.linearGradient(
-                    colors = listOf(
-                        borderColor,
-                        Color.White.copy(alpha = 0.35f),
-                        SelforaPrimary.copy(alpha = 0.15f)
-                    )
-                ),
+                width = 1.dp,
+                color = borderColor,
                 shape = RoundedCornerShape(cornerRadius)
             )
             .then(clickableModifier)
@@ -126,7 +113,7 @@ fun GlassCard(
 }
 
 // ============================================================================
-// 2. GLASS BUTTON
+// 2. GLASS BUTTON (Clean 50dp Clinical Button)
 // ============================================================================
 @Composable
 fun GlassButton(
@@ -134,17 +121,17 @@ fun GlassButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     icon: ImageVector? = null,
-    gradient: List<Color> = listOf(SelforaPrimary, Color(0xFF1D4ED8)),
+    gradient: List<Color> = listOf(SelforaPrimary, SelforaPrimary),
     contentColor: Color = Color.White,
     enabled: Boolean = true,
-    cornerRadius: Dp = 24.dp,
+    cornerRadius: Dp = 14.dp,
     leadingIcon: ImageVector? = null
 ) {
     val effectiveIcon = leadingIcon ?: icon
     val safeText = text ?: ""
     var isPressed by remember { mutableStateOf(false) }
     val scale by animateFloatAsState(
-        targetValue = if (isPressed && enabled) 0.96f else 1.0f,
+        targetValue = if (isPressed && enabled) 0.97f else 1.0f,
         animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow),
         label = "glassBtnScale"
     )
@@ -156,9 +143,10 @@ fun GlassButton(
                 scaleY = scale
             }
             .shadow(
-                elevation = if (enabled) (if (isPressed) 4.dp else 10.dp) else 2.dp,
+                elevation = if (enabled) (if (isPressed) 1.dp else 2.dp) else 0.dp,
                 shape = RoundedCornerShape(cornerRadius),
-                spotColor = gradient.firstOrNull()?.copy(alpha = 0.4f) ?: Color.Unspecified
+                ambientColor = Color(0x10172033),
+                spotColor = gradient.firstOrNull()?.copy(alpha = 0.25f) ?: Color.Unspecified
             )
             .clip(RoundedCornerShape(cornerRadius))
             .pointerInput(enabled) {
@@ -184,12 +172,7 @@ fun GlassButton(
                         Brush.horizontalGradient(listOf(Color(0xFFCBD5E1), Color(0xFF94A3B8)))
                     }
                 )
-                .border(
-                    width = 1.dp,
-                    color = Color.White.copy(alpha = 0.40f),
-                    shape = RoundedCornerShape(cornerRadius)
-                )
-                .padding(horizontal = 22.dp, vertical = 14.dp),
+                .padding(horizontal = 20.dp, vertical = 13.dp),
             contentAlignment = Alignment.Center
         ) {
             Row(
@@ -201,7 +184,7 @@ fun GlassButton(
                         imageVector = effectiveIcon,
                         contentDescription = null,
                         tint = contentColor,
-                        modifier = Modifier.size(20.dp)
+                        modifier = Modifier.size(19.dp)
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                 }
@@ -223,29 +206,23 @@ fun GlassOutlinedButton(
     modifier: Modifier = Modifier,
     icon: ImageVector? = null,
     accentColor: Color = SelforaPrimary,
-    cornerRadius: Dp = 24.dp
+    cornerRadius: Dp = 14.dp
 ) {
     val safeText = text ?: ""
     var isPressed by remember { mutableStateOf(false) }
     val scale by animateFloatAsState(
-        targetValue = if (isPressed) 0.96f else 1.0f,
+        targetValue = if (isPressed) 0.97f else 1.0f,
         animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow),
         label = "glassOutlinedBtnScale"
     )
 
-    Box(
+    Surface(
         modifier = modifier
             .graphicsLayer {
                 scaleX = scale
                 scaleY = scale
             }
             .clip(RoundedCornerShape(cornerRadius))
-            .background(Color.White.copy(alpha = 0.75f))
-            .border(
-                width = 1.5.dp,
-                color = accentColor.copy(alpha = 0.60f),
-                shape = RoundedCornerShape(cornerRadius)
-            )
             .pointerInput(Unit) {
                 detectTapGestures(
                     onPress = {
@@ -255,29 +232,35 @@ fun GlassOutlinedButton(
                     },
                     onTap = { onClick() }
                 )
-            }
-            .padding(horizontal = 18.dp, vertical = 12.dp),
-        contentAlignment = Alignment.Center
+            },
+        shape = RoundedCornerShape(cornerRadius),
+        color = Color.White,
+        border = BorderStroke(1.2.dp, accentColor)
     ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center
+        Box(
+            modifier = Modifier.padding(horizontal = 18.dp, vertical = 12.dp),
+            contentAlignment = Alignment.Center
         ) {
-            if (icon != null) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    tint = accentColor,
-                    modifier = Modifier.size(18.dp)
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
+            ) {
+                if (icon != null) {
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = null,
+                        tint = accentColor,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                }
+                Text(
+                    text = safeText,
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 14.sp,
+                    color = accentColor
                 )
-                Spacer(modifier = Modifier.width(6.dp))
             }
-            Text(
-                text = safeText,
-                fontWeight = FontWeight.SemiBold,
-                fontSize = 14.sp,
-                color = accentColor
-            )
         }
     }
 }
@@ -292,15 +275,15 @@ fun GlassIconButton(
     modifier: Modifier = Modifier,
     contentDescription: String? = null,
     tint: Color = SelforaPrimary,
-    backgroundColor: Color = Color.White.copy(alpha = 0.85f),
-    borderColor: Color = Color.White.copy(alpha = 0.70f),
-    size: Dp = 44.dp,
-    iconSize: Dp = 22.dp,
-    elevation: Dp = 4.dp
+    backgroundColor: Color = Color(0xFFF8FAFC),
+    borderColor: Color = Color(0xFFE2E8F0),
+    size: Dp = 40.dp,
+    iconSize: Dp = 20.dp,
+    elevation: Dp = 1.dp
 ) {
     var isPressed by remember { mutableStateOf(false) }
     val scale by animateFloatAsState(
-        targetValue = if (isPressed) 0.90f else 1.0f,
+        targetValue = if (isPressed) 0.92f else 1.0f,
         animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow),
         label = "glassIconBtnScale"
     )
@@ -315,12 +298,13 @@ fun GlassIconButton(
             .shadow(
                 elevation = elevation,
                 shape = CircleShape,
-                spotColor = tint.copy(alpha = 0.3f)
+                ambientColor = Color(0x0A172033),
+                spotColor = Color(0x12172033)
             )
             .clip(CircleShape)
             .background(backgroundColor)
             .border(
-                width = 1.2.dp,
+                width = 1.dp,
                 color = borderColor,
                 shape = CircleShape
             )
@@ -355,7 +339,7 @@ fun GlassTopBar(
     subtitle: String? = null,
     onBackClick: (() -> Unit)? = null,
     actions: @Composable (RowScope.() -> Unit)? = null,
-    backgroundColor: Color = Color.White.copy(alpha = 0.88f),
+    backgroundColor: Color = Color.White,
     accentColor: Color = SelforaPrimary
 ) {
     val safeTitle = title ?: ""
@@ -363,25 +347,17 @@ fun GlassTopBar(
         modifier = modifier
             .fillMaxWidth()
             .shadow(
-                elevation = 6.dp,
-                spotColor = Color(0x15172033)
+                elevation = 2.dp,
+                spotColor = Color(0x14172033)
             ),
         color = backgroundColor,
-        border = BorderStroke(
-            width = 1.dp,
-            brush = Brush.verticalGradient(
-                colors = listOf(
-                    Color.White.copy(alpha = 0.8f),
-                    accentColor.copy(alpha = 0.2f)
-                )
-            )
-        )
+        border = BorderStroke(1.dp, Color(0xFFE2E8F0))
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .statusBarsPadding()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
+                .padding(horizontal = 16.dp, vertical = 11.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
@@ -394,8 +370,8 @@ fun GlassTopBar(
                         icon = Icons.Default.ArrowBack,
                         onClick = onBackClick,
                         tint = accentColor,
-                        size = 40.dp,
-                        iconSize = 20.dp
+                        size = 38.dp,
+                        iconSize = 19.dp
                     )
                     Spacer(modifier = Modifier.width(12.dp))
                 }
@@ -403,7 +379,7 @@ fun GlassTopBar(
                 Column {
                     Text(
                         text = safeTitle,
-                        fontSize = 19.sp,
+                        fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
                         color = SelforaTextPrimary,
                         maxLines = 1,
@@ -440,9 +416,9 @@ fun GlassTopBar(
 @Composable
 fun GlassBottomNavigation(
     modifier: Modifier = Modifier,
-    backgroundColor: Color = Color.White.copy(alpha = 0.94f),
-    borderColor: Color = SelforaPrimary.copy(alpha = 0.25f),
-    elevation: Dp = 10.dp,
+    backgroundColor: Color = Color.White,
+    borderColor: Color = Color(0xFFE2E8F0),
+    elevation: Dp = 4.dp,
     content: @Composable RowScope.() -> Unit
 ) {
     Box(
@@ -456,21 +432,13 @@ fun GlassBottomNavigation(
                 .fillMaxWidth()
                 .shadow(
                     elevation = elevation,
-                    shape = RoundedCornerShape(26.dp),
-                    spotColor = Color(0x22172033)
+                    shape = RoundedCornerShape(20.dp),
+                    ambientColor = Color(0x0A172033),
+                    spotColor = Color(0x14172033)
                 ),
-            shape = RoundedCornerShape(26.dp),
+            shape = RoundedCornerShape(20.dp),
             color = backgroundColor,
-            border = BorderStroke(
-                width = 1.1.dp,
-                brush = Brush.horizontalGradient(
-                    listOf(
-                        Color.White,
-                        borderColor,
-                        Color.White
-                    )
-                )
-            )
+            border = BorderStroke(1.dp, borderColor)
         ) {
             Row(
                 modifier = Modifier
@@ -565,20 +533,21 @@ fun GlassTextField(
             modifier = Modifier
                 .fillMaxWidth()
                 .shadow(
-                    elevation = if (isFocused) 6.dp else 4.dp,
-                    shape = RoundedCornerShape(20.dp),
-                    spotColor = if (isFocused) accentColor.copy(alpha = 0.25f) else Color(0x12000000)
+                    elevation = if (isFocused) 2.dp else 1.dp,
+                    shape = RoundedCornerShape(14.dp),
+                    ambientColor = Color(0x0A172033),
+                    spotColor = if (isFocused) accentColor.copy(alpha = 0.20f) else Color(0x0E000000)
                 )
-                .clip(RoundedCornerShape(20.dp))
-                .background(Color.White.copy(alpha = 0.90f))
+                .clip(RoundedCornerShape(14.dp))
+                .background(Color.White)
                 .border(
-                    width = if (isFocused) 1.6.dp else 1.2.dp,
+                    width = if (isFocused) 1.5.dp else 1.dp,
                     color = when {
                         isError -> SelforaError
                         isFocused -> accentColor
-                        else -> SelforaBorder
+                        else -> Color(0xFFE2E8F0)
                     },
-                    shape = RoundedCornerShape(20.dp)
+                    shape = RoundedCornerShape(14.dp)
                 )
         ) {
             val fieldModifier = Modifier
@@ -649,16 +618,17 @@ fun GlassSearchBar(
         modifier = modifier
             .fillMaxWidth()
             .shadow(
-                elevation = 4.dp,
-                shape = RoundedCornerShape(22.dp),
-                spotColor = accentColor.copy(alpha = 0.2f)
+                elevation = 1.dp,
+                shape = RoundedCornerShape(14.dp),
+                ambientColor = Color(0x0A172033),
+                spotColor = Color(0x10172033)
             )
-            .clip(RoundedCornerShape(22.dp))
-            .background(Color.White.copy(alpha = 0.88f))
+            .clip(RoundedCornerShape(14.dp))
+            .background(Color.White)
             .border(
-                width = 1.2.dp,
-                color = accentColor.copy(alpha = 0.25f),
-                shape = RoundedCornerShape(22.dp)
+                width = 1.dp,
+                color = Color(0xFFE2E8F0),
+                shape = RoundedCornerShape(14.dp)
             )
             .padding(horizontal = 14.dp, vertical = 2.dp)
     ) {
@@ -865,10 +835,10 @@ fun GlassStatCard(
 ) {
     GlassCard(
         modifier = modifier,
-        cornerRadius = 22.dp,
-        backgroundColor = Color.White.copy(alpha = 0.85f),
-        borderColor = Color.White.copy(alpha = 0.70f),
-        elevation = 6.dp,
+        cornerRadius = 18.dp,
+        backgroundColor = Color.White,
+        borderColor = Color(0xFFE2E8F0),
+        elevation = 1.5.dp,
         onClick = onClick,
         contentPadding = PaddingValues(16.dp)
     ) {
@@ -933,14 +903,16 @@ fun GlassActivityCard(
     statusText: String? = null,
     statusColor: Color = SelforaSuccess,
     icon: ImageVector = Icons.Default.PlayArrow,
-    iconBgColor: Color = SelforaPrimary.copy(alpha = 0.15f),
+    iconBgColor: Color = SelforaPrimary.copy(alpha = 0.12f),
     iconTint: Color = SelforaPrimary,
     onClick: () -> Unit
 ) {
     GlassCard(
         modifier = modifier.fillMaxWidth(),
-        cornerRadius = 24.dp,
-        elevation = 6.dp,
+        cornerRadius = 18.dp,
+        backgroundColor = Color.White,
+        borderColor = Color(0xFFE2E8F0),
+        elevation = 1.5.dp,
         onClick = onClick,
         contentPadding = PaddingValues(14.dp)
     ) {
@@ -1029,8 +1001,10 @@ fun GlassProfileCard(
 ) {
     GlassCard(
         modifier = modifier.fillMaxWidth(),
-        cornerRadius = 24.dp,
-        elevation = 8.dp,
+        cornerRadius = 18.dp,
+        backgroundColor = Color.White,
+        borderColor = Color(0xFFE2E8F0),
+        elevation = 1.5.dp,
         onClick = onClick,
         contentPadding = PaddingValues(16.dp)
     ) {

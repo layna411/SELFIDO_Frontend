@@ -33,6 +33,7 @@ import com.simats.selfora.ui.components.glass.GlassCard
 import com.simats.selfora.ui.components.glass.GlassIconButton
 import com.simats.selfora.ui.components.progress.ChildRewardProgress
 import com.simats.selfora.ui.theme.*
+import com.simats.selfora.utils.LanguageManager
 import com.simats.selfora.utils.TtsManager
 import kotlinx.coroutines.launch
 
@@ -46,6 +47,9 @@ fun ChildHomeScreen(
     val ttsManager = remember { TtsManager(context) }
     val scope = rememberCoroutineScope()
 
+    val currentLanguage by LanguageManager.currentLanguage.collectAsState()
+    val isTamil = currentLanguage == "ta"
+
     var dashboardData by remember { mutableStateOf<ChildDashboardResponse?>(null) }
     var isLoading by remember { mutableStateOf(true) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
@@ -54,9 +58,13 @@ fun ChildHomeScreen(
 
     val activeChildId = remember { SessionManager.getActiveChildId() }
 
+    LaunchedEffect(currentLanguage) {
+        ttsManager.setLanguage(if (isTamil) "ta" else "en")
+    }
+
     fun loadChildDashboard() {
         if (activeChildId <= 0) {
-            errorMessage = "No active child selected."
+            errorMessage = if (isTamil) "குழந்தை தேர்ந்தெடுக்கப்படவில்லை." else "No active child selected."
             isLoading = false
             return
         }
@@ -70,11 +78,16 @@ fun ChildHomeScreen(
                 val res = ApiClient.apiService.getChildModeDashboard(activeChildId)
                 if (res.isSuccessful && res.body() != null) {
                     dashboardData = res.body()
+                    ttsManager.setLanguage(if (isTamil) "ta" else "en")
                     dashboardData?.preferredName?.let { pName ->
-                        ttsManager.speak("Welcome back, $pName! Let's practise today!")
+                        if (isTamil) {
+                            ttsManager.speak("வணக்கம், $pName! வாருங்கள், பயிற்சி செய்யலாம்!")
+                        } else {
+                            ttsManager.speak("Welcome back, $pName! Let's practise today!")
+                        }
                     }
                 } else {
-                    errorMessage = "Access denied or child not found (${res.code()})"
+                    errorMessage = if (isTamil) "அனுமதி மறுக்கப்பட்டது அல்லது குழந்தை கிடைக்கவில்லை (${res.code()})" else "Access denied or child not found (${res.code()})"
                 }
             } catch (e: Exception) {
                 errorMessage = "Network error: ${e.localizedMessage ?: "Unable to connect"}"
@@ -126,7 +139,7 @@ fun ChildHomeScreen(
                     Text("🔒", fontSize = 42.sp)
                     Spacer(modifier = Modifier.height(10.dp))
                     Text(
-                        "Unable to Load Child Mode",
+                        if (isTamil) "குழந்தை பயன்முறையைத் திறக்க முடியவில்லை" else "Unable to Load Child Mode",
                         fontWeight = FontWeight.Bold,
                         fontSize = 18.sp,
                         color = SelforaTextPrimary
@@ -142,7 +155,7 @@ fun ChildHomeScreen(
                         onClick = { loadChildDashboard() },
                         colors = ButtonDefaults.buttonColors(containerColor = SelforaPrimary)
                     ) {
-                        Text("Retry", color = Color.White, fontWeight = FontWeight.Bold)
+                        Text(if (isTamil) "மீண்டும் முயற்சி செய்" else "Retry", color = Color.White, fontWeight = FontWeight.Bold)
                     }
                 }
             }
@@ -162,45 +175,70 @@ fun ChildHomeScreen(
                 .padding(20.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-        // Header (Greeting, Avatar, Settings & Adult Exit)
+        // Header (Greeting, Avatar, Language Toggle, Settings & Adult Exit)
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
                 ChildAvatarImage(
                     avatarId = if (isGirl) "ananya_girl" else "aarav_boy",
                     gender = if (isGirl) "GIRL" else "BOY",
-                    size = 60.dp,
+                    size = 56.dp,
                     animateWave = true
                 )
                 Spacer(modifier = Modifier.width(12.dp))
                 Column {
                     Text(
-                        text = "Hi, $childName! ✨",
+                        text = if (isTamil) "வணக்கம், $childName! ✨" else "Hi, $childName! ✨",
                         fontWeight = FontWeight.Bold,
-                        fontSize = 24.sp,
+                        fontSize = 22.sp,
                         color = primaryThemeColor
                     )
-                    Text("Ready for fun learning?", fontSize = 13.sp, color = SelforaTextSecondary)
+                    Text(
+                        text = if (isTamil) "இன்று மகிழ்ச்சியாகக் கற்போமா?" else "Ready for fun learning?",
+                        fontSize = 12.sp,
+                        color = SelforaTextSecondary
+                    )
                 }
             }
 
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Immediate Language Switcher Toggle Pill
+                Surface(
+                    shape = RoundedCornerShape(18.dp),
+                    color = if (isTamil) Color(0xFFFEF3C7) else Color(0xFFEFF6FF),
+                    border = BorderStroke(1.2.dp, if (isTamil) Color(0xFFF59E0B) else SelforaPrimary),
+                    modifier = Modifier.clickable {
+                        LanguageManager.toggleLanguage()
+                    }
+                ) {
+                    Text(
+                        text = if (isTamil) "🇮🇳 தமிழ்" else "🇬🇧 English",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = if (isTamil) Color(0xFFB45309) else SelforaPrimary,
+                        modifier = Modifier.padding(horizontal = 9.dp, vertical = 6.dp)
+                    )
+                }
+
                 GlassIconButton(
                     icon = Icons.Default.Settings,
                     onClick = onOpenSettings,
                     tint = SelforaTextSecondary,
-                    size = 42.dp,
-                    iconSize = 20.dp
+                    size = 38.dp,
+                    iconSize = 18.dp
                 )
                 GlassIconButton(
                     icon = Icons.Default.ExitToApp,
                     onClick = { showExitDialog = true },
                     tint = SelforaError,
-                    size = 42.dp,
-                    iconSize = 20.dp
+                    size = 38.dp,
+                    iconSize = 18.dp
                 )
             }
         }
@@ -226,14 +264,14 @@ fun ChildHomeScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    "My Badges & Trophies 🏆",
+                    text = if (isTamil) "என் பதக்கங்கள் 🏆" else "My Badges & Trophies 🏆",
                     fontWeight = FontWeight.Bold,
                     fontSize = 18.sp,
                     color = SelforaTextPrimary
                 )
                 val unlockedCount = allBadges.count { it.isUnlocked }
                 Text(
-                    "$unlockedCount of ${allBadges.size} Unlocked",
+                    text = if (isTamil) "$unlockedCount / ${allBadges.size} திறக்கப்பட்டது" else "$unlockedCount of ${allBadges.size} Unlocked",
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold,
                     color = SelforaPrimary
@@ -248,7 +286,7 @@ fun ChildHomeScreen(
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 allBadges.forEach { badge ->
-                    ChildBadgeCard(badge = badge)
+                    ChildBadgeCard(badge = badge, isTamil = isTamil)
                 }
             }
 
@@ -256,36 +294,68 @@ fun ChildHomeScreen(
         }
 
         // Section A: Today's Assigned Home Programme Activities
-        Text("Today's Assigned Activities 🎯", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = SelforaTextPrimary, modifier = Modifier.fillMaxWidth())
+        Text(
+            text = if (isTamil) "இன்றைய பயிற்சிகள் 🎯" else "Today's Assigned Activities 🎯",
+            fontWeight = FontWeight.Bold,
+            fontSize = 18.sp,
+            color = SelforaTextPrimary,
+            modifier = Modifier.fillMaxWidth()
+        )
         Spacer(modifier = Modifier.height(10.dp))
 
         val assigned = dashboardData?.assignedActivities ?: emptyList()
         if (assigned.isNotEmpty()) {
             assigned.forEach { act ->
-                AssignedActivityCard(act = act, primaryColor = primaryThemeColor, onClick = { onSelectActivity(act.activityId) })
+                AssignedActivityCard(
+                    act = act,
+                    primaryColor = primaryThemeColor,
+                    isTamil = isTamil,
+                    onClick = { onSelectActivity(act.activityId) }
+                )
                 Spacer(modifier = Modifier.height(10.dp))
             }
         } else {
             GlassCard(modifier = Modifier.fillMaxWidth(), cornerRadius = 18.dp, backgroundColor = Color.White) {
-                Text("No home programme activities assigned for today.", fontSize = 13.sp, color = SelforaTextSecondary)
+                Text(
+                    text = if (isTamil) "இன்று பயிற்சிகள் எதுவும் ஒதுக்கப்படவில்லை." else "No home programme activities assigned for today.",
+                    fontSize = 13.sp,
+                    color = SelforaTextSecondary
+                )
             }
         }
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        // Section C: Category Filter Tabs
-        Text("My ADL Activities 📚", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = SelforaTextPrimary, modifier = Modifier.fillMaxWidth())
+        // Section C: Category Filter Tabs (Approved ADL Scope: Dressing, Upper/Lower Body, Footwear, Eating)
+        Text(
+            text = if (isTamil) "என் பயிற்சிகள் 📚" else "My ADL Activities 📚",
+            fontWeight = FontWeight.Bold,
+            fontSize = 18.sp,
+            color = SelforaTextPrimary,
+            modifier = Modifier.fillMaxWidth()
+        )
         Spacer(modifier = Modifier.height(10.dp))
 
+        val categoryTabs = listOf(
+            "ALL" to if (isTamil) "அனைத்தும்" else "ALL",
+            "Dressing" to if (isTamil) "ஆடை அணிதல்" else "Dressing",
+            "Upper Body" to if (isTamil) "மேல் உடல்" else "Upper Body",
+            "Lower Body" to if (isTamil) "கீழ் உடல்" else "Lower Body",
+            "Shoes & Socks" to if (isTamil) "காலணிகள்" else "Shoes & Socks",
+            "Eating" to if (isTamil) "உணவு" else "Eating"
+        )
+
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState()),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            listOf("ALL", "Dressing", "Eating", "Grooming", "Shoes & Socks").forEach { cat ->
+            categoryTabs.forEach { (catKey, catLabel) ->
                 FilterChip(
-                    selected = selectedCategory == cat,
-                    onClick = { selectedCategory = cat },
-                    label = { Text(cat, fontSize = 12.sp, fontWeight = FontWeight.SemiBold) }
+                    selected = selectedCategory == catKey,
+                    onClick = { selectedCategory = catKey },
+                    label = { Text(catLabel, fontSize = 12.sp, fontWeight = FontWeight.SemiBold) }
                 )
             }
         }
@@ -294,10 +364,40 @@ fun ChildHomeScreen(
 
         // Category Filtered Activity List
         val allActs = dashboardData?.allActivities ?: emptyList()
-        val filteredActs = if (selectedCategory == "ALL") allActs else allActs.filter { it.categoryName.equals(selectedCategory, ignoreCase = true) }
+        val filteredActs = when (selectedCategory) {
+            "ALL" -> allActs
+            "Dressing" -> allActs.filter {
+                it.categoryName.contains("Dressing", ignoreCase = true) ||
+                it.subCategory?.contains("Dressing", ignoreCase = true) == true
+            }
+            "Upper Body" -> allActs.filter {
+                it.categoryName.contains("Upper", ignoreCase = true) ||
+                it.subCategory?.contains("Upper", ignoreCase = true) == true
+            }
+            "Lower Body" -> allActs.filter {
+                it.categoryName.contains("Lower", ignoreCase = true) ||
+                it.subCategory?.contains("Lower", ignoreCase = true) == true
+            }
+            "Shoes & Socks" -> allActs.filter {
+                it.categoryName.contains("Shoe", ignoreCase = true) ||
+                it.categoryName.contains("Sock", ignoreCase = true) ||
+                it.categoryName.contains("Footwear", ignoreCase = true) ||
+                it.title.contains("Shoe", ignoreCase = true) ||
+                it.title.contains("Sock", ignoreCase = true)
+            }
+            "Eating" -> allActs.filter {
+                it.categoryName.contains("Eating", ignoreCase = true) ||
+                it.title.contains("Eating", ignoreCase = true)
+            }
+            else -> allActs
+        }
 
         filteredActs.forEach { act ->
-            CategoryActivityCard(act = act, onClick = { onSelectActivity(act.activityId) })
+            CategoryActivityCard(
+                act = act,
+                isTamil = isTamil,
+                onClick = { onSelectActivity(act.activityId) }
+            )
             Spacer(modifier = Modifier.height(12.dp))
         }
     }
@@ -305,7 +405,7 @@ fun ChildHomeScreen(
 }
 
 @Composable
-fun ChildBadgeCard(badge: ChildRewardDto) {
+fun ChildBadgeCard(badge: ChildRewardDto, isTamil: Boolean = false) {
     Surface(
         modifier = Modifier
             .width(135.dp)
@@ -340,8 +440,13 @@ fun ChildBadgeCard(badge: ChildRewardDto) {
                     overflow = TextOverflow.Ellipsis
                 )
                 Spacer(modifier = Modifier.height(2.dp))
+                val defaultDesc = if (badge.isUnlocked) {
+                    if (isTamil) "முடிக்கப்பட்டது!" else "Completed!"
+                } else {
+                    if (isTamil) "திறக்க பயிற்சி செய்" else "Practice to unlock"
+                }
                 Text(
-                    text = badge.description.ifBlank { if (badge.isUnlocked) "Completed!" else "Practice to unlock" },
+                    text = badge.description.ifBlank { defaultDesc },
                     fontSize = 10.sp,
                     color = if (badge.isUnlocked) Color(0xFFB45309) else Color(0xFF94A3B8),
                     textAlign = TextAlign.Center,
@@ -354,8 +459,13 @@ fun ChildBadgeCard(badge: ChildRewardDto) {
                 shape = RoundedCornerShape(8.dp),
                 color = if (badge.isUnlocked) Color(0xFFFEF3C7) else Color(0xFFF1F5F9)
             ) {
+                val badgeStatus = if (badge.isUnlocked) {
+                    if (isTamil) "திறக்கப்பட்டது! 🎉" else "Unlocked! 🎉"
+                } else {
+                    if (isTamil) "பூட்டப்பட்டுள்ளது" else "Locked"
+                }
                 Text(
-                    text = if (badge.isUnlocked) "Unlocked! 🎉" else "Locked",
+                    text = badgeStatus,
                     fontSize = 9.sp,
                     fontWeight = FontWeight.ExtraBold,
                     color = if (badge.isUnlocked) Color(0xFFD97706) else Color(0xFF94A3B8),
@@ -370,17 +480,38 @@ fun ChildBadgeCard(badge: ChildRewardDto) {
 fun AssignedActivityCard(
     act: ChildActivitySummaryDto,
     primaryColor: Color,
+    isTamil: Boolean = false,
     onClick: () -> Unit
 ) {
-    val ctaText = when {
-        act.isCompleted -> "Replay"
-        act.completedSteps > 0 -> "Step ${act.completedSteps + 1}"
-        else -> "Start"
+    val displayTitle = if (isTamil && !act.titleTa.isNullOrBlank()) act.titleTa else act.title
+
+    val ctaText = if (isTamil) {
+        when {
+            act.isCompleted -> "மீண்டும் செய்"
+            act.completedSteps > 0 -> "படி ${act.completedSteps + 1}"
+            else -> "தொடங்கு"
+        }
+    } else {
+        when {
+            act.isCompleted -> "Replay"
+            act.completedSteps > 0 -> "Step ${act.completedSteps + 1}"
+            else -> "Start"
+        }
     }
     val ctaColor = when {
         act.isCompleted -> SelforaPrimary
         act.completedSteps > 0 -> Color(0xFFEA580C)
         else -> ChildGreenPlay
+    }
+
+    val subtitleText = if (isTamil) {
+        if (act.isCompleted) "முடிக்கப்பட்டது ⭐ • மீண்டும் செய்யலாம்"
+        else if (act.completedSteps > 0) "படி ${act.completedSteps} / ${act.totalSteps} முடிந்தது"
+        else "${act.totalSteps} எளிய படிகள்"
+    } else {
+        if (act.isCompleted) "Completed ⭐ • Replay anytime"
+        else if (act.completedSteps > 0) "Step ${act.completedSteps} of ${act.totalSteps} Completed"
+        else "${act.totalSteps} Simple Steps"
     }
 
     GlassCard(
@@ -408,11 +539,9 @@ fun AssignedActivityCard(
                 }
                 Spacer(modifier = Modifier.width(14.dp))
                 Column {
-                    Text(act.title, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = SelforaTextPrimary)
+                    Text(displayTitle, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = SelforaTextPrimary)
                     Text(
-                        text = if (act.isCompleted) "Completed ⭐ • Replay anytime"
-                               else if (act.completedSteps > 0) "Step ${act.completedSteps} of ${act.totalSteps} Completed"
-                               else "${act.totalSteps} Simple Steps",
+                        text = subtitleText,
                         fontSize = 12.sp,
                         color = if (act.completedSteps > 0 && !act.isCompleted) Color(0xFFEA580C) else SelforaTextSecondary
                     )
@@ -432,12 +561,23 @@ fun AssignedActivityCard(
 @Composable
 fun CategoryActivityCard(
     act: ChildActivitySummaryDto,
+    isTamil: Boolean = false,
     onClick: () -> Unit
 ) {
-    val ctaText = when {
-        act.isCompleted -> "Replay"
-        act.completedSteps > 0 -> "Continue"
-        else -> "Start"
+    val displayTitle = if (isTamil && !act.titleTa.isNullOrBlank()) act.titleTa else act.title
+
+    val ctaText = if (isTamil) {
+        when {
+            act.isCompleted -> "மீண்டும் செய்"
+            act.completedSteps > 0 -> "தொடரவும்"
+            else -> "தொடங்கு"
+        }
+    } else {
+        when {
+            act.isCompleted -> "Replay"
+            act.completedSteps > 0 -> "Continue"
+            else -> "Start"
+        }
     }
     val ctaBg = when {
         act.isCompleted -> SelforaPrimary.copy(alpha = 0.12f)
@@ -448,6 +588,16 @@ fun CategoryActivityCard(
         act.isCompleted -> SelforaPrimary
         act.completedSteps > 0 -> Color(0xFFEA580C)
         else -> ChildGreenPlay
+    }
+
+    val subtitleText = if (isTamil) {
+        if (act.isCompleted) "முடிக்கப்பட்டது ⭐ • மீண்டும் செய்"
+        else if (act.completedSteps > 0) "படி ${act.completedSteps + 1} / ${act.totalSteps}"
+        else "${act.totalSteps} எளிய படிகள்"
+    } else {
+        if (act.isCompleted) "Mastered ⭐ • Replay"
+        else if (act.completedSteps > 0) "Step ${act.completedSteps + 1} of ${act.totalSteps}"
+        else "${act.categoryName} • ${act.totalSteps} Steps"
     }
 
     GlassCard(
@@ -474,11 +624,9 @@ fun CategoryActivityCard(
                 }
                 Spacer(modifier = Modifier.width(12.dp))
                 Column {
-                    Text(act.title, fontWeight = FontWeight.Bold, fontSize = 15.sp, color = SelforaTextPrimary)
+                    Text(displayTitle, fontWeight = FontWeight.Bold, fontSize = 15.sp, color = SelforaTextPrimary)
                     Text(
-                        text = if (act.isCompleted) "Mastered ⭐ • Replay"
-                               else if (act.completedSteps > 0) "Step ${act.completedSteps + 1} of ${act.totalSteps}"
-                               else "${act.categoryName} • ${act.totalSteps} Steps",
+                        text = subtitleText,
                         fontSize = 12.sp,
                         color = if (act.completedSteps > 0 && !act.isCompleted) Color(0xFFEA580C) else SelforaTextSecondary
                     )

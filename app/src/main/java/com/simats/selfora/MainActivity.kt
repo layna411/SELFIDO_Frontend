@@ -15,6 +15,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         SessionManager.init(applicationContext)
+        com.simats.selfora.utils.LanguageManager.init(applicationContext)
         com.simats.selfora.data.repository.PracticeSessionStore.init(applicationContext)
         setContent {
             SELFORATheme(darkTheme = false) {

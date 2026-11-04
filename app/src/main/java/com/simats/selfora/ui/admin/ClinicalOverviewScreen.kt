@@ -20,6 +20,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.simats.selfora.ui.theme.*
+import com.simats.selfora.ui.components.design.AppTopBar
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -27,23 +29,19 @@ fun ClinicalOverviewScreen(
     onBack: () -> Unit
 ) {
     val scrollState = rememberScrollState()
-    val blueAccent = Color(0xFF06B6D4)
-    val textPrimary = Color(0xFF0F172A)
-    val textSecondary = Color(0xFF64748B)
+    val blueAccent = SelforaPrimary
+    val textPrimary = SelforaTextPrimary
+    val textSecondary = SelforaTextSecondary
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("Clinical Overview & Prompt Fading Audit", fontWeight = FontWeight.Bold, fontSize = 17.sp) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
+            AppTopBar(
+                title = "Clinical Overview",
+                subtitle = "Prompt Fading & Adaptation Auditing",
+                onBackClick = onBack
             )
         },
-        containerColor = Color(0xFFF8FAFC)
+        containerColor = SelforaBackground
     ) { padding ->
         Column(
             modifier = Modifier
@@ -54,9 +52,10 @@ fun ClinicalOverviewScreen(
         ) {
             Surface(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(24.dp),
+                shape = RoundedCornerShape(18.dp),
                 color = Color.White,
-                shadowElevation = 4.dp
+                shadowElevation = 1.5.dp,
+                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0))
             ) {
                 Column(modifier = Modifier.padding(20.dp)) {
                     Text("Clinical Hierarchy Prompt Levels (L0–L6)", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = textPrimary)
@@ -78,9 +77,10 @@ fun ClinicalOverviewScreen(
 
             Surface(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(24.dp),
+                shape = RoundedCornerShape(18.dp),
                 color = Color.White,
-                shadowElevation = 4.dp
+                shadowElevation = 1.5.dp,
+                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0))
             ) {
                 Column(modifier = Modifier.padding(20.dp)) {
                     Text("Clinical Safeguards & Governance", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = textPrimary)

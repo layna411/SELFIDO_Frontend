@@ -46,8 +46,8 @@ sealed class NavRoutes(val route: String) {
     object SessionSummary : NavRoutes("session_summary/{sessionId}") {
         fun createRoute(sessionId: Long) = "session_summary/$sessionId"
     }
-    object Adaptation : NavRoutes("adaptation/{sessionId}") {
-        fun createRoute(sessionId: Long) = "adaptation/$sessionId"
+    object Adaptation : NavRoutes("adaptation/{sessionId}/{childId}/{activityId}") {
+        fun createRoute(sessionId: Long, childId: Long, activityId: Long) = "adaptation/$sessionId/$childId/$activityId"
     }
     object AnalyzeAndAdapt : NavRoutes("analyze_and_adapt/{childId}") {
         fun createRoute(childId: Long = 1L) = "analyze_and_adapt/$childId"

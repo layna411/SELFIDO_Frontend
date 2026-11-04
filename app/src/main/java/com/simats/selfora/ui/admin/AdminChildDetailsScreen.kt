@@ -23,6 +23,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.simats.selfora.R
+import com.simats.selfora.ui.theme.*
+import com.simats.selfora.ui.components.design.AppTopBar
 import com.simats.selfora.data.api.ApiClient
 import com.simats.selfora.data.api.NetworkErrorHandler
 import com.simats.selfora.data.model.AdminChildDetailProfile
@@ -39,8 +41,8 @@ fun AdminChildDetailsScreen(
     val context = LocalContext.current
     val scrollState = rememberScrollState()
     val scope = rememberCoroutineScope()
-    val blueAccent = Color(0xFF2563EB)
-    val textSecondary = Color(0xFF64748B)
+    val blueAccent = SelforaPrimary
+    val textSecondary = SelforaTextSecondary
 
     var profile by remember { mutableStateOf<AdminChildDetailProfile?>(null) }
     var isLoading by remember { mutableStateOf(false) }
@@ -146,22 +148,18 @@ fun AdminChildDetailsScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("Child Clinical File", fontWeight = FontWeight.Bold) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
-                    }
-                },
+            AppTopBar(
+                title = "Child Clinical File",
+                subtitle = profile?.summary?.fullName ?: "Record & Caseload Overview",
+                onBackClick = onBack,
                 actions = {
                     IconButton(onClick = { loadProfile() }) {
                         Icon(Icons.Default.Refresh, contentDescription = "Refresh", tint = blueAccent)
                     }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
+                }
             )
         },
-        containerColor = Color(0xFFF8FAFC)
+        containerColor = SelforaBackground
     ) { padding ->
         if (isLoading) {
             Box(modifier = Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {

@@ -22,6 +22,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.simats.selfora.ui.theme.*
+import com.simats.selfora.ui.components.design.AppTopBar
 import com.simats.selfora.data.api.ApiClient
 import com.simats.selfora.data.model.TherapistItem
 import com.simats.selfora.ui.components.glass.GlassTextField
@@ -49,9 +51,9 @@ fun TherapistManagementScreen(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
-    val blueAccent = Color(0xFF2563EB)
-    val textPrimary = Color(0xFF0F172A)
-    val textSecondary = Color(0xFF64748B)
+    val blueAccent = SelforaPrimary
+    val textPrimary = SelforaTextPrimary
+    val textSecondary = SelforaTextSecondary
 
     fun fetchTherapists() {
         isLoading = true
@@ -95,15 +97,10 @@ fun TherapistManagementScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = {
-                    Text("Therapist & Doctor Management", fontWeight = FontWeight.Bold, fontSize = 18.sp)
-                },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
-                    }
-                },
+            AppTopBar(
+                title = "Therapist & Clinician Management",
+                subtitle = "Onboard, Configure & Audit Clinicians",
+                onBackClick = onBack,
                 actions = {
                     IconButton(onClick = { fetchTherapists() }) {
                         Icon(Icons.Default.Refresh, contentDescription = "Refresh", tint = blueAccent)
@@ -111,8 +108,7 @@ fun TherapistManagementScreen(
                     IconButton(onClick = onNavigateToCreateTherapist) {
                         Icon(Icons.Default.PersonAdd, contentDescription = "Add Therapist", tint = blueAccent)
                     }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
+                }
             )
         },
         floatingActionButton = {
@@ -124,7 +120,7 @@ fun TherapistManagementScreen(
                 contentColor = Color.White
             )
         },
-        containerColor = Color(0xFFF8FAFC)
+        containerColor = SelforaBackground
     ) { padding ->
         Column(
             modifier = Modifier
@@ -265,7 +261,7 @@ private fun TherapistCard(
     onClick: () -> Unit,
     onToggleStatus: (Boolean) -> Unit
 ) {
-    val blueAccent = Color(0xFF2563EB)
+    val blueAccent = SelforaPrimary
 
     Surface(
         modifier = Modifier

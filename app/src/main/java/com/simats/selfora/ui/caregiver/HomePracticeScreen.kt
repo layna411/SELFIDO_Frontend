@@ -107,22 +107,24 @@ fun HomePracticeScreen(
                 if (stepRes.isSuccessful && !stepRes.body().isNullOrEmpty()) {
                     steps = stepRes.body()!!
                 } else {
-                    steps = getSampleTShirtSteps()
+                    steps = SelfidoCatalogue.getStepsForActivity(actId)
                 }
             } else {
-                // Fallback to active program or sample
+                // Fallback to active program or catalogue
                 val todayRes = ApiClient.apiService.getTodayHomePrograms()
                 val found = todayRes.body()?.firstOrNull { it.id == programId }
                 if (found != null) {
                     program = found
-                    val stepRes = ApiClient.apiService.getTaskSteps(found.activityId)
-                    steps = if (stepRes.isSuccessful && !stepRes.body().isNullOrEmpty()) stepRes.body()!! else getSampleTShirtSteps()
+                    val actId = found.activityId
+                    val stepRes = ApiClient.apiService.getTaskSteps(actId)
+                    steps = if (stepRes.isSuccessful && !stepRes.body().isNullOrEmpty()) stepRes.body()!! else SelfidoCatalogue.getStepsForActivity(actId)
                 } else {
-                    steps = getSampleTShirtSteps()
+                    steps = SelfidoCatalogue.getStepsForActivity(1L)
                 }
             }
         } catch (e: Exception) {
-            steps = getSampleTShirtSteps()
+            val actId = program?.activityId ?: 1L
+            steps = SelfidoCatalogue.getStepsForActivity(actId)
         } finally {
             isLoading = false
         }

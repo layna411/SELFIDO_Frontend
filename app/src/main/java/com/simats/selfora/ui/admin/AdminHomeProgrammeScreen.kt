@@ -16,6 +16,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.simats.selfora.ui.theme.*
+import com.simats.selfora.ui.components.design.AppTopBar
 
 data class AdminHomeProgramItem(
     val id: Long,
@@ -46,17 +48,13 @@ fun AdminHomeProgrammeScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("Home Programmes Oversight", fontWeight = FontWeight.Bold) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
+            AppTopBar(
+                title = "Home Programmes Oversight",
+                subtitle = "Caregiver ADL Practice Compliance",
+                onBackClick = onBack
             )
         },
-        containerColor = Color(0xFFF8FAFC)
+        containerColor = SelforaBackground
     ) { padding ->
         LazyColumn(
             modifier = Modifier

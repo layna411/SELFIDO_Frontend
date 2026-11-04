@@ -1,5 +1,9 @@
 package com.simats.selfora.ui.admin
 
+import com.simats.selfora.R
+
+import com.simats.selfora.ui.components.LanguageTogglePill
+import androidx.compose.ui.res.stringResource
 import android.widget.Toast
 import androidx.compose.animation.*
 import androidx.compose.foundation.background
@@ -41,6 +45,7 @@ import com.simats.selfora.data.api.ApiClient
 import com.simats.selfora.data.local.SessionManager
 import com.simats.selfora.data.model.LoginRequest
 import com.simats.selfora.ui.components.glass.GlassTextField
+import com.simats.selfora.ui.theme.*
 import kotlinx.coroutines.launch
 
 @Composable
@@ -58,23 +63,15 @@ fun SuperAdminLoginScreen(
     val scope = rememberCoroutineScope()
     val scrollState = rememberScrollState()
 
-    val adminAccent = Color(0xFF0F172A) // Dark Slate Executive Accent
-    val goldAccent = Color(0xFFD97706)
-    val textPrimary = Color(0xFF0F172A)
-    val textSecondary = Color(0xFF475569)
+    val adminAccent = SelforaPrimary
+    val goldAccent = SelforaPrimary
+    val textPrimary = SelforaTextPrimary
+    val textSecondary = SelforaTextSecondary
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(
-                Brush.verticalGradient(
-                    colors = listOf(
-                        Color(0xFFFEF3C7), // Warm Gold
-                        Color(0xFFF1F5F9), // Slate White
-                        Color(0xFFE2E8F0)
-                    )
-                )
-            )
+            .background(SelforaBackground)
     ) {
         Column(
             modifier = Modifier
@@ -91,6 +88,7 @@ fun SuperAdminLoginScreen(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
+                LanguageTogglePill(isCompact = true)
                 IconButton(
                     onClick = onBack,
                     modifier = Modifier
@@ -113,17 +111,18 @@ fun SuperAdminLoginScreen(
             // Admin Shield Badge Header
             Surface(
                 shape = CircleShape,
-                color = adminAccent,
+                color = adminAccent.copy(alpha = 0.12f),
                 modifier = Modifier
-                    .size(80.dp)
-                    .shadow(12.dp, CircleShape)
+                    .size(76.dp)
+                    .shadow(1.dp, CircleShape),
+                border = androidx.compose.foundation.BorderStroke(1.dp, adminAccent.copy(alpha = 0.25f))
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Icon(
                         imageVector = Icons.Default.AdminPanelSettings,
                         contentDescription = null,
-                        tint = goldAccent,
-                        modifier = Modifier.size(44.dp)
+                        tint = adminAccent,
+                        modifier = Modifier.size(40.dp)
                     )
                 }
             }
@@ -147,21 +146,21 @@ fun SuperAdminLoginScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Admin Login Form Glass Card
+            // Admin Login Form Card
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .shadow(16.dp, RoundedCornerShape(28.dp), clip = false),
-                shape = RoundedCornerShape(28.dp),
-                color = Color.White.copy(alpha = 0.94f),
-                border = androidx.compose.foundation.BorderStroke(1.5.dp, Color.White.copy(alpha = 0.8f))
+                    .shadow(2.dp, RoundedCornerShape(20.dp), clip = false),
+                shape = RoundedCornerShape(20.dp),
+                color = Color.White,
+                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0))
             ) {
                 Column(
                     modifier = Modifier.padding(24.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
-                        text = "System Administration Login",
+                        text = stringResource(R.string.auth_admin_login_title),
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
                         color = textPrimary
@@ -170,7 +169,7 @@ fun SuperAdminLoginScreen(
                     Spacer(modifier = Modifier.height(4.dp))
 
                     Text(
-                        text = "Enter your secure admin credentials to access system management.",
+                        text = stringResource(R.string.auth_admin_login_subtitle),
                         fontSize = 12.sp,
                         color = textSecondary,
                         textAlign = TextAlign.Center
@@ -185,7 +184,7 @@ fun SuperAdminLoginScreen(
                             username = it
                             errorMessage = null
                         },
-                        label = "Admin Username / Email",
+                        label = stringResource(R.string.auth_email_or_username),
                         placeholder = "admin@selfora.org",
                         leadingIcon = Icons.Default.Email,
                         keyboardOptions = KeyboardOptions(
@@ -204,8 +203,8 @@ fun SuperAdminLoginScreen(
                             password = it
                             errorMessage = null
                         },
-                        label = "Password",
-                        placeholder = "Enter admin password",
+                        label = stringResource(R.string.auth_password),
+                        placeholder = stringResource(R.string.auth_password),
                         leadingIcon = Icons.Default.Lock,
                         visualTransformation = if (isPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                         trailingIcon = {
@@ -272,10 +271,10 @@ fun SuperAdminLoginScreen(
                         },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(52.dp)
-                            .shadow(8.dp, CircleShape),
-                        shape = CircleShape,
-                        colors = ButtonDefaults.buttonColors(containerColor = adminAccent)
+                            .height(50.dp),
+                        shape = RoundedCornerShape(14.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = adminAccent),
+                        elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp)
                     ) {
                         if (isLoading) {
                             CircularProgressIndicator(
@@ -291,7 +290,7 @@ fun SuperAdminLoginScreen(
                             ) {
                                 Spacer(modifier = Modifier.weight(1f))
                                 Text(
-                                    text = "Access Super Admin Portal",
+                                    text = stringResource(R.string.auth_sign_in_btn),
                                     fontSize = 15.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = Color.White
@@ -300,8 +299,8 @@ fun SuperAdminLoginScreen(
                                 Icon(
                                     imageVector = Icons.Default.ArrowForward,
                                     contentDescription = null,
-                                    tint = goldAccent,
-                                    modifier = Modifier.size(20.dp)
+                                    tint = Color.White,
+                                    modifier = Modifier.size(18.dp)
                                 )
                             }
                         }
@@ -313,12 +312,11 @@ fun SuperAdminLoginScreen(
 
             // Security Badge
             Surface(
-                modifier = Modifier
-                    .fillMaxWidth(0.92f)
-                    .shadow(4.dp, RoundedCornerShape(16.dp), clip = false),
-                shape = RoundedCornerShape(16.dp),
-                color = Color.White.copy(alpha = 0.88f),
-                border = androidx.compose.foundation.BorderStroke(1.dp, goldAccent.copy(alpha = 0.3f))
+                modifier = Modifier.fillMaxWidth(0.92f),
+                shape = RoundedCornerShape(14.dp),
+                color = Color.White,
+                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                shadowElevation = 1.dp
             ) {
                 Row(
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),

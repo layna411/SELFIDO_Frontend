@@ -22,6 +22,8 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.simats.selfora.ui.theme.*
+import com.simats.selfora.ui.components.design.AppTopBar
 import com.simats.selfora.data.api.ApiClient
 import com.simats.selfora.data.model.CreateTherapistRequest
 import com.simats.selfora.ui.components.glass.GlassTextField
@@ -48,23 +50,19 @@ fun CreateTherapistScreen(
     val scope = rememberCoroutineScope()
     val scrollState = rememberScrollState()
 
-    val blueAccent = Color(0xFF2563EB)
-    val textPrimary = Color(0xFF0F172A)
-    val textSecondary = Color(0xFF64748B)
+    val blueAccent = SelforaPrimary
+    val textPrimary = SelforaTextPrimary
+    val textSecondary = SelforaTextSecondary
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("Register New Clinician", fontWeight = FontWeight.Bold) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
+            AppTopBar(
+                title = "Register New Clinician",
+                subtitle = "Onboard Therapist & Assign Credentials",
+                onBackClick = onBack
             )
         },
-        containerColor = Color(0xFFF8FAFC)
+        containerColor = SelforaBackground
     ) { padding ->
         Column(
             modifier = Modifier
@@ -238,7 +236,8 @@ fun CreateTherapistScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(50.dp),
-                        shape = CircleShape,
+                        shape = RoundedCornerShape(14.dp),
+                        elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = blueAccent)
                     ) {
                         if (isLoading) {

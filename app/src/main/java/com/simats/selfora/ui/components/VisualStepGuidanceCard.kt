@@ -35,6 +35,8 @@ fun VisualStepGuidanceCard(
     stepTitle: String,
     childInstruction: String,
     gender: String = "BOY", // BOY or GIRL
+    activityTitle: String = "",
+    isTamil: Boolean = false,
     onSpeakInstruction: () -> Unit
 ) {
     val isGirlMode = gender.uppercase().contains("GIRL") || gender.uppercase().contains("FEMALE")
@@ -62,8 +64,16 @@ fun VisualStepGuidanceCard(
                     shape = RoundedCornerShape(10.dp),
                     color = cardBg
                 ) {
+                    val headerText = if (isTamil) {
+                        if (activityTitle.isNotBlank()) "$activityTitle • படி $stepNumber / $totalSteps"
+                        else "படி $stepNumber / $totalSteps"
+                    } else {
+                        if (activityTitle.isNotBlank()) "$activityTitle • Step $stepNumber of $totalSteps"
+                        else if (isGirlMode) "Step $stepNumber of $totalSteps"
+                        else "Step $stepNumber of $totalSteps"
+                    }
                     Text(
-                        text = if (isGirlMode) "Frock Dressing Step $stepNumber of $totalSteps" else "T-Shirt Dressing Step $stepNumber of $totalSteps",
+                        text = headerText,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
                         color = themeColor,
@@ -75,8 +85,13 @@ fun VisualStepGuidanceCard(
                     shape = RoundedCornerShape(8.dp),
                     color = SelforaBackground
                 ) {
+                    val genderLabel = if (isTamil) {
+                        if (isGirlMode) "சிறுமி 👧" else "சிறுவன் 👦"
+                    } else {
+                        if (isGirlMode) "Girl Mode 👧" else "Boy Mode 👦"
+                    }
                     Text(
-                        text = if (isGirlMode) "Girl Mode 👧" else "Boy Mode 👦",
+                        text = genderLabel,
                         fontSize = 11.sp,
                         fontWeight = FontWeight.SemiBold,
                         color = SelforaTextSecondary,
@@ -123,7 +138,7 @@ fun VisualStepGuidanceCard(
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "SPOKEN INSTRUCTION:",
+                            text = if (isTamil) "வழிகாட்டுதல் உரை:" else "SPOKEN INSTRUCTION:",
                             fontSize = 10.sp,
                             fontWeight = FontWeight.Bold,
                             color = themeColor

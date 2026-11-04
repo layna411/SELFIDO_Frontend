@@ -30,6 +30,7 @@ import com.simats.selfora.ui.components.avatar.ChildAvatar
 import com.simats.selfora.ui.components.avatar.ChildAvatarType
 import com.simats.selfora.ui.components.glass.GlassCard
 import com.simats.selfora.ui.theme.*
+import com.simats.selfora.utils.LanguageManager
 import com.simats.selfora.utils.TtsManager
 import kotlinx.coroutines.launch
 
@@ -44,18 +45,36 @@ fun ChildActivityCompletionScreen(
     val ttsManager = remember { TtsManager(context) }
     val lastProgress = remember { com.simats.selfora.data.repository.PracticeSessionStore.getLastStepProgress() }
 
+    val currentLanguage by LanguageManager.currentLanguage.collectAsState()
+    val isTamil = currentLanguage == "ta"
+
     val displayTitle = lastProgress?.activityTitle?.ifBlank { activityTitle } ?: activityTitle
     val starsAwarded = lastProgress?.starsAwarded ?: 5
     val totalStars = lastProgress?.totalStars ?: 5
     val newBadge = lastProgress?.newlyUnlockedBadge
 
-    LaunchedEffect(activityId) {
-        val ttsMessage = if (newBadge != null) {
-            "Awesome job! You completed $displayTitle! And you unlocked a new badge: $newBadge!"
-        } else if (starsAwarded > 0) {
-            "Awesome job! You completed $displayTitle! You earned 5 stars!"
+    LaunchedEffect(currentLanguage) {
+        ttsManager.setLanguage(if (isTamil) "ta" else "en")
+    }
+
+    LaunchedEffect(activityId, currentLanguage) {
+        ttsManager.setLanguage(if (isTamil) "ta" else "en")
+        val ttsMessage = if (isTamil) {
+            if (newBadge != null) {
+                "அற்புதம்! $displayTitle பயிற்சியை முடித்துவிட்டீர்கள்! புதிய பதக்கம் பெற்றுள்ளீர்கள்: $newBadge!"
+            } else if (starsAwarded > 0) {
+                "அற்புதம்! $displayTitle பயிற்சியை முடித்துவிட்டீர்கள்! 5 நட்சத்திரங்கள் பெற்றுள்ளீர்கள்!"
+            } else {
+                "அற்புதம்! $displayTitle பயிற்சியை மீண்டும் முடித்துவிட்டீர்கள்!"
+            }
         } else {
-            "Awesome job! You completed $displayTitle practice again!"
+            if (newBadge != null) {
+                "Awesome job! You completed $displayTitle! And you unlocked a new badge: $newBadge!"
+            } else if (starsAwarded > 0) {
+                "Awesome job! You completed $displayTitle! You earned 5 stars!"
+            } else {
+                "Awesome job! You completed $displayTitle practice again!"
+            }
         }
         ttsManager.speak(ttsMessage)
     }
@@ -102,7 +121,7 @@ fun ChildActivityCompletionScreen(
             Spacer(modifier = Modifier.height(12.dp))
 
             Text(
-                text = "Great Job! 🎉",
+                text = if (isTamil) "அற்புதம்! 🎉" else "Great Job! 🎉",
                 fontSize = 30.sp,
                 fontWeight = FontWeight.ExtraBold,
                 color = SelforaTextPrimary,
@@ -112,7 +131,7 @@ fun ChildActivityCompletionScreen(
             Spacer(modifier = Modifier.height(4.dp))
 
             Text(
-                text = "You completed $displayTitle!",
+                text = if (isTamil) "நீங்கள் $displayTitle பயிற்சியை முடித்துவிட்டீர்கள்!" else "You completed $displayTitle!",
                 fontSize = 17.sp,
                 fontWeight = FontWeight.Bold,
                 color = SelforaPrimary,
@@ -137,7 +156,12 @@ fun ChildActivityCompletionScreen(
                         Text("🏆", fontSize = 36.sp)
                         Spacer(modifier = Modifier.width(12.dp))
                         Column {
-                            Text("NEW BADGE UNLOCKED! ✨", fontWeight = FontWeight.ExtraBold, fontSize = 12.sp, color = Color(0xFFB45309))
+                            Text(
+                                text = if (isTamil) "புதிய பதக்கம் திறக்கப்பட்டது! ✨" else "NEW BADGE UNLOCKED! ✨",
+                                fontWeight = FontWeight.ExtraBold,
+                                fontSize = 12.sp,
+                                color = Color(0xFFB45309)
+                            )
                             Text(newBadge, fontWeight = FontWeight.Bold, fontSize = 17.sp, color = SelforaTextPrimary)
                         }
                     }
@@ -154,8 +178,14 @@ fun ChildActivityCompletionScreen(
 
             Spacer(modifier = Modifier.height(12.dp))
 
+            val rewardSubtitle = if (isTamil) {
+                if (starsAwarded > 0) "+5 சிறப்பு நட்சத்திரங்கள் சேர்க்கப்பட்டன! ⭐" else "பயிற்சி சிறப்பாக முடிந்தது! 🌟"
+            } else {
+                if (starsAwarded > 0) "+5 Super Stars Added to Balance! ⭐" else "Activity Mastered! Replay Practice Complete! 🌟"
+            }
+
             Text(
-                text = if (starsAwarded > 0) "+5 Super Stars Added to Balance! ⭐" else "Activity Mastered! Replay Practice Complete! 🌟",
+                text = rewardSubtitle,
                 fontSize = 14.sp,
                 fontWeight = FontWeight.SemiBold,
                 color = if (starsAwarded > 0) Color(0xFFD97706) else SelforaTextSecondary
@@ -174,7 +204,11 @@ fun ChildActivityCompletionScreen(
             ) {
                 Icon(Icons.Default.Refresh, contentDescription = null)
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Practise Again 🔄", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                Text(
+                    text = if (isTamil) "மீண்டும் பயிற்சி செய் 🔄" else "Practise Again 🔄",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp
+                )
             }
 
             Spacer(modifier = Modifier.height(12.dp))
@@ -189,7 +223,12 @@ fun ChildActivityCompletionScreen(
             ) {
                 Icon(Icons.Default.Home, contentDescription = null, tint = Color.White)
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Back to Fun Home 🏠", fontWeight = FontWeight.Bold, fontSize = 17.sp, color = Color.White)
+                Text(
+                    text = if (isTamil) "முகப்பு பக்கத்திற்கு செல் 🏠" else "Back to Fun Home 🏠",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 17.sp,
+                    color = Color.White
+                )
             }
         }
     }

@@ -49,6 +49,9 @@ object SessionManager {
         if (token.isNotBlank()) {
             ApiClient.setJwtToken(token)
         }
+        // Restore user language preference independently for this authenticated user
+        val userLang = getUserLanguage(userId)
+        com.simats.selfora.utils.LanguageManager.setLanguage(userLang, null, userId)
     }
 
     fun mustChangePassword(): Boolean {
@@ -181,11 +184,43 @@ object SessionManager {
 
     fun clearSession() {
         if (!::prefs.isInitialized) return
-        val savedBaseUrl = getCustomBaseUrl()
-        prefs.edit().clear().apply()
-        if (savedBaseUrl != null) {
-            setCustomBaseUrl(savedBaseUrl)
+        prefs.edit().apply {
+            remove(KEY_IS_LOGGED_IN)
+            remove(KEY_USER_ROLE)
+            remove(KEY_USER_ID)
+            remove(KEY_USERNAME)
+            remove(KEY_JWT_TOKEN)
+            remove(KEY_MUST_CHANGE_PASSWORD)
+            remove(KEY_ACTIVE_CHILD_ID)
+            remove(KEY_ACTIVE_CHILD_NAME)
+            remove(KEY_ACTIVE_CHILD_GENDER)
+            apply()
         }
         ApiClient.setJwtToken(null)
+    }
+
+    // ==========================================
+    // Language & Localization Preference Management
+    // ==========================================
+    private const val KEY_USER_LANGUAGE_PREFIX = "user_language_"
+    private const val KEY_APP_LANGUAGE = "app_language"
+
+    fun getUserLanguage(userId: Long = getUserId()): String {
+        if (!::prefs.isInitialized) return "en"
+        return prefs.getString(KEY_USER_LANGUAGE_PREFIX + userId, prefs.getString(KEY_APP_LANGUAGE, "en")) ?: "en"
+    }
+
+    fun setUserLanguage(language: String, userId: Long = getUserId()) {
+        if (!::prefs.isInitialized) return
+        val normalized = if (language.equals("ta", ignoreCase = true)) "ta" else "en"
+        prefs.edit().apply {
+            putString(KEY_USER_LANGUAGE_PREFIX + userId, normalized)
+            putString(KEY_APP_LANGUAGE, normalized)
+            apply()
+        }
+    }
+
+    fun isTamilActive(userId: Long = getUserId()): Boolean {
+        return getUserLanguage(userId).equals("ta", ignoreCase = true)
     }
 }

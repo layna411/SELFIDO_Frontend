@@ -49,13 +49,25 @@ data class SessionResponse(
     val endTime: String?,
     val totalDurationSeconds: Int,
     val summaryNotes: String?,
-    val performanceRecords: List<PerformanceRecordResponse> = emptyList()
+    val performanceRecords: List<PerformanceRecordResponse> = emptyList(),
+    val totalSteps: Int? = null,
+    val completedSteps: Int? = null,
+    val independentSteps: Int? = null,
+    val promptedSteps: Int? = null,
+    val unableSteps: Int? = null,
+    val notAssessedSteps: Int? = null,
+    val independencePercentage: Double? = null,
+    val sessionOutcome: String? = null,
+    val promptDistribution: Map<String, Int> = emptyMap(),
+    val mostFrequentPromptLevel: String? = null
 )
 
 data class SessionSummaryResponse(
     val sessionId: Long,
     val sessionCode: String,
+    val childId: Long? = null,
     val childName: String,
+    val activityId: Long? = null,
     val activityTitle: String,
     val totalSteps: Int,
     val completedSteps: Int,

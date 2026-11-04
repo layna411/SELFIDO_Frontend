@@ -20,23 +20,29 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.res.stringResource
+import com.simats.selfora.R
 import com.simats.selfora.data.local.SessionManager
 import com.simats.selfora.ui.components.glass.GlassTextField
 import com.simats.selfora.ui.theme.*
+import com.simats.selfora.utils.LanguageManager
 
 @Composable
 fun AdultExitDialog(
     onDismiss: () -> Unit,
     onConfirmExit: () -> Unit
 ) {
+    val currentLanguage by LanguageManager.currentLanguage.collectAsState()
+
     var pinText by remember { mutableStateOf("") }
     var errorMessage by remember { mutableStateOf<String?>(null) }
+    val invalidPinMessage = stringResource(R.string.incorrect_pin)
 
     val handleConfirm = {
         if (SessionManager.validateAdultExitPin(pinText)) {
             onConfirmExit()
         } else {
-            errorMessage = "Incorrect PIN. Please enter the valid 4-digit PIN (default: 1234)."
+            errorMessage = invalidPinMessage
         }
     }
 
@@ -47,7 +53,12 @@ fun AdultExitDialog(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Default.Lock, contentDescription = null, tint = SelforaPrimary, modifier = Modifier.size(24.dp))
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Supervising Adult Exit", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = SelforaTextPrimary)
+                Text(
+                    text = stringResource(R.string.parent_exit_title),
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 18.sp,
+                    color = SelforaTextPrimary
+                )
             }
         },
         text = {
@@ -58,7 +69,7 @@ fun AdultExitDialog(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    "Please enter the adult exit PIN (default: 1234) or confirm exit to return to the Adult Interface.",
+                    text = stringResource(R.string.parent_exit_subtitle),
                     fontSize = 13.sp,
                     color = SelforaTextSecondary,
                     textAlign = TextAlign.Start
@@ -72,7 +83,7 @@ fun AdultExitDialog(
                             errorMessage = null
                         }
                     },
-                    label = "Adult PIN",
+                    label = stringResource(R.string.enter_pin),
                     placeholder = "1234",
                     singleLine = true,
                     visualTransformation = PasswordVisualTransformation(),
@@ -95,12 +106,18 @@ fun AdultExitDialog(
                 colors = ButtonDefaults.buttonColors(containerColor = SelforaPrimary),
                 shape = RoundedCornerShape(12.dp)
             ) {
-                Text("Exit Child Mode", fontWeight = FontWeight.Bold)
+                Text(
+                    text = stringResource(R.string.exit_child_mode),
+                    fontWeight = FontWeight.Bold
+                )
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Stay in Child Mode", color = SelforaTextSecondary)
+                Text(
+                    text = stringResource(R.string.stay_in_child_mode),
+                    color = SelforaTextSecondary
+                )
             }
         },
         shape = RoundedCornerShape(20.dp),

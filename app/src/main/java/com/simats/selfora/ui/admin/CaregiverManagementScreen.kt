@@ -23,6 +23,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.simats.selfora.ui.theme.*
+import com.simats.selfora.ui.components.design.AppTopBar
 import com.simats.selfora.data.api.ApiClient
 import com.simats.selfora.data.model.CaregiverItem
 import com.simats.selfora.ui.components.glass.GlassTextField
@@ -37,9 +39,9 @@ fun CaregiverManagementScreen(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
-    val purpleAccent = Color(0xFF7C3AED)
-    val textPrimary = Color(0xFF0F172A)
-    val textSecondary = Color(0xFF64748B)
+    val purpleAccent = SelforaSecondary
+    val textPrimary = SelforaTextPrimary
+    val textSecondary = SelforaTextSecondary
 
     var searchQuery by remember { mutableStateOf("") }
     var selectedFilter by remember { mutableStateOf("All") } // "All", "Active", "Inactive"
@@ -93,22 +95,19 @@ fun CaregiverManagementScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("Caregiver & Parent Accounts", fontWeight = FontWeight.Bold) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
-                    }
-                },
+            AppTopBar(
+                title = "Caregiver & Parent Accounts",
+                subtitle = "Linked Parent Logins & Access Status",
+                onBackClick = onBack,
+                accentColor = purpleAccent,
                 actions = {
                     IconButton(onClick = { loadCaregivers() }) {
                         Icon(Icons.Default.Refresh, contentDescription = "Refresh", tint = purpleAccent)
                     }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
+                }
             )
         },
-        containerColor = Color(0xFFF8FAFC)
+        containerColor = SelforaBackground
     ) { padding ->
         Column(
             modifier = Modifier

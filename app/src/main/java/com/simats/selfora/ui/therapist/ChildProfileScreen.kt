@@ -689,6 +689,14 @@ fun ChildProfileScreen(
                                 )
                             }
                         }
+
+                        Spacer(modifier = Modifier.height(8.dp))
+                        GlassButton(
+                            text = "Start New Session",
+                            onClick = { onStartSession(childId) },
+                            icon = Icons.Default.PlayArrow,
+                            modifier = Modifier.fillMaxWidth()
+                        )
                     }
                 }
 

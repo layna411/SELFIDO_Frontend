@@ -1,6 +1,8 @@
 package com.simats.selfora.ui.child
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -20,6 +22,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.simats.selfora.data.api.ApiClient
 import com.simats.selfora.data.local.SessionManager
+import com.simats.selfora.data.model.ActivityResponse
 import com.simats.selfora.data.model.TaskStepResponse
 import com.simats.selfora.data.repository.PracticeSessionStore
 import com.simats.selfora.ui.components.VisualStepGuidanceCard
@@ -28,6 +31,7 @@ import com.simats.selfora.ui.therapist.getSampleEatingSteps
 import com.simats.selfora.ui.therapist.getSampleGirlFrockSteps
 import com.simats.selfora.ui.therapist.getSampleShoesSteps
 import com.simats.selfora.ui.therapist.getSampleTShirtSteps
+import com.simats.selfora.utils.LanguageManager
 import com.simats.selfora.utils.TtsManager
 import kotlinx.coroutines.launch
 
@@ -37,7 +41,11 @@ fun ChildActivityStepScreen(
     onFinished: () -> Unit,
     onBack: () -> Unit
 ) {
+    val currentLanguage by LanguageManager.currentLanguage.collectAsState()
+    val isTamil = currentLanguage == "ta"
+
     var steps by remember { mutableStateOf<List<TaskStepResponse>>(emptyList()) }
+    var activityDetail by remember { mutableStateOf<ActivityResponse?>(null) }
     var currentStepIndex by remember { mutableStateOf(0) }
     var isLoading by remember { mutableStateOf(true) }
     var isSubmitting by remember { mutableStateOf(false) }
@@ -48,6 +56,10 @@ fun ChildActivityStepScreen(
     val ttsManager = remember { TtsManager(context) }
     val gender = remember { SessionManager.getActiveChildGender().ifBlank { "BOY" } }
     val activeChildId = remember { SessionManager.getActiveChildId() }
+
+    LaunchedEffect(currentLanguage) {
+        ttsManager.setLanguage(if (isTamil) "ta" else "en")
+    }
 
     DisposableEffect(Unit) {
         onDispose {
@@ -65,6 +77,13 @@ fun ChildActivityStepScreen(
             else -> getSampleTShirtSteps()
         }
         try {
+            // Fetch activity metadata (including starting positions in en & ta)
+            val actRes = ApiClient.apiService.getActivityById(activityId)
+            if (actRes.isSuccessful && actRes.body() != null) {
+                activityDetail = actRes.body()
+            }
+
+            // Fetch steps
             val res = ApiClient.apiService.getTaskSteps(activityId)
             steps = if (res.isSuccessful && res.body() != null && res.body()!!.isNotEmpty()) res.body()!! else fallbackSteps
             
@@ -84,11 +103,16 @@ fun ChildActivityStepScreen(
         }
     }
 
-    // Auto-save active progress on step change and auto-speak instruction
-    LaunchedEffect(currentStepIndex, steps) {
+    // Auto-save active progress on step change and auto-speak instruction in selected language
+    LaunchedEffect(currentStepIndex, steps, currentLanguage) {
         if (steps.isNotEmpty() && currentStepIndex in steps.indices) {
-            val instruction = steps[currentStepIndex].childInstruction
-            ttsManager.speak(instruction)
+            ttsManager.setLanguage(if (isTamil) "ta" else "en")
+            val rawInstruction = if (isTamil && !steps[currentStepIndex].childInstructionTa.isNullOrBlank()) {
+                steps[currentStepIndex].childInstructionTa!!
+            } else {
+                steps[currentStepIndex].childInstruction
+            }
+            ttsManager.speak(rawInstruction)
 
             if (activeChildId > 0) {
                 PracticeSessionStore.saveActivePracticeSession(
@@ -117,13 +141,16 @@ fun ChildActivityStepScreen(
             CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
         } else {
             val step = steps[currentStepIndex]
+            val displayStepTitle = if (isTamil && !step.titleTa.isNullOrBlank()) step.titleTa!! else step.title
+            val displayInstruction = if (isTamil && !step.childInstructionTa.isNullOrBlank()) step.childInstructionTa!! else step.childInstruction
+            val displayActivityTitle = if (isTamil && !activityDetail?.titleTa.isNullOrBlank()) activityDetail?.titleTa!! else (activityDetail?.title ?: "")
 
             Column(
                 modifier = Modifier.fillMaxSize(),
                 verticalArrangement = Arrangement.SpaceBetween,
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // Header Bar (Back button, ActivityStepProgress & Audio)
+                // Header Bar (Back button, ActivityStepProgress, Language Switcher & Audio)
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -133,15 +160,73 @@ fun ChildActivityStepScreen(
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = SelforaBlueDark)
                     }
 
-                    Box(modifier = Modifier.weight(1f).padding(horizontal = 12.dp)) {
+                    Box(modifier = Modifier.weight(1f).padding(horizontal = 8.dp)) {
                         com.simats.selfora.ui.components.progress.ActivityStepProgress(
                             currentStep = currentStepIndex + 1,
                             totalSteps = steps.size
                         )
                     }
 
-                    IconButton(onClick = { ttsManager.speak(step.childInstruction) }) {
+                    // Direct Compact Language Toggle Button
+                    Surface(
+                        shape = RoundedCornerShape(14.dp),
+                        color = if (isTamil) Color(0xFFFEF3C7) else Color.White,
+                        border = BorderStroke(1.dp, if (isTamil) Color(0xFFF59E0B) else Color(0xFFCBD5E1)),
+                        modifier = Modifier.clickable {
+                            LanguageManager.toggleLanguage()
+                        }
+                    ) {
+                        Text(
+                            text = if (isTamil) "🇮🇳 தமிழ்" else "🇬🇧 EN",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = if (isTamil) Color(0xFFB45309) else SelforaPrimary,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.width(6.dp))
+
+                    IconButton(onClick = { ttsManager.speak(displayInstruction) }) {
                         Icon(Icons.Default.VolumeUp, contentDescription = "Replay Audio", tint = SelforaPrimary)
+                    }
+                }
+
+                // Starting Position Card (Prominently displayed at initial step 1)
+                val startPos = if (isTamil && !activityDetail?.startingPositionTa.isNullOrBlank()) {
+                    activityDetail?.startingPositionTa
+                } else {
+                    activityDetail?.startingPosition
+                }
+                if (currentStepIndex == 0 && !startPos.isNullOrBlank()) {
+                    Surface(
+                        shape = RoundedCornerShape(14.dp),
+                        color = Color.White.copy(alpha = 0.95f),
+                        border = BorderStroke(1.dp, SelforaPrimary.copy(alpha = 0.3f)),
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(10.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text("📍", fontSize = 18.sp)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Column {
+                                Text(
+                                    text = if (isTamil) "தொடக்க நிலை:" else "STARTING POSITION:",
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = SelforaPrimary
+                                )
+                                Text(
+                                    text = startPos,
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = SelforaTextPrimary,
+                                    lineHeight = 14.sp
+                                )
+                            }
+                        }
                     }
                 }
 
@@ -149,10 +234,12 @@ fun ChildActivityStepScreen(
                 VisualStepGuidanceCard(
                     stepNumber = currentStepIndex + 1,
                     totalSteps = steps.size,
-                    stepTitle = step.title,
-                    childInstruction = step.childInstruction,
+                    stepTitle = displayStepTitle,
+                    childInstruction = displayInstruction,
                     gender = gender,
-                    onSpeakInstruction = { ttsManager.speak(step.childInstruction) }
+                    activityTitle = displayActivityTitle,
+                    isTamil = isTamil,
+                    onSpeakInstruction = { ttsManager.speak(displayInstruction) }
                 )
 
                 // Navigation Touch Buttons
@@ -172,12 +259,12 @@ fun ChildActivityStepScreen(
                         ) {
                             Icon(Icons.Default.ArrowBack, contentDescription = null)
                             Spacer(modifier = Modifier.width(4.dp))
-                            Text("Previous", fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                            Text(if (isTamil) "முந்தையது" else "Previous", fontWeight = FontWeight.Bold, fontSize = 15.sp)
                         }
                     }
 
                     IconButton(
-                        onClick = { ttsManager.speak(step.childInstruction) },
+                        onClick = { ttsManager.speak(displayInstruction) },
                         modifier = Modifier
                             .size(60.dp)
                             .background(Color.White, CircleShape)
@@ -221,7 +308,7 @@ fun ChildActivityStepScreen(
                                                         sessionStatus = "PENDING_SYNC"
                                                     )
                                                 )
-                                                submitError = "Progress safely saved offline! Tap to retry sending."
+                                                submitError = if (isTamil) "முன்னேற்றம் பாதுகாக்கப்பட்டது! அனுப்ப தட்டவும்." else "Progress safely saved offline! Tap to retry sending."
                                             }
                                         } catch (e: Exception) {
                                             PracticeSessionStore.saveActivePracticeSession(
@@ -234,7 +321,7 @@ fun ChildActivityStepScreen(
                                                     sessionStatus = "PENDING_SYNC"
                                                 )
                                             )
-                                            submitError = "Connection paused. Progress safely saved! Tap to retry."
+                                            submitError = if (isTamil) "இணைப்பு தாமதமாகிறது. முன்னேற்றம் பாதுகாக்கப்பட்டது!" else "Connection paused. Progress safely saved! Tap to retry."
                                         }
                                     }
                                     isSubmitting = false
@@ -268,10 +355,15 @@ fun ChildActivityStepScreen(
                         if (isSubmitting) {
                             CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.White, strokeWidth = 3.dp)
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text("Saving... ✨", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Color.White)
+                            Text(if (isTamil) "சேமிக்கிறது... ✨" else "Saving... ✨", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Color.White)
                         } else {
+                            val nextButtonText = if (currentStepIndex == steps.size - 1) {
+                                if (isTamil) "நான் முடித்தேன்! 🎉" else "I DID IT! 🎉"
+                            } else {
+                                if (isTamil) "அடுத்த படி" else "NEXT STEP"
+                            }
                             Text(
-                                if (currentStepIndex == steps.size - 1) "I DID IT! 🎉" else "NEXT STEP",
+                                text = nextButtonText,
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 17.sp,
                                 color = Color.White

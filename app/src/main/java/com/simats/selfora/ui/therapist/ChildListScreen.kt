@@ -3,6 +3,7 @@ package com.simats.selfora.ui.therapist
 import androidx.compose.animation.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.*
@@ -34,6 +35,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun ChildListScreen(
     onChildSelected: (Long) -> Unit,
+    onStartSession: (Long) -> Unit = onChildSelected,
     onAddChildClick: () -> Unit,
     onBack: () -> Unit
 ) {
@@ -242,7 +244,11 @@ fun ChildListScreen(
                     contentPadding = PaddingValues(bottom = 150.dp)
                 ) {
                     items(childrenList) { child ->
-                        GlassChildCard(child = child, onViewChild = { onChildSelected(child.id) })
+                        GlassChildCard(
+                            child = child,
+                            onViewChild = { onChildSelected(child.id) },
+                            onStartSession = { onStartSession(child.id) }
+                        )
                     }
                 }
             }
@@ -253,7 +259,8 @@ fun ChildListScreen(
 @Composable
 fun GlassChildCard(
     child: ChildSummaryItem,
-    onViewChild: () -> Unit
+    onViewChild: () -> Unit,
+    onStartSession: () -> Unit = onViewChild
 ) {
     val safeGender = (child.gender ?: "BOY").uppercase()
     val safeName = child.name ?: "Unnamed Child"
@@ -448,12 +455,32 @@ fun GlassChildCard(
                 fontWeight = FontWeight.SemiBold,
                 color = SelforaTextSecondary
             )
-            Text(
-                text = "Clinical Profile →",
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Bold,
-                color = SelforaPrimary
-            )
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Surface(
+                    shape = RoundedCornerShape(8.dp),
+                    color = SelforaPrimary.copy(alpha = 0.12f),
+                    modifier = Modifier.clickable { onStartSession() }
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(Icons.Default.PlayArrow, contentDescription = null, tint = SelforaPrimary, modifier = Modifier.size(14.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Start Session", fontSize = 11.5.sp, fontWeight = FontWeight.Bold, color = SelforaPrimary)
+                    }
+                }
+                Text(
+                    text = "Profile →",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = SelforaTextSecondary,
+                    modifier = Modifier.clickable { onViewChild() }
+                )
+            }
         }
     }
 }

@@ -19,6 +19,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.simats.selfora.ui.theme.*
+import com.simats.selfora.ui.components.design.AppTopBar
 import com.simats.selfora.data.api.ApiClient
 import com.simats.selfora.data.api.NetworkErrorHandler
 import com.simats.selfora.data.model.AdminChildItem
@@ -34,9 +36,9 @@ fun AdminReportsScreen(
     val scope = rememberCoroutineScope()
     val scrollState = rememberScrollState()
 
-    val blueAccent = Color(0xFF2563EB)
-    val textPrimary = Color(0xFF0F172A)
-    val textSecondary = Color(0xFF64748B)
+    val blueAccent = SelforaPrimary
+    val textPrimary = SelforaTextPrimary
+    val textSecondary = SelforaTextSecondary
 
     var isDownloading by remember { mutableStateOf(false) }
     var showChildSelectorDialog by remember { mutableStateOf(false) }
@@ -87,17 +89,13 @@ fun AdminReportsScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("Reports & Analytics Export", fontWeight = FontWeight.Bold) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
+            AppTopBar(
+                title = "Reports & Analytics Export",
+                subtitle = "Authorized Clinical & Operational PDF Reports",
+                onBackClick = onBack
             )
         },
-        containerColor = Color(0xFFF8FAFC)
+        containerColor = SelforaBackground
     ) { padding ->
         Column(
             modifier = Modifier

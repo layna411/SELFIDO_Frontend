@@ -25,6 +25,8 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.simats.selfora.ui.theme.*
+import com.simats.selfora.ui.components.design.AppTopBar
 import com.simats.selfora.data.api.ApiClient
 import com.simats.selfora.data.model.CaregiverItem
 import com.simats.selfora.data.model.ResetPasswordRequest
@@ -42,9 +44,9 @@ fun CaregiverDetailsScreen(
     val scope = rememberCoroutineScope()
     val scrollState = rememberScrollState()
 
-    val purpleAccent = Color(0xFF7C3AED)
-    val textPrimary = Color(0xFF0F172A)
-    val textSecondary = Color(0xFF64748B)
+    val purpleAccent = SelforaSecondary
+    val textPrimary = SelforaTextPrimary
+    val textSecondary = SelforaTextSecondary
 
     var caregiver by remember { mutableStateOf<CaregiverItem?>(null) }
     var isLoading by remember { mutableStateOf(false) }
@@ -79,24 +81,21 @@ fun CaregiverDetailsScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("Caregiver Profile Details", fontWeight = FontWeight.Bold) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
-                    }
-                },
+            AppTopBar(
+                title = "Caregiver Profile Details",
+                subtitle = caregiver?.fullName ?: "Parent Account & Linked Children",
+                onBackClick = onBack,
+                accentColor = purpleAccent,
                 actions = {
                     if (caregiver != null) {
                         IconButton(onClick = { showEditDialog = true }) {
                             Icon(Icons.Default.Edit, contentDescription = "Edit Profile", tint = purpleAccent)
                         }
                     }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
+                }
             )
         },
-        containerColor = Color(0xFFF8FAFC)
+        containerColor = SelforaBackground
     ) { padding ->
         if (isLoading) {
             Box(modifier = Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {

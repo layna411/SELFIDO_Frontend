@@ -22,6 +22,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.simats.selfora.R
+import com.simats.selfora.ui.theme.*
+import com.simats.selfora.ui.components.design.AppTopBar
 import com.simats.selfora.data.api.ApiClient
 import com.simats.selfora.data.model.AdminChildItem
 import com.simats.selfora.ui.components.glass.GlassTextField
@@ -42,8 +44,8 @@ fun ChildManagementScreen(
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
     val scope = rememberCoroutineScope()
-    val blueAccent = Color(0xFF2563EB)
-    val textSecondary = Color(0xFF64748B)
+    val blueAccent = SelforaPrimary
+    val textSecondary = SelforaTextSecondary
 
     fun fetchChildren() {
         isLoading = true
@@ -87,22 +89,18 @@ fun ChildManagementScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("Centralized Child Management", fontWeight = FontWeight.Bold) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
-                    }
-                },
+            AppTopBar(
+                title = "Centralized Child Records",
+                subtitle = "Clinical Profiles & Caseload Management",
+                onBackClick = onBack,
                 actions = {
                     IconButton(onClick = { fetchChildren() }) {
                         Icon(Icons.Default.Refresh, contentDescription = "Refresh", tint = blueAccent)
                     }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
+                }
             )
         },
-        containerColor = Color(0xFFF8FAFC)
+        containerColor = SelforaBackground
     ) { padding ->
         Column(
             modifier = Modifier

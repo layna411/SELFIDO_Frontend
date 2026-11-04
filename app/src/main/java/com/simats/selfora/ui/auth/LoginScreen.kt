@@ -1,5 +1,7 @@
 package com.simats.selfora.ui.auth
 
+import com.simats.selfora.ui.components.LanguageTogglePill
+import androidx.compose.ui.res.stringResource
 import androidx.compose.animation.*
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
@@ -35,6 +37,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.simats.selfora.R
+import com.simats.selfora.ui.theme.*
 import com.simats.selfora.data.api.ApiClient
 import com.simats.selfora.data.local.SessionManager
 import com.simats.selfora.data.model.LoginRequest
@@ -62,9 +65,9 @@ fun LoginScreen(
     val isImeVisible = WindowInsets.isImeVisible
     val isEditing = isImeVisible || isUsernameFocused || isPasswordFocused
 
-    val primaryBlue = Color(0xFF2563EB)
-    val textPrimary = Color(0xFF172033)
-    val textSecondary = Color(0xFF64748B)
+    val primaryBlue = SelforaPrimary
+    val textPrimary = SelforaTextPrimary
+    val textSecondary = SelforaTextSecondary
 
     // Smooth Auto-Scroll when Keyboard Appears
     LaunchedEffect(isEditing) {
@@ -138,15 +141,7 @@ fun LoginScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(
-                brush = Brush.verticalGradient(
-                    colors = listOf(
-                        Color(0xFFF5F7FC),
-                        Color(0xFFEFF6FF),
-                        Color(0xFFE0F2FE)
-                    )
-                )
-            )
+            .background(SelforaBackground)
     ) {
         Column(
             modifier = Modifier
@@ -199,7 +194,7 @@ fun LoginScreen(
                 exit = fadeOut(animationSpec = tween(200)) + shrinkVertically(animationSpec = tween(250))
             ) {
                 Text(
-                    text = "Building Daily Living Skills for a Brighter Tomorrow",
+                    text = stringResource(R.string.auth_tagline),
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Medium,
                     color = textSecondary,
@@ -238,14 +233,14 @@ fun LoginScreen(
 
             Spacer(modifier = Modifier.height(if (isEditing) 10.dp else 18.dp))
 
-            // Main Glassmorphism Login Card
+            // Main Login Card
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .shadow(12.dp, RoundedCornerShape(24.dp), clip = false),
-                shape = RoundedCornerShape(24.dp),
-                color = Color.White.copy(alpha = 0.92f),
-                border = androidx.compose.foundation.BorderStroke(1.5.dp, Color.White)
+                    .shadow(2.dp, RoundedCornerShape(20.dp), clip = false),
+                shape = RoundedCornerShape(20.dp),
+                color = Color.White,
+                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0))
             ) {
                 Column(
                     modifier = Modifier
@@ -254,7 +249,7 @@ fun LoginScreen(
                     horizontalAlignment = Alignment.Start
                 ) {
                     Text(
-                        text = "Welcome back",
+                        text = stringResource(R.string.auth_welcome_back),
                         fontSize = 22.sp,
                         fontWeight = FontWeight.Bold,
                         color = textPrimary
@@ -263,7 +258,7 @@ fun LoginScreen(
                     Spacer(modifier = Modifier.height(4.dp))
 
                     Text(
-                        text = "Sign in to continue to SELFIDO",
+                        text = stringResource(R.string.auth_sign_in_title),
                         fontSize = 12.5.sp,
                         color = textSecondary
                     )
@@ -410,7 +405,7 @@ fun LoginScreen(
                             contentPadding = PaddingValues(0.dp)
                         ) {
                             Text(
-                                text = "Forgot Password?",
+                                text = stringResource(R.string.auth_forgot_password),
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.SemiBold,
                                 color = primaryBlue
@@ -446,7 +441,7 @@ fun LoginScreen(
                                 horizontalArrangement = Arrangement.Center
                             ) {
                                 Text(
-                                    text = "Sign In",
+                                    text = stringResource(R.string.auth_sign_in_btn),
                                     fontSize = 15.5.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = Color.White

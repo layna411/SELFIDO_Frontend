@@ -22,6 +22,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.simats.selfora.ui.theme.*
+import androidx.compose.material.icons.automirrored.filled.Logout
 import com.simats.selfora.data.api.ApiClient
 import com.simats.selfora.data.model.AdminDashboardStatsResponse
 import kotlinx.coroutines.launch
@@ -47,12 +49,12 @@ fun SuperAdminDashboardScreen(
     val coroutineScope = rememberCoroutineScope()
     val scrollState = rememberScrollState()
 
-    val darkSlate = Color(0xFF0F172A)
-    val goldAccent = Color(0xFFD97706)
-    val blueAccent = Color(0xFF2563EB)
-    val purpleAccent = Color(0xFF7C3AED)
-    val textPrimary = Color(0xFF0F172A)
-    val textSecondary = Color(0xFF64748B)
+    val darkSlate = SelforaTextPrimary
+    val goldAccent = SelforaPrimary
+    val blueAccent = SelforaPrimary
+    val purpleAccent = SelforaSecondary
+    val textPrimary = SelforaTextPrimary
+    val textSecondary = SelforaTextSecondary
 
     fun loadDashboardData() {
         isLoading = true
@@ -87,7 +89,7 @@ fun SuperAdminDashboardScreen(
     }
 
     Scaffold(
-        containerColor = Color(0xFFF8FAFC)
+        containerColor = SelforaBackground
     ) { padding ->
         Column(
             modifier = Modifier
@@ -95,16 +97,17 @@ fun SuperAdminDashboardScreen(
                 .padding(padding)
                 .verticalScroll(scrollState)
         ) {
-            // Top Executive Header Banner
+            // Modern Clean Executive Top Bar
             Surface(
                 modifier = Modifier.fillMaxWidth(),
-                color = darkSlate,
-                shadowElevation = 8.dp
+                color = Color.White,
+                shadowElevation = 2.dp,
+                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0))
             ) {
                 Column(
                     modifier = Modifier
                         .statusBarsPadding()
-                        .padding(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 14.dp)
+                        .padding(start = 20.dp, end = 20.dp, top = 14.dp, bottom = 14.dp)
                 ) {
                     // Header Brand & Action Icons
                     Row(
@@ -116,24 +119,32 @@ fun SuperAdminDashboardScreen(
                                 modifier = Modifier
                                     .size(38.dp)
                                     .clip(CircleShape)
-                                    .background(goldAccent.copy(alpha = 0.18f)),
+                                    .background(blueAccent.copy(alpha = 0.12f)),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.AdminPanelSettings,
                                     contentDescription = null,
-                                    tint = goldAccent,
-                                    modifier = Modifier.size(24.dp)
+                                    tint = blueAccent,
+                                    modifier = Modifier.size(22.dp)
                                 )
                             }
                             Spacer(modifier = Modifier.width(10.dp))
-                            Text(
-                                text = "SELFIDO ADMIN",
-                                fontSize = 20.sp,
-                                fontWeight = FontWeight.ExtraBold,
-                                color = Color.White,
-                                letterSpacing = 1.2.sp
-                            )
+                            Column {
+                                Text(
+                                    text = "SELFIDO ADMIN",
+                                    fontSize = 18.sp,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = textPrimary,
+                                    letterSpacing = 1.sp
+                                )
+                                Text(
+                                    text = "Platform Operations Console",
+                                    fontSize = 11.sp,
+                                    color = textSecondary,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
                         }
 
                         Spacer(modifier = Modifier.weight(1f))
@@ -144,13 +155,14 @@ fun SuperAdminDashboardScreen(
                             modifier = Modifier
                                 .size(38.dp)
                                 .clip(CircleShape)
-                                .background(Color.White.copy(alpha = 0.1f))
+                                .background(Color(0xFFF8FAFC))
+                                .border(1.dp, Color(0xFFE2E8F0), CircleShape)
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Settings,
                                 contentDescription = "Settings",
-                                tint = Color.White,
-                                modifier = Modifier.size(20.dp)
+                                tint = textSecondary,
+                                modifier = Modifier.size(19.dp)
                             )
                         }
 
@@ -162,25 +174,26 @@ fun SuperAdminDashboardScreen(
                             modifier = Modifier
                                 .size(38.dp)
                                 .clip(CircleShape)
-                                .background(Color(0xFFEF4444).copy(alpha = 0.15f))
+                                .background(Color(0xFFFEF2F2))
+                                .border(1.dp, Color(0xFFFEE2E2), CircleShape)
                         ) {
                             Icon(
-                                imageVector = Icons.Default.Logout,
+                                imageVector = Icons.AutoMirrored.Filled.Logout,
                                 contentDescription = "Logout",
-                                tint = Color(0xFFF87171),
-                                modifier = Modifier.size(20.dp)
+                                tint = Color(0xFFEF4444),
+                                modifier = Modifier.size(19.dp)
                             )
                         }
                     }
 
                     Spacer(modifier = Modifier.height(14.dp))
 
-                    // Welcome Greeting Banner
+                    // Welcome Greeting Banner (Pastel Blue)
                     Surface(
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(18.dp),
-                        color = Color.White.copy(alpha = 0.08f),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.12f))
+                        shape = RoundedCornerShape(16.dp),
+                        color = Color(0xFFF0F7FF),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFDBEAFE))
                     ) {
                         Row(
                             modifier = Modifier
@@ -190,17 +203,17 @@ fun SuperAdminDashboardScreen(
                         ) {
                             Box(
                                 modifier = Modifier
-                                    .size(46.dp)
+                                    .size(44.dp)
                                     .clip(CircleShape)
-                                    .background(goldAccent.copy(alpha = 0.25f))
-                                    .border(1.5.dp, goldAccent, CircleShape),
+                                    .background(blueAccent.copy(alpha = 0.14f))
+                                    .border(1.2.dp, blueAccent.copy(alpha = 0.3f), CircleShape),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Text(
                                     text = "SA",
-                                    fontSize = 17.sp,
+                                    fontSize = 16.sp,
                                     fontWeight = FontWeight.ExtraBold,
-                                    color = goldAccent
+                                    color = blueAccent
                                 )
                             }
 
@@ -209,22 +222,22 @@ fun SuperAdminDashboardScreen(
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
                                     text = "Welcome back, Administrator",
-                                    fontSize = 16.sp,
+                                    fontSize = 15.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = Color.White
+                                    color = textPrimary
                                 )
                                 Spacer(modifier = Modifier.height(2.dp))
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Box(
                                         modifier = Modifier
-                                            .size(8.dp)
-                                            .background(Color(0xFF22C55E), CircleShape)
+                                            .size(7.dp)
+                                            .background(Color(0xFF10B981), CircleShape)
                                     )
                                     Spacer(modifier = Modifier.width(6.dp))
                                     Text(
                                         text = "System Operational • Administrator Console",
                                         fontSize = 11.sp,
-                                        color = Color(0xFF94A3B8),
+                                        color = textSecondary,
                                         fontWeight = FontWeight.Medium
                                     )
                                 }

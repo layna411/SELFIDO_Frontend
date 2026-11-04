@@ -28,11 +28,14 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
+import com.simats.selfora.ui.components.LanguageTogglePill
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.simats.selfora.R
+import com.simats.selfora.ui.theme.*
 
 @Composable
 fun SelfidoWelcomeScreen(
@@ -96,16 +99,16 @@ fun SelfidoWelcomeScreen(
                 IconButton(
                     onClick = onNavigateToSuperAdminLogin,
                     modifier = Modifier
-                        .size(42.dp)
+                        .size(40.dp)
                         .clip(CircleShape)
-                        .background(Color.White.copy(alpha = 0.9f))
-                        .shadow(4.dp, CircleShape)
+                        .background(Color.White)
+                        .shadow(1.dp, CircleShape)
                 ) {
                     Icon(
                         imageVector = Icons.Default.AdminPanelSettings,
-                        contentDescription = "Super Admin Portal",
-                        tint = Color(0xFF0F172A),
-                        modifier = Modifier.size(24.dp)
+                        contentDescription = stringResource(R.string.super_admin_portal),
+                        tint = SelforaPrimary,
+                        modifier = Modifier.size(22.dp)
                     )
                 }
 
@@ -129,19 +132,22 @@ fun SelfidoWelcomeScreen(
                     )
                 }
 
-                // Sun Icon (Top Right)
-                Icon(
-                    imageVector = Icons.Default.WbSunny,
-                    contentDescription = null,
-                    tint = Color(0xFFFBBF24),
-                    modifier = Modifier.size(36.dp)
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    LanguageTogglePill(isCompact = true)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Icon(
+                        imageVector = Icons.Default.WbSunny,
+                        contentDescription = null,
+                        tint = Color(0xFFFBBF24),
+                        modifier = Modifier.size(32.dp)
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(4.dp))
 
             Text(
-                text = "Building Daily Living Skills\nfor a Brighter Tomorrow",
+                text = stringResource(R.string.auth_tagline),
                 fontSize = 13.sp,
                 fontWeight = FontWeight.Medium,
                 color = Color(0xFF475569),
@@ -170,21 +176,21 @@ fun SelfidoWelcomeScreen(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Role Selection Glass Card Container
+            // Role Selection Card Container
             Surface(
                 modifier = Modifier
                     .fillMaxWidth(0.92f)
-                    .shadow(16.dp, RoundedCornerShape(28.dp), clip = false),
-                shape = RoundedCornerShape(28.dp),
-                color = Color.White.copy(alpha = 0.92f),
-                border = androidx.compose.foundation.BorderStroke(1.5.dp, Color.White.copy(alpha = 0.8f))
+                    .shadow(2.dp, RoundedCornerShape(20.dp), clip = false),
+                shape = RoundedCornerShape(20.dp),
+                color = Color.White,
+                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0))
             ) {
                 Column(
                     modifier = Modifier.padding(20.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
-                        text = "Welcome to SELFIDO",
+                        text = stringResource(R.string.auth_welcome_title),
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color(0xFF172033)
@@ -193,7 +199,7 @@ fun SelfidoWelcomeScreen(
                     Spacer(modifier = Modifier.height(4.dp))
 
                     Text(
-                        text = "Choose how you would like to continue",
+                        text = stringResource(R.string.auth_choose_role),
                         fontSize = 13.sp,
                         color = Color(0xFF64748B),
                         textAlign = TextAlign.Center
@@ -203,8 +209,8 @@ fun SelfidoWelcomeScreen(
 
                     // Card 1: Therapist Role Card
                     RoleSelectionCard(
-                        title = "I am a Therapist",
-                        subtitle = "Clinical assessment, progress tracking and care planning",
+                        title = stringResource(R.string.auth_role_therapist_title),
+                        subtitle = stringResource(R.string.auth_role_therapist_desc),
                         accentColor = Color(0xFF2563EB),
                         iconDrawableId = R.drawable.therapist_card_icon,
                         onClick = onNavigateToTherapistLogin
@@ -214,8 +220,8 @@ fun SelfidoWelcomeScreen(
 
                     // Card 2: Caregiver Role Card
                     RoleSelectionCard(
-                        title = "I am a Caregiver / Parent",
-                        subtitle = "Home practice, activity guidance and progress updates",
+                        title = stringResource(R.string.auth_role_caregiver_title),
+                        subtitle = stringResource(R.string.auth_role_caregiver_desc),
                         accentColor = Color(0xFF7C3AED),
                         iconDrawableId = R.drawable.caregiver_card_icon,
                         onClick = onNavigateToCaregiverLogin
@@ -227,11 +233,10 @@ fun SelfidoWelcomeScreen(
                     Surface(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clickable(onClick = onNavigateToSuperAdminLogin)
-                            .shadow(4.dp, RoundedCornerShape(16.dp)),
-                        shape = RoundedCornerShape(16.dp),
-                        color = Color(0xFF0F172A),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFD97706))
+                            .clickable(onClick = onNavigateToSuperAdminLogin),
+                        shape = RoundedCornerShape(14.dp),
+                        color = Color(0xFFF8FAFC),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0))
                     ) {
                         Row(
                             modifier = Modifier
@@ -243,21 +248,21 @@ fun SelfidoWelcomeScreen(
                             Icon(
                                 imageVector = Icons.Default.AdminPanelSettings,
                                 contentDescription = null,
-                                tint = Color(0xFFD97706),
+                                tint = SelforaPrimary,
                                 modifier = Modifier.size(20.dp)
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = "Super Administrator Access",
+                                text = stringResource(R.string.auth_role_admin_title),
                                 fontSize = 13.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = Color.White
+                                color = SelforaTextPrimary
                             )
                             Spacer(modifier = Modifier.width(6.dp))
                             Icon(
                                 imageVector = Icons.Default.ChevronRight,
                                 contentDescription = null,
-                                tint = Color(0xFFD97706),
+                                tint = SelforaTextSecondary,
                                 modifier = Modifier.size(16.dp)
                             )
                         }
@@ -318,10 +323,10 @@ private fun RoleSelectionCard(
                 indication = null,
                 onClick = onClick
             )
-            .shadow(6.dp, RoundedCornerShape(24.dp), clip = false),
-        shape = RoundedCornerShape(24.dp),
-        color = accentColor.copy(alpha = 0.06f),
-        border = androidx.compose.foundation.BorderStroke(1.5.dp, accentColor.copy(alpha = 0.25f))
+            .shadow(1.dp, RoundedCornerShape(16.dp), clip = false),
+        shape = RoundedCornerShape(16.dp),
+        color = accentColor.copy(alpha = 0.05f),
+        border = androidx.compose.foundation.BorderStroke(1.dp, accentColor.copy(alpha = 0.20f))
     ) {
         Row(
             modifier = Modifier

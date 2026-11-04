@@ -63,10 +63,8 @@ class TherapySessionViewModel : ViewModel() {
                 val stepsRes = ApiClient.apiService.getTaskSteps(activityId)
                 val loadedSteps = if (stepsRes.isSuccessful && !stepsRes.body().isNullOrEmpty()) {
                     stepsRes.body()!!
-                } else if (activityId == 5L) {
-                    getSampleToothBrushingSteps()
                 } else {
-                    getSampleTShirtSteps()
+                    SelfidoCatalogue.getStepsForActivity(activityId).ifEmpty { getSampleTShirtSteps() }
                 }
 
                 // 2. Obtain or resume therapy session
@@ -288,7 +286,11 @@ class TherapySessionViewModel : ViewModel() {
     }
 
     fun completeSession(onCompleted: (Long) -> Unit) {
-        val sId = _uiState.value.sessionId ?: 1L
+        val sId = _uiState.value.sessionId
+        if (sId == null || sId <= 0L) {
+            _uiState.update { it.copy(errorMessage = "Cannot complete session: session has not been initialized.") }
+            return
+        }
         viewModelScope.launch {
             try {
                 ApiClient.apiService.completeSession(sId)

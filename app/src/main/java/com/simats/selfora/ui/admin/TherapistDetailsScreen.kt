@@ -20,6 +20,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.simats.selfora.ui.theme.*
+import com.simats.selfora.ui.components.design.AppTopBar
 import com.simats.selfora.data.api.ApiClient
 import com.simats.selfora.data.model.ResetPasswordRequest
 import com.simats.selfora.data.model.TherapistItem
@@ -37,9 +39,9 @@ fun TherapistDetailsScreen(
     val scope = rememberCoroutineScope()
     val scrollState = rememberScrollState()
 
-    val blueAccent = Color(0xFF2563EB)
-    val textPrimary = Color(0xFF0F172A)
-    val textSecondary = Color(0xFF64748B)
+    val blueAccent = SelforaPrimary
+    val textPrimary = SelforaTextPrimary
+    val textSecondary = SelforaTextSecondary
 
     var therapist by remember { mutableStateOf<TherapistItem?>(null) }
     var isLoading by remember { mutableStateOf(false) }
@@ -73,24 +75,20 @@ fun TherapistDetailsScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("Therapist Clinical Profile", fontWeight = FontWeight.Bold) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
-                    }
-                },
+            AppTopBar(
+                title = "Therapist Clinical Profile",
+                subtitle = therapist?.fullName ?: "Clinician Details",
+                onBackClick = onBack,
                 actions = {
                     if (therapist != null) {
                         IconButton(onClick = { showEditDialog = true }) {
                             Icon(Icons.Default.Edit, contentDescription = "Edit Profile", tint = blueAccent)
                         }
                     }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
+                }
             )
         },
-        containerColor = Color(0xFFF8FAFC)
+        containerColor = SelforaBackground
     ) { padding ->
         if (isLoading) {
             Box(modifier = Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {

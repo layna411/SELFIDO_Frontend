@@ -1,5 +1,9 @@
 package com.simats.selfora.ui.auth
 
+import com.simats.selfora.R
+
+import com.simats.selfora.ui.components.LanguageTogglePill
+import androidx.compose.ui.res.stringResource
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -87,11 +91,13 @@ fun ChangePasswordScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
+            LanguageTogglePill(isCompact = true, modifier = Modifier.align(Alignment.End))
+            Spacer(modifier = Modifier.height(12.dp))
             Text("🔑", fontSize = 44.sp)
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text = "Create New Password",
+                text = stringResource(R.string.auth_change_password_title),
                 fontSize = 24.sp,
                 fontWeight = FontWeight.Bold,
                 color = SelforaTextPrimary,
@@ -101,7 +107,7 @@ fun ChangePasswordScreen(
             Spacer(modifier = Modifier.height(6.dp))
 
             Text(
-                text = "For security reasons, you must change your temporary password before accessing your account dashboard.",
+                text = stringResource(R.string.auth_change_password_notice),
                 fontSize = 13.sp,
                 color = SelforaTextSecondary,
                 textAlign = TextAlign.Center,
@@ -114,8 +120,8 @@ fun ChangePasswordScreen(
                 GlassTextField(
                     value = newPassword,
                     onValueChange = { newPassword = it },
-                    label = "New Password *",
-                    placeholder = "Minimum 6 characters",
+                    label = stringResource(R.string.auth_new_password),
+                    placeholder = stringResource(R.string.auth_password_min_length),
                     leadingIcon = Icons.Default.Lock,
                     visualTransformation = if (showNewPassword) VisualTransformation.None else PasswordVisualTransformation(),
                     keyboardOptions = KeyboardOptions(
@@ -134,8 +140,8 @@ fun ChangePasswordScreen(
                 GlassTextField(
                     value = confirmPassword,
                     onValueChange = { confirmPassword = it },
-                    label = "Confirm New Password *",
-                    placeholder = "Re-enter new password",
+                    label = stringResource(R.string.auth_confirm_password),
+                    placeholder = stringResource(R.string.auth_confirm_password),
                     leadingIcon = Icons.Default.Lock,
                     visualTransformation = if (showConfirmPassword) VisualTransformation.None else PasswordVisualTransformation(),
                     keyboardOptions = KeyboardOptions(
@@ -158,7 +164,7 @@ fun ChangePasswordScreen(
                     CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally), color = SelforaPrimary)
                 } else {
                     GlassButton(
-                        text = "Save New Password & Continue",
+                        text = stringResource(R.string.auth_update_password_btn),
                         onClick = submitChangePassword,
                         modifier = Modifier.fillMaxWidth()
                     )
