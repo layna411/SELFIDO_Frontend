@@ -407,9 +407,13 @@ fun ADLProgressCard(
                         text = safeCategory,
                         fontSize = 15.sp,
                         fontWeight = FontWeight.Bold,
-                        color = SelforaProgressTextPrimary
+                        color = SelforaProgressTextPrimary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f, fill = false)
                     )
                     if (trendDelta != null) {
+                        Spacer(modifier = Modifier.width(6.dp))
                         Surface(
                             shape = RoundedCornerShape(6.dp),
                             color = SelforaProgressGreen.copy(alpha = 0.12f)
@@ -583,19 +587,25 @@ fun ProgressTrendChart(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Column {
+                Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = title,
                         fontSize = 15.sp,
                         fontWeight = FontWeight.Bold,
-                        color = SelforaProgressTextPrimary
+                        color = SelforaProgressTextPrimary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                     Text(
                         text = subtitle,
                         fontSize = 11.sp,
-                        color = SelforaProgressTextSecondary
+                        color = SelforaProgressTextSecondary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
+
+                Spacer(modifier = Modifier.width(8.dp))
 
                 Surface(
                     shape = CircleShape,
@@ -855,10 +865,14 @@ fun ProgressTrendChart(
                                         color = Color(0xFF64748B)
                                     )
                                 )
+                                val labelX = (point.x - dateLayout.size.width / 2f).coerceIn(
+                                    2.dp.toPx(),
+                                    width - dateLayout.size.width - 2.dp.toPx()
+                                )
                                 drawText(
                                     textLayoutResult = dateLayout,
                                     topLeft = Offset(
-                                        x = point.x - dateLayout.size.width / 2f,
+                                        x = labelX,
                                         y = paddingTop + chartHeight + 8.dp.toPx()
                                     )
                                 )
@@ -1495,14 +1509,14 @@ fun ProgressLegend(
 
             if (type == "PROMPT_LEVELS") {
                 val row1 = listOf(
-                    Pair("L0 Independent", Color(0xFF10B981)),
+                    Pair("L0 Indep", Color(0xFF10B981)),
                     Pair("L1 Visual", Color(0xFF2563EB)),
                     Pair("L2 Gesture", Color(0xFF06B6D4)),
                     Pair("L3 Verbal", Color(0xFF7C3AED))
                 )
                 val row2 = listOf(
                     Pair("L4 Model", Color(0xFFF59E0B)),
-                    Pair("L5 Partial Phys", Color(0xFFEC4899)),
+                    Pair("L5 Part Phys", Color(0xFFEC4899)),
                     Pair("L6 Full Phys", Color(0xFFEF4444))
                 )
 

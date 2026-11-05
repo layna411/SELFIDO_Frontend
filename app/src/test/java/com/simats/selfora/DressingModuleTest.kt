@@ -9,28 +9,28 @@ class DressingModuleTest {
     private val repository = DressingRepository()
 
     @Test
-    fun testBoyTShirtActivityHas18Steps() {
+    fun testBoyTShirtActivityHas20Steps() {
         val activity = repository.getBoyTShirtActivity()
         assertEquals("Boy T-Shirt Dressing", activity.title)
-        assertEquals(18, activity.totalSteps)
-        assertEquals(18, activity.steps.size)
+        assertEquals(20, activity.totalSteps)
+        assertEquals(20, activity.steps.size)
 
         // Verify Step 1
         val step1 = activity.steps[0]
         assertEquals(1, step1.stepNumber)
-        assertEquals("Look at the T-shirt", step1.title)
-        assertEquals("Look at your cool T-Shirt in the cupboard!", step1.childGuidance)
+        assertEquals("Stand or sit in front of the T-shirt", step1.title)
+        assertEquals("Stand or sit in front of your T-shirt!", step1.childGuidance)
 
-        // Verify Step 7 (Head through neck opening)
-        val step7 = activity.steps[6]
-        assertEquals(7, step7.stepNumber)
-        assertEquals("Put head through neck opening", step7.title)
+        // Verify Step 9 (Head through neck opening)
+        val step9 = activity.steps[8]
+        assertEquals(9, step9.stepNumber)
+        assertEquals("Put the head through the neck opening", step9.title)
 
-        // Verify Step 18 (Check comfortable positioning)
-        val step18 = activity.steps[17]
-        assertEquals(18, step18.stepNumber)
-        assertEquals("Check comfortable positioning", step18.title)
-        assertEquals("You look awesome! All set!", step18.childGuidance)
+        // Verify Step 20 (Check comfortable positioning)
+        val step20 = activity.steps[19]
+        assertEquals(20, step20.stepNumber)
+        assertEquals("Check that the T-shirt is worn comfortably and correctly", step20.title)
+        assertEquals("Look in the mirror! You look great in your T-shirt!", step20.childGuidance)
     }
 
     @Test

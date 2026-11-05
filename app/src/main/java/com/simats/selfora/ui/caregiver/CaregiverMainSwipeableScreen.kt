@@ -1,5 +1,6 @@
 package com.simats.selfora.ui.caregiver
 
+import androidx.compose.animation.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.pager.HorizontalPager
@@ -127,20 +128,26 @@ fun CaregiverMainSwipeableScreen(
                 }
             }
 
-            CaregiverBottomNavigation(
-                currentRoute = currentTabRoute,
-                onTabSelected = { selectedRoute ->
-                    val pageIndex = tabs.indexOfFirst { it.route == selectedRoute }
-                    if (pageIndex >= 0) {
-                        coroutineScope.launch {
-                            pagerState.animateScrollToPage(pageIndex)
-                        }
-                    }
-                },
+            AnimatedVisibility(
+                visible = tabs[pagerState.currentPage] != CaregiverTab.Messages,
+                enter = slideInVertically { it } + fadeIn(),
+                exit = slideOutVertically { it } + fadeOut(),
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .navigationBarsPadding()
-            )
+            ) {
+                CaregiverBottomNavigation(
+                    currentRoute = currentTabRoute,
+                    onTabSelected = { selectedRoute ->
+                        val pageIndex = tabs.indexOfFirst { it.route == selectedRoute }
+                        if (pageIndex >= 0) {
+                            coroutineScope.launch {
+                                pagerState.animateScrollToPage(pageIndex)
+                            }
+                        }
+                    }
+                )
+            }
         }
     }
 }

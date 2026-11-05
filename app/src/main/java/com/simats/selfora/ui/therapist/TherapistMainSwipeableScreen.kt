@@ -103,6 +103,7 @@ fun TherapistMainSwipeableScreen(
 
                 TherapistTab.PROGRESS -> TherapistProgressScreen(
                     childId = activeChildId ?: 0L,
+                    onChildSelected = { id -> activeChildId = id },
                     onBack = {
                         coroutineScope.launch { pagerState.animateScrollToPage(0) }
                     }

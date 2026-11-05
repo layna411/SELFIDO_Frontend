@@ -1,4 +1,4 @@
-package com.simats.selfora.data.repository
+﻿package com.simats.selfora.data.repository
 
 import com.simats.selfora.data.model.dressing.*
 
@@ -10,181 +10,201 @@ class DressingRepository {
                 stepId = "boy_tshirt_01",
                 activityId = "boy_tshirt_activity",
                 stepNumber = 1,
-                title = "Look at the T-shirt",
-                childGuidance = "Look at your cool T-Shirt in the cupboard!",
-                visualDescription = "Show the boy looking at a T-shirt inside an open cupboard.",
-                visualHighlight = "T-Shirt in Cupboard",
-                assetPath = "file:///android_asset/dressing/boy/tshirt/step_01_look.gif"
+                title = "Stand or sit in front of the T-shirt",
+                childGuidance = "Stand or sit in front of your T-shirt!",
+                visualDescription = "Show the boy standing or sitting calmly in front of the T-shirt.",
+                visualHighlight = "Boy in front of T-shirt",
+                assetPath = "file:///android_asset/dressing/boy/tshirt/step_01.gif"
             ),
             DressingStep(
                 stepId = "boy_tshirt_02",
                 activityId = "boy_tshirt_activity",
                 stepNumber = 2,
-                title = "Pick up the T-shirt",
-                childGuidance = "Pick up your T-shirt with both hands!",
-                visualDescription = "Show the boy reaching toward the T-shirt and picking it up with both hands.",
-                visualHighlight = "Both Hands & T-Shirt",
-                assetPath = "file:///android_asset/dressing/boy/tshirt/step_02_pickup.gif"
+                title = "Look at the T-shirt",
+                childGuidance = "Look at the T-shirt carefully!",
+                visualDescription = "Show the boy focusing attention on the T-shirt.",
+                visualHighlight = "T-Shirt on surface",
+                assetPath = "file:///android_asset/dressing/boy/tshirt/step_02.gif"
             ),
             DressingStep(
                 stepId = "boy_tshirt_03",
                 activityId = "boy_tshirt_activity",
                 stepNumber = 3,
-                title = "Identify front and back",
-                childGuidance = "Find the tag on the back!",
-                visualDescription = "Show the boy examining the T-shirt and identifying the tag on the back neckline.",
-                visualHighlight = "Clothing Tag on Back",
-                assetPath = "file:///android_asset/dressing/boy/tshirt/step_03_front_back.gif"
+                title = "Pick up the T-shirt with both hands",
+                childGuidance = "Pick up your T-shirt with both hands!",
+                visualDescription = "Show the boy picking up the T-shirt using both hands.",
+                visualHighlight = "Both hands picking up T-shirt",
+                assetPath = "file:///android_asset/dressing/boy/tshirt/step_03.gif"
             ),
             DressingStep(
                 stepId = "boy_tshirt_04",
                 activityId = "boy_tshirt_activity",
                 stepNumber = 4,
-                title = "Find neck opening",
-                childGuidance = "Look for the big neck hole!",
-                visualDescription = "Show the boy holding the T-shirt and identifying the neck opening.",
-                visualHighlight = "Neck Opening Circle",
-                assetPath = "file:///android_asset/dressing/boy/tshirt/step_04_neck.gif"
+                title = "Identify the front and back of the T-shirt",
+                childGuidance = "Find the tag on the back and picture on the front!",
+                visualDescription = "Show the boy identifying the front picture and back collar tag.",
+                visualHighlight = "Front graphic and back collar tag",
+                assetPath = "file:///android_asset/dressing/boy/tshirt/step_04.gif"
             ),
             DressingStep(
                 stepId = "boy_tshirt_05",
                 activityId = "boy_tshirt_activity",
                 stepNumber = 5,
-                title = "Hold T-shirt at shoulder areas",
-                childGuidance = "Hold your shirt at the shoulders!",
-                visualDescription = "Show the boy holding both shoulder areas of the T-shirt.",
-                visualHighlight = "Both Shoulder Areas",
-                assetPath = "file:///android_asset/dressing/boy/tshirt/step_05_shoulders.gif"
+                title = "Find the bottom edge of the T-shirt",
+                childGuidance = "Find the bottom opening of your shirt!",
+                visualDescription = "Show the boy locating the lower hem opening of the T-shirt.",
+                visualHighlight = "Bottom edge opening",
+                assetPath = "file:///android_asset/dressing/boy/tshirt/step_05.gif"
             ),
             DressingStep(
                 stepId = "boy_tshirt_06",
                 activityId = "boy_tshirt_activity",
                 stepNumber = 6,
-                title = "Lift T-shirt to chest level",
-                childGuidance = "Lift the shirt up high to your chest!",
-                visualDescription = "Show the boy lifting the T-shirt to chest level.",
-                visualHighlight = "Shirt & Chest Position",
-                assetPath = "file:///android_asset/dressing/boy/tshirt/step_06_chest.gif"
+                title = "Find the neck opening",
+                childGuidance = "Look for the neck hole at the top!",
+                visualDescription = "Show the boy holding the T-shirt and identifying the neck opening.",
+                visualHighlight = "Neck opening",
+                assetPath = "file:///android_asset/dressing/boy/tshirt/step_06.gif"
             ),
             DressingStep(
                 stepId = "boy_tshirt_07",
                 activityId = "boy_tshirt_activity",
                 stepNumber = 7,
-                title = "Put head through neck opening",
-                childGuidance = "Pop your head through the neck hole! Peekaboo!",
-                visualDescription = "Show the boy slowly putting his head through the neck opening.",
-                visualHighlight = "Neck Opening Action",
-                assetPath = "file:///android_asset/dressing/boy/tshirt/step_07_head.gif"
+                title = "Hold the T-shirt at the shoulder areas",
+                childGuidance = "Hold your shirt near both shoulders!",
+                visualDescription = "Show the boy gripping both shoulder seams firmly.",
+                visualHighlight = "Both shoulder seams",
+                assetPath = "file:///android_asset/dressing/boy/tshirt/step_07.gif"
             ),
             DressingStep(
                 stepId = "boy_tshirt_08",
                 activityId = "boy_tshirt_activity",
                 stepNumber = 8,
-                title = "Pull T-shirt down",
-                childGuidance = "Pull the shirt down past your head!",
-                visualDescription = "Show the boy pulling the T-shirt downward after placing his head through the neck.",
-                visualHighlight = "Both Hands & Downward Movement",
-                assetPath = "file:///android_asset/dressing/boy/tshirt/step_08_pull_down.gif"
+                title = "Lift the T-shirt to chest level",
+                childGuidance = "Lift the shirt up to your chest!",
+                visualDescription = "Show the boy lifting the T-shirt upward toward chest level.",
+                visualHighlight = "T-shirt at chest height",
+                assetPath = "file:///android_asset/dressing/boy/tshirt/step_08.gif"
             ),
             DressingStep(
                 stepId = "boy_tshirt_09",
                 activityId = "boy_tshirt_activity",
                 stepNumber = 9,
-                title = "Find right sleeve",
-                childGuidance = "Find the right arm sleeve!",
-                visualDescription = "Show the boy locating the right sleeve opening.",
-                visualHighlight = "Right Sleeve",
-                assetPath = "file:///android_asset/dressing/boy/tshirt/step_09_right_sleeve.gif"
+                title = "Put the head through the neck opening",
+                childGuidance = "Pop your head through the neck hole! Peekaboo!",
+                visualDescription = "Show the boy guiding his head through the collar opening.",
+                visualHighlight = "Head popping through collar",
+                assetPath = "file:///android_asset/dressing/boy/tshirt/step_09.gif"
             ),
             DressingStep(
                 stepId = "boy_tshirt_10",
                 activityId = "boy_tshirt_activity",
                 stepNumber = 10,
-                title = "Put right arm through sleeve",
-                childGuidance = "Push your right arm through!",
-                visualDescription = "Show the boy slowly pushing his right arm through the right sleeve.",
-                visualHighlight = "Right Arm & Sleeve",
-                assetPath = "file:///android_asset/dressing/boy/tshirt/step_10_right_arm.gif"
+                title = "Pull the T-shirt down over the head",
+                childGuidance = "Pull the shirt down around your neck!",
+                visualDescription = "Show the boy pulling the collar down past his head onto the neck.",
+                visualHighlight = "Collar resting around neck",
+                assetPath = "file:///android_asset/dressing/boy/tshirt/step_10.gif"
             ),
             DressingStep(
                 stepId = "boy_tshirt_11",
                 activityId = "boy_tshirt_activity",
                 stepNumber = 11,
-                title = "Pull right sleeve toward shoulder",
-                childGuidance = "Pull the right sleeve up onto your shoulder!",
-                visualDescription = "Show the boy adjusting the right sleeve toward his shoulder.",
-                visualHighlight = "Right Sleeve & Shoulder",
-                assetPath = "file:///android_asset/dressing/boy/tshirt/step_11_right_shoulder.gif"
+                title = "Find the right sleeve opening",
+                childGuidance = "Find the right sleeve hole!",
+                visualDescription = "Show the boy locating the right sleeve opening.",
+                visualHighlight = "Right sleeve opening",
+                assetPath = "file:///android_asset/dressing/boy/tshirt/step_11.gif"
             ),
             DressingStep(
                 stepId = "boy_tshirt_12",
                 activityId = "boy_tshirt_activity",
                 stepNumber = 12,
-                title = "Find left sleeve",
-                childGuidance = "Find the left arm sleeve!",
-                visualDescription = "Show the boy locating the left sleeve opening.",
-                visualHighlight = "Left Sleeve",
-                assetPath = "file:///android_asset/dressing/boy/tshirt/step_12_left_sleeve.gif"
+                title = "Put the right arm through the right sleeve",
+                childGuidance = "Push your right arm through the sleeve!",
+                visualDescription = "Show the boy pushing his right hand and arm through the right sleeve.",
+                visualHighlight = "Right arm extending through sleeve",
+                assetPath = "file:///android_asset/dressing/boy/tshirt/step_12.gif"
             ),
             DressingStep(
                 stepId = "boy_tshirt_13",
                 activityId = "boy_tshirt_activity",
                 stepNumber = 13,
-                title = "Put left arm through sleeve",
-                childGuidance = "Push your left arm through!",
-                visualDescription = "Show the boy slowly pushing his left arm through the left sleeve.",
-                visualHighlight = "Left Arm & Sleeve",
-                assetPath = "file:///android_asset/dressing/boy/tshirt/step_13_left_arm.gif"
+                title = "Pull the right sleeve up toward the shoulder",
+                childGuidance = "Pull the sleeve up on your right shoulder!",
+                visualDescription = "Show the boy pulling the right sleeve securely up onto the shoulder.",
+                visualHighlight = "Right sleeve on shoulder",
+                assetPath = "file:///android_asset/dressing/boy/tshirt/step_13.gif"
             ),
             DressingStep(
                 stepId = "boy_tshirt_14",
                 activityId = "boy_tshirt_activity",
                 stepNumber = 14,
-                title = "Pull left sleeve toward shoulder",
-                childGuidance = "Pull the left sleeve up onto your shoulder!",
-                visualDescription = "Show the boy adjusting the left sleeve toward his shoulder.",
-                visualHighlight = "Left Sleeve & Shoulder",
-                assetPath = "file:///android_asset/dressing/boy/tshirt/step_14_left_shoulder.gif"
+                title = "Find the left sleeve opening",
+                childGuidance = "Find the left sleeve hole!",
+                visualDescription = "Show the boy locating the left sleeve opening.",
+                visualHighlight = "Left sleeve opening",
+                assetPath = "file:///android_asset/dressing/boy/tshirt/step_14.gif"
             ),
             DressingStep(
                 stepId = "boy_tshirt_15",
                 activityId = "boy_tshirt_activity",
                 stepNumber = 15,
-                title = "Pull front down",
-                childGuidance = "Pull the front down to your tummy!",
-                visualDescription = "Show the boy using both hands to pull the front of the T-shirt downward toward his tummy.",
-                visualHighlight = "Front Lower Portion of Shirt",
-                assetPath = "file:///android_asset/dressing/boy/tshirt/step_15_front.gif"
+                title = "Put the left arm through the left sleeve",
+                childGuidance = "Push your left arm through the sleeve!",
+                visualDescription = "Show the boy pushing his left hand and arm through the left sleeve.",
+                visualHighlight = "Left arm extending through sleeve",
+                assetPath = "file:///android_asset/dressing/boy/tshirt/step_15.gif"
             ),
             DressingStep(
                 stepId = "boy_tshirt_16",
                 activityId = "boy_tshirt_activity",
                 stepNumber = 16,
-                title = "Pull back down",
-                childGuidance = "Pull the back down over your waist!",
-                visualDescription = "Show the boy adjusting the back of the T-shirt downward over his waist.",
-                visualHighlight = "Back Lower Portion of Shirt",
-                assetPath = "file:///android_asset/dressing/boy/tshirt/step_16_back.gif"
+                title = "Pull the left sleeve up toward the shoulder",
+                childGuidance = "Pull the sleeve up on your left shoulder!",
+                visualDescription = "Show the boy pulling the left sleeve securely up onto the shoulder.",
+                visualHighlight = "Left sleeve on shoulder",
+                assetPath = "file:///android_asset/dressing/boy/tshirt/step_16.gif"
             ),
             DressingStep(
                 stepId = "boy_tshirt_17",
                 activityId = "boy_tshirt_activity",
                 stepNumber = 17,
-                title = "Straighten T-shirt",
-                childGuidance = "Smooth out your T-shirt!",
-                visualDescription = "Show the boy using both hands to straighten and smooth the T-shirt.",
-                visualHighlight = "Shirt Surface",
-                assetPath = "file:///android_asset/dressing/boy/tshirt/step_17_straighten.gif"
+                title = "Pull the front of the T-shirt down",
+                childGuidance = "Pull the front of your shirt down!",
+                visualDescription = "Show the boy pulling the front hem of the T-shirt down over his torso.",
+                visualHighlight = "Front torso covered",
+                assetPath = "file:///android_asset/dressing/boy/tshirt/step_17.gif"
             ),
             DressingStep(
                 stepId = "boy_tshirt_18",
                 activityId = "boy_tshirt_activity",
                 stepNumber = 18,
-                title = "Check comfortable positioning",
-                childGuidance = "You look awesome! All set!",
-                visualDescription = "Show the boy standing comfortably wearing the correctly positioned T-shirt with victory stars.",
-                visualHighlight = "Happy Confident Completion State",
-                assetPath = "file:///android_asset/dressing/boy/tshirt/step_18_complete.gif"
+                title = "Pull the back of the T-shirt down",
+                childGuidance = "Pull the back of your shirt down smooth!",
+                visualDescription = "Show the boy pulling the back hem of the T-shirt down over his waist.",
+                visualHighlight = "Back waist covered",
+                assetPath = "file:///android_asset/dressing/boy/tshirt/step_18.gif"
+            ),
+            DressingStep(
+                stepId = "boy_tshirt_19",
+                activityId = "boy_tshirt_activity",
+                stepNumber = 19,
+                title = "Straighten the T-shirt around the shoulders and waist",
+                childGuidance = "Straighten your shirt nicely!",
+                visualDescription = "Show the boy adjusting and smoothing the fabric across shoulders and waist.",
+                visualHighlight = "Smooth neat shirt",
+                assetPath = "file:///android_asset/dressing/boy/tshirt/step_19.gif"
+            ),
+            DressingStep(
+                stepId = "boy_tshirt_20",
+                activityId = "boy_tshirt_activity",
+                stepNumber = 20,
+                title = "Check that the T-shirt is worn comfortably and correctly",
+                childGuidance = "Look in the mirror! You look great in your T-shirt!",
+                visualDescription = "Show the boy standing proudly with the T-shirt worn comfortably and correctly.",
+                visualHighlight = "Fully dressed happy boy",
+                assetPath = "file:///android_asset/dressing/boy/tshirt/step_20.gif"
             )
         )
 
@@ -194,9 +214,9 @@ class DressingRepository {
             category = "Dressing",
             gender = GenderCategory.BOY,
             garmentType = "T-Shirt",
-            totalSteps = 18,
+            totalSteps = 20,
             iconName = "ic_boy_tshirt",
-            description = "18 Clinical task-analysis steps for independent T-shirt dressing.",
+            description = "20 Clinical task-analysis steps for independent T-shirt dressing.",
             steps = steps
         )
     }
