@@ -40,6 +40,7 @@ fun StartSessionTopBar(
     currentDate: String,
     therapistName: String,
     therapistDesignation: String = "Occupational Therapist (OT)",
+    title: String = "Start New Session",
     onBackClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -89,7 +90,7 @@ fun StartSessionTopBar(
 
                     Column {
                         Text(
-                            text = "Start New Session",
+                            text = title,
                             fontSize = 18.sp,
                             fontWeight = FontWeight.Bold,
                             color = SelforaTextPrimary,
@@ -639,6 +640,8 @@ fun SelectedActivityOverviewCard(
     activity: SelfidoActivityDef?,
     childGender: String?,
     selectedCategory: String,
+    cardTitle: String = "SELECTED ADL FOR THERAPY SESSION",
+    buttonText: String = "Start Therapy Session",
     onStartSessionClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -651,7 +654,7 @@ fun SelectedActivityOverviewCard(
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
-                text = "SELECTED ADL FOR THERAPY SESSION",
+                text = cardTitle,
                 fontSize = 11.sp,
                 fontWeight = FontWeight.Bold,
                 color = SelforaPrimary,
@@ -744,7 +747,7 @@ fun SelectedActivityOverviewCard(
                     Text("🚀", fontSize = 16.sp)
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "Start Therapy Session",
+                        text = buttonText,
                         fontSize = 15.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color.White

@@ -91,6 +91,7 @@ fun TherapistMainSwipeableScreen(
 
                 TherapistTab.ASSESSMENTS -> AssessmentScreen(
                     childId = activeChildId ?: 0L,
+                    onChildSelected = { id -> activeChildId = id },
                     onAssessmentSaved = {
                         coroutineScope.launch { pagerState.animateScrollToPage(3) }
                     },

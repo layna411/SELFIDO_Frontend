@@ -58,12 +58,16 @@ data class StepAssessmentState(
 @Composable
 fun AssessmentScreen(
     childId: Long,
+    onChildSelected: ((Long) -> Unit)? = null,
     onAssessmentSaved: () -> Unit,
     onBack: () -> Unit
 ) {
+    var activeChildId by remember(childId) { mutableStateOf(if (childId > 0) childId else 0L) }
+    var assignedChildren by remember { mutableStateOf<List<ChildSummaryItem>>(emptyList()) }
+    var isChildrenLoading by remember { mutableStateOf(false) }
+
     var isStarted by remember { mutableStateOf(false) }
-    var selectedCategory by remember { mutableStateOf("DRESSING") } // "DRESSING", "SHOES", "EATING"
-    var isShelfLayout by remember { mutableStateOf(true) } // true: horizontal notebook sketch shelf, false: 2x2 grid
+    var isShelfLayout by remember { mutableStateOf(false) } // Default to modern 2x2 grid view matching reference design
 
     var currentStepIndex by remember { mutableStateOf(0) }
     var stepStates by remember { mutableStateOf<List<StepAssessmentState>>(emptyList()) }
@@ -82,19 +86,55 @@ fun AssessmentScreen(
     var childDto by remember { mutableStateOf<ChildDto?>(null) }
     var childLoading by remember { mutableStateOf(true) }
 
+    // Child caseload search query & filtered list
+    var childSearchQuery by remember { mutableStateOf("") }
+    val filteredChildren = remember(assignedChildren, childSearchQuery) {
+        if (childSearchQuery.isBlank()) {
+            assignedChildren
+        } else {
+            val q = childSearchQuery.trim().lowercase()
+            assignedChildren.filter {
+                it.name.lowercase().contains(q) ||
+                it.id.toString().contains(q) ||
+                (it.caregiverName.isNotBlank() && it.caregiverName.lowercase().contains(q))
+            }
+        }
+    }
+
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
     val currentDate = remember { LocalDate.now().toString() }
 
-    // Fetch Child Details
-    LaunchedEffect(childId) {
-        if (childId <= 0L) {
+    // Automatically load therapist assigned children when caseload is empty or childId is zero
+    LaunchedEffect(Unit) {
+        if (assignedChildren.isEmpty()) {
+            isChildrenLoading = true
+            try {
+                val res = ApiClient.apiService.getTherapistChildren()
+                if (res.isSuccessful && !res.body().isNullOrEmpty()) {
+                    val list = res.body()!!
+                    assignedChildren = list
+                    if (activeChildId <= 0L) {
+                        activeChildId = list.first().id
+                        onChildSelected?.invoke(list.first().id)
+                    }
+                }
+            } catch (_: Exception) {}
+            finally {
+                isChildrenLoading = false
+            }
+        }
+    }
+
+    // Fetch Child Details whenever activeChildId changes
+    LaunchedEffect(activeChildId) {
+        if (activeChildId <= 0L) {
             childLoading = false
             return@LaunchedEffect
         }
         childLoading = true
         try {
-            val res = ApiClient.apiService.getChildById(childId)
+            val res = ApiClient.apiService.getChildById(activeChildId)
             if (res.isSuccessful && res.body() != null) {
                 childDto = res.body()
             }
@@ -107,10 +147,21 @@ fun AssessmentScreen(
     // Gender State: auto-detect from child profile with interactive therapist switch
     var manualGenderOverride by remember { mutableStateOf<String?>(null) }
     val detectedGender = remember(childDto) {
-        val g = childDto?.gender?.trim()?.uppercase() ?: "BOY"
-        if (g.startsWith("G") || g.startsWith("F")) "GIRL" else "BOY"
+        val g = childDto?.gender?.trim()?.uppercase()
+        if (g != null && (g.startsWith("G") || g.startsWith("F"))) {
+            "GIRL"
+        } else if (g != null && (g.startsWith("B") || g.startsWith("M"))) {
+            "BOY"
+        } else {
+            null
+        }
     }
     val childGender = manualGenderOverride ?: detectedGender
+
+    // ADL Category State
+    var selectedCategory by remember(childGender) {
+        mutableStateOf(if (childGender == null) "SHOES" else "DRESSING")
+    } // "DRESSING", "SHOES", "EATING"
 
     // Selected Activity ID with auto-default strictly matching child gender
     var selectedActivityId by remember(childGender, selectedCategory) {
@@ -168,18 +219,26 @@ fun AssessmentScreen(
 
     Scaffold(
         topBar = {
-            GlassTopBar(
-                title = if (!isStarted) "Clinical ADL Assessment" else "Assessment: $selectedActivityTitle",
-                subtitle = "Child ID: #$childId • Date: $currentDate",
-                onBackClick = {
-                    if (isStarted) {
-                        showExitConfirmationDialog = true
-                    } else {
-                        onBack()
-                    }
-                },
-                accentColor = SelforaPrimary
-            )
+            if (!isStarted) {
+                val doctorName = childDto?.therapistName?.ifBlank { null }
+                    ?: com.simats.selfora.data.local.SessionManager.getUsername().ifBlank { null }
+                    ?: "Jenkins"
+                StartSessionTopBar(
+                    childId = activeChildId,
+                    currentDate = currentDate,
+                    therapistName = doctorName,
+                    therapistDesignation = "Occupational Therapist (OT)",
+                    title = "Clinical ADL Assessment",
+                    onBackClick = onBack
+                )
+            } else {
+                GlassTopBar(
+                    title = "Assessment: $selectedActivityTitle",
+                    subtitle = "Step ${currentStepIndex + 1} of ${stepStates.size} • Child ID: #$activeChildId",
+                    onBackClick = { showExitConfirmationDialog = true },
+                    accentColor = SelforaPrimary
+                )
+            }
         },
         containerColor = SelforaBackground
     ) { padding ->
@@ -203,388 +262,401 @@ fun AssessmentScreen(
                     .verticalScroll(rememberScrollState())
                     .padding(16.dp)
             ) {
-                if (childId <= 0L) {
-                    GlassCard(modifier = Modifier.fillMaxWidth()) {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            modifier = Modifier.padding(20.dp)
+                if (!started) {
+                    // Empty caseload handling
+                    if (activeChildId <= 0L && !isChildrenLoading && assignedChildren.isEmpty()) {
+                        Surface(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(20.dp),
+                            color = Color.White,
+                            border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                            shadowElevation = 1.dp
                         ) {
-                            Surface(
-                                shape = CircleShape,
-                                color = SelforaPrimary.copy(alpha = 0.12f),
-                                modifier = Modifier.size(64.dp)
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                modifier = Modifier.padding(24.dp)
                             ) {
-                                Box(contentAlignment = Alignment.Center) {
-                                    Icon(Icons.Default.ChildCare, contentDescription = null, tint = SelforaPrimary, modifier = Modifier.size(32.dp))
-                                }
-                            }
-                            Spacer(modifier = Modifier.height(14.dp))
-                            Text("No Child Selected for Assessment", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = SelforaTextPrimary)
-                            Spacer(modifier = Modifier.height(6.dp))
-                            Text(
-                                "Please select an assigned child from 'My Children' or the Dashboard before starting a clinical assessment.",
-                                color = SelforaTextSecondary,
-                                fontSize = 13.sp,
-                                textAlign = TextAlign.Center
-                            )
-                            Spacer(modifier = Modifier.height(16.dp))
-                            Button(
-                                onClick = onBack,
-                                colors = ButtonDefaults.buttonColors(containerColor = SelforaPrimary),
-                                shape = RoundedCornerShape(10.dp)
-                            ) {
-                                Text("Go to My Children")
-                            }
-                        }
-                    }
-                } else if (!started) {
-                    // =========================================================================
-                    // SECTION 1: Pediatric Patient Details Header & Interactive Gender Switch
-                    // =========================================================================
-                    GlassCard(modifier = Modifier.fillMaxWidth()) {
-                        Text("PEDIATRIC PATIENT DETAILS", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = SelforaPrimary)
-                        Spacer(modifier = Modifier.height(10.dp))
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
                                 Surface(
                                     shape = CircleShape,
-                                    color = if (childGender == "GIRL") SelforaSecondary.copy(alpha = 0.15f) else SelforaBlueLight,
-                                    modifier = Modifier.size(52.dp)
+                                    color = SelforaPrimary.copy(alpha = 0.12f),
+                                    modifier = Modifier.size(64.dp)
                                 ) {
                                     Box(contentAlignment = Alignment.Center) {
-                                        Text(if (childGender == "GIRL") "👧" else "👦", fontSize = 28.sp)
+                                        Icon(Icons.Default.ChildCare, contentDescription = null, tint = SelforaPrimary, modifier = Modifier.size(32.dp))
                                     }
                                 }
-                                Spacer(modifier = Modifier.width(12.dp))
-                                Column {
-                                    val displayName = childDto?.let { "${it.firstName} ${it.lastName ?: ""}".trim() } ?: "Child #$childId"
-                                    val displayAge = childDto?.dateOfBirth?.let {
-                                        try {
-                                            val birth = LocalDate.parse(it)
-                                            java.time.Period.between(birth, LocalDate.now()).years
-                                        } catch (_: Exception) { 7 }
-                                    } ?: 7
-                                    val doctorName = childDto?.therapistName ?: "Assigned Occupational Therapist"
-
-                                    Text(displayName, fontSize = 17.sp, fontWeight = FontWeight.Bold, color = SelforaTextPrimary)
-                                    Text("Child ID: #$childId • Age: $displayAge yrs", fontSize = 12.sp, color = SelforaTextSecondary)
-                                    Text("Doctor: $doctorName", fontSize = 11.sp, color = SelforaPrimary, fontWeight = FontWeight.SemiBold)
-                                }
-                            }
-
-                            // Interactive Gender Switch (Boy Baby / Girl Baby)
-                            Column(horizontalAlignment = Alignment.End) {
-                                Text("GENDER SCOPE", fontSize = 9.sp, fontWeight = FontWeight.Bold, color = SelforaTextSecondary)
-                                Spacer(modifier = Modifier.height(4.dp))
-                                Row(
-                                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                                    verticalAlignment = Alignment.CenterVertically
+                                Spacer(modifier = Modifier.height(14.dp))
+                                Text("No Assigned Children Found", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = SelforaTextPrimary)
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Text(
+                                    "No children are currently assigned to your caseload. Please assign or register children from the Children list or Dashboard.",
+                                    color = SelforaTextSecondary,
+                                    fontSize = 13.sp,
+                                    textAlign = TextAlign.Center
+                                )
+                                Spacer(modifier = Modifier.height(16.dp))
+                                Button(
+                                    onClick = onBack,
+                                    colors = ButtonDefaults.buttonColors(containerColor = SelforaPrimary),
+                                    shape = RoundedCornerShape(12.dp)
                                 ) {
-                                    Surface(
-                                        shape = RoundedCornerShape(10.dp),
-                                        color = if (childGender == "BOY") SelforaPrimary else Color.White,
-                                        border = BorderStroke(1.5.dp, if (childGender == "BOY") SelforaPrimary else Color(0xFFCBD5E1)),
-                                        modifier = Modifier.clickable {
-                                            manualGenderOverride = "BOY"
-                                            if (selectedCategory == "DRESSING") selectedActivityId = 1L
-                                        }
-                                    ) {
-                                        Text(
-                                            text = "👦 Boy",
-                                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                                            fontSize = 11.5.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            color = if (childGender == "BOY") Color.White else SelforaTextPrimary
-                                        )
-                                    }
-
-                                    Surface(
-                                        shape = RoundedCornerShape(10.dp),
-                                        color = if (childGender == "GIRL") SelforaSecondary else Color.White,
-                                        border = BorderStroke(1.5.dp, if (childGender == "GIRL") SelforaSecondary else Color(0xFFCBD5E1)),
-                                        modifier = Modifier.clickable {
-                                            manualGenderOverride = "GIRL"
-                                            if (selectedCategory == "DRESSING") selectedActivityId = 17L
-                                        }
-                                    ) {
-                                        Text(
-                                            text = "👧 Girl",
-                                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                                            fontSize = 11.5.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            color = if (childGender == "GIRL") Color.White else SelforaTextPrimary
-                                        )
-                                    }
+                                    Text("Go to Dashboard", fontWeight = FontWeight.Bold)
                                 }
                             }
                         }
-                    }
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    // =========================================================================
-                    // SECTION 2: ADL Category Tabs (3 Categories: Dresses, Footwear, Food)
-                    // =========================================================================
-                    GlassCard(modifier = Modifier.fillMaxWidth()) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text("SELECT ADL CATEGORY", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = SelforaPrimary)
+                    } else {
+                        // =========================================================================
+                        // CASELOAD & SEARCH SELECTOR (Fast child search & instant switching)
+                        // =========================================================================
+                        if (assignedChildren.isNotEmpty()) {
                             Surface(
-                                shape = RoundedCornerShape(8.dp),
-                                color = SelforaPrimary.copy(alpha = 0.08f),
-                                modifier = Modifier.clickable { isShelfLayout = !isShelfLayout }
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(18.dp),
+                                color = Color.White,
+                                border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                                shadowElevation = 1.dp
                             ) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                                ) {
-                                    Text(if (isShelfLayout) "↔️ Shelf View" else "▦ Grid View", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = SelforaPrimary)
-                                }
-                            }
-                        }
-                        Spacer(modifier = Modifier.height(10.dp))
-
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                            GlassChip(
-                                text = "👗 Dresses",
-                                selected = selectedCategory == "DRESSING",
-                                onClick = {
-                                    selectedCategory = "DRESSING"
-                                    selectedActivityId = if (childGender == "GIRL") 17L else 1L
-                                },
-                                modifier = Modifier.weight(1f)
-                            )
-                            GlassChip(
-                                text = "👟 Footwear",
-                                selected = selectedCategory == "SHOES",
-                                onClick = {
-                                    selectedCategory = "SHOES"
-                                    selectedActivityId = 8L
-                                },
-                                modifier = Modifier.weight(1f)
-                            )
-                            GlassChip(
-                                text = "🍽️ Food",
-                                selected = selectedCategory == "EATING",
-                                onClick = {
-                                    selectedCategory = "EATING"
-                                    selectedActivityId = 11L
-                                },
-                                modifier = Modifier.weight(1f)
-                            )
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    // =========================================================================
-                    // SECTION 3: Structured Activity Boxes by Category and Gender
-                    // Smooth animated transition when category or gender changes
-                    // =========================================================================
-                    AnimatedContent(
-                        targetState = Pair(selectedCategory, childGender),
-                        transitionSpec = {
-                            (fadeIn(animationSpec = tween(260)) + slideInHorizontally(animationSpec = tween(260)) { it / 6 })
-                                .togetherWith(fadeOut(animationSpec = tween(200)) + slideOutHorizontally(animationSpec = tween(200)) { -it / 6 })
-                        },
-                        label = "CategoryAndGenderContent"
-                    ) { (cat, gender) ->
-                        val activitySections = remember(cat, gender) {
-                            SelfidoCatalogue.getActivitiesForGenderAndCategory(gender, cat)
-                        }
-
-                        Column(modifier = Modifier.fillMaxWidth()) {
-                            activitySections.forEach { (sectionTitle, activities) ->
-                                val sectionIcon = when {
-                                    sectionTitle.contains("Upper", ignoreCase = true) || sectionTitle.contains("Top", ignoreCase = true) -> "👕"
-                                    sectionTitle.contains("Lower", ignoreCase = true) || sectionTitle.contains("Bottom", ignoreCase = true) -> "👖"
-                                    sectionTitle.contains("Sock", ignoreCase = true) -> "🧦"
-                                    sectionTitle.contains("Shoe", ignoreCase = true) -> "👟"
-                                    sectionTitle.contains("Hand", ignoreCase = true) -> "🍛"
-                                    else -> "🥣"
-                                }
-
-                                GlassCard(modifier = Modifier.fillMaxWidth()) {
+                                Column(modifier = Modifier.padding(14.dp)) {
                                     Row(
-                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier.fillMaxWidth(),
                                         horizontalArrangement = Arrangement.SpaceBetween,
-                                        modifier = Modifier.fillMaxWidth()
+                                        verticalAlignment = Alignment.CenterVertically
                                     ) {
                                         Row(verticalAlignment = Alignment.CenterVertically) {
-                                            Text(sectionIcon, fontSize = 18.sp)
+                                            Surface(
+                                                shape = CircleShape,
+                                                color = SelforaPrimary.copy(alpha = 0.10f),
+                                                modifier = Modifier.size(26.dp)
+                                            ) {
+                                                Box(contentAlignment = Alignment.Center) {
+                                                    Icon(
+                                                        imageVector = Icons.Default.PersonSearch,
+                                                        contentDescription = null,
+                                                        tint = SelforaPrimary,
+                                                        modifier = Modifier.size(15.dp)
+                                                    )
+                                                }
+                                            }
                                             Spacer(modifier = Modifier.width(8.dp))
                                             Text(
-                                                text = sectionTitle.uppercase(),
-                                                fontSize = 13.sp,
-                                                fontWeight = FontWeight.Bold,
-                                                color = SelforaPrimary
-                                            )
-                                        }
-                                        Surface(
-                                            shape = RoundedCornerShape(10.dp),
-                                            color = SelforaPrimary.copy(alpha = 0.1f)
-                                        ) {
-                                            Text(
-                                                text = "${activities.size} Activities",
-                                                fontSize = 11.sp,
+                                                text = "SELECT PATIENT FOR ASSESSMENT",
+                                                fontSize = 11.5.sp,
                                                 fontWeight = FontWeight.Bold,
                                                 color = SelforaPrimary,
+                                                letterSpacing = 0.5.sp
+                                            )
+                                        }
+
+                                        Surface(
+                                            shape = RoundedCornerShape(8.dp),
+                                            color = if (childSearchQuery.isNotBlank() && filteredChildren.isEmpty()) SelforaError.copy(alpha = 0.1f) else SelforaPrimary.copy(alpha = 0.08f)
+                                        ) {
+                                            Text(
+                                                text = if (childSearchQuery.isNotBlank()) "${filteredChildren.size} of ${assignedChildren.size}" else "${assignedChildren.size} Assigned",
+                                                fontSize = 10.5.sp,
+                                                color = if (childSearchQuery.isNotBlank() && filteredChildren.isEmpty()) SelforaError else SelforaPrimary,
+                                                fontWeight = FontWeight.Bold,
                                                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
                                             )
                                         }
                                     }
 
-                                    Spacer(modifier = Modifier.height(12.dp))
+                                    Spacer(modifier = Modifier.height(10.dp))
 
-                                    if (isShelfLayout) {
-                                        // ---------------------------------------------------------
-                                        // SHELF VIEW: Matches the Notebook Sketch Diagram Exactly
-                                        // Horizontal row of uniform square cards side-by-side
-                                        // ---------------------------------------------------------
-                                        Row(
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .horizontalScroll(rememberScrollState()),
-                                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                    // Real-time Child Search Input
+                                    GlassSearchBar(
+                                        query = childSearchQuery,
+                                        onQueryChange = { childSearchQuery = it },
+                                        placeholder = "Search child by name, ID or caregiver...",
+                                        onClear = { childSearchQuery = "" },
+                                        modifier = Modifier.fillMaxWidth()
+                                    )
+
+                                    Spacer(modifier = Modifier.height(10.dp))
+
+                                    if (filteredChildren.isEmpty()) {
+                                        Surface(
+                                            shape = RoundedCornerShape(12.dp),
+                                            color = Color(0xFFF8FAFC),
+                                            border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                                            modifier = Modifier.fillMaxWidth()
                                         ) {
-                                            activities.forEachIndexed { index, act ->
-                                                val isSelected = act.id == selectedActivityId
-                                                ActivitySelectionBox(
-                                                    number = index + 1,
-                                                    activity = act,
-                                                    isSelected = isSelected,
-                                                    onClick = { selectedActivityId = act.id },
-                                                    modifier = Modifier.width(138.dp)
+                                            Row(
+                                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.SpaceBetween
+                                            ) {
+                                                Text(
+                                                    text = "No children match \"$childSearchQuery\"",
+                                                    fontSize = 12.sp,
+                                                    color = SelforaTextSecondary
+                                                )
+                                                Text(
+                                                    text = "Clear filter",
+                                                    fontSize = 12.sp,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = SelforaPrimary,
+                                                    modifier = Modifier.clickable { childSearchQuery = "" }
                                                 )
                                             }
                                         }
                                     } else {
-                                        // ---------------------------------------------------------
-                                        // GRID VIEW: Balanced 2-Column Grid with Fixed Card Heights
-                                        // No empty voids, perfectly aligned borders and heights
-                                        // ---------------------------------------------------------
-                                        activities.chunked(2).forEachIndexed { rowIndex, rowActivities ->
-                                            if (rowActivities.size == 2) {
-                                                Row(
-                                                    horizontalArrangement = Arrangement.spacedBy(10.dp),
-                                                    modifier = Modifier.fillMaxWidth()
+                                        Row(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .horizontalScroll(rememberScrollState()),
+                                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                        ) {
+                                            filteredChildren.forEach { childItem ->
+                                                val isSelected = childItem.id == activeChildId
+                                                val childGenderShort = childItem.gender.trim().uppercase()
+                                                val avatarEmoji = if (childGenderShort.startsWith("G") || childGenderShort.startsWith("F")) "👧" else "👦"
+                                                Surface(
+                                                    shape = RoundedCornerShape(12.dp),
+                                                    color = if (isSelected) SelforaPrimary else Color(0xFFF8FAFC),
+                                                    border = BorderStroke(1.dp, if (isSelected) SelforaPrimary else Color(0xFFE2E8F0)),
+                                                    shadowElevation = if (isSelected) 1.5.dp else 0.dp,
+                                                    modifier = Modifier.clickable {
+                                                        activeChildId = childItem.id
+                                                        manualGenderOverride = null
+                                                        onChildSelected?.invoke(childItem.id)
+                                                    }
                                                 ) {
-                                                    rowActivities.forEachIndexed { colIndex, act ->
-                                                        val itemNumber = rowIndex * 2 + colIndex + 1
-                                                        val isSelected = act.id == selectedActivityId
-                                                        ActivitySelectionBox(
-                                                            number = itemNumber,
-                                                            activity = act,
-                                                            isSelected = isSelected,
-                                                            onClick = { selectedActivityId = act.id },
-                                                            modifier = Modifier.weight(1f)
+                                                    Row(
+                                                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp),
+                                                        verticalAlignment = Alignment.CenterVertically
+                                                    ) {
+                                                        Text(avatarEmoji, fontSize = 14.sp)
+                                                        Spacer(modifier = Modifier.width(6.dp))
+                                                        Text(
+                                                            text = childItem.name,
+                                                            fontSize = 12.sp,
+                                                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                                            color = if (isSelected) Color.White else SelforaTextPrimary
                                                         )
+                                                        Spacer(modifier = Modifier.width(4.dp))
+                                                        Text(
+                                                            text = "#${childItem.id}",
+                                                            fontSize = 10.5.sp,
+                                                            fontWeight = FontWeight.SemiBold,
+                                                            color = if (isSelected) Color.White.copy(alpha = 0.85f) else SelforaTextSecondary
+                                                        )
+                                                        if (isSelected) {
+                                                            Spacer(modifier = Modifier.width(6.dp))
+                                                            Icon(
+                                                                imageVector = Icons.Default.Check,
+                                                                contentDescription = "Selected",
+                                                                tint = Color.White,
+                                                                modifier = Modifier.size(14.dp)
+                                                            )
+                                                        }
                                                     }
                                                 }
-                                            } else {
-                                                // Single odd card: spans full width gracefully
-                                                val act = rowActivities.first()
-                                                val itemNumber = rowIndex * 2 + 1
-                                                val isSelected = act.id == selectedActivityId
-                                                ActivitySelectionBox(
-                                                    number = itemNumber,
-                                                    activity = act,
-                                                    isSelected = isSelected,
-                                                    onClick = { selectedActivityId = act.id },
-                                                    modifier = Modifier.fillMaxWidth()
-                                                )
-                                            }
-                                            if (rowIndex < activities.chunked(2).size - 1) {
-                                                Spacer(modifier = Modifier.height(10.dp))
                                             }
                                         }
                                     }
                                 }
-
-                                Spacer(modifier = Modifier.height(16.dp))
                             }
+                            Spacer(modifier = Modifier.height(14.dp))
                         }
-                    }
 
-                    // =========================================================================
-                    // SECTION 4: Selected Activity Overview & Launch Assessment Button
-                    // =========================================================================
-                    GlassCard(
-                        modifier = Modifier.fillMaxWidth(),
-                        borderColor = SelforaPrimary.copy(alpha = 0.5f)
-                    ) {
-                        Text("SELECTED ADL FOR ASSESSMENT", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = SelforaPrimary)
-                        Spacer(modifier = Modifier.height(10.dp))
-
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Surface(
-                                shape = CircleShape,
-                                color = SelforaPrimary.copy(alpha = 0.12f),
-                                modifier = Modifier.size(48.dp)
-                            ) {
-                                Box(contentAlignment = Alignment.Center) {
-                                    Text(selectedActivityDef?.icon ?: "🎯", fontSize = 24.sp)
+                        // =========================================================================
+                        // SECTION 1: Patient Context Card & Interactive Dual-Gender Switch
+                        // =========================================================================
+                        PatientContextCard(
+                            childDto = childDto,
+                            childId = activeChildId,
+                            childGender = childGender,
+                            onSelectGender = { g ->
+                                manualGenderOverride = g
+                                if (selectedCategory == "DRESSING") {
+                                    selectedActivityId = if (g == "GIRL") 17L else 1L
                                 }
                             }
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Column {
-                                Text(
-                                    text = selectedActivityDef?.title ?: selectedActivityTitle,
-                                    fontSize = 16.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = SelforaTextPrimary
-                                )
-                                Text(
-                                    text = "${selectedActivityDef?.totalSteps ?: 20} Steps • Gender: $childGender • $selectedCategory",
-                                    fontSize = 12.sp,
-                                    color = SelforaTextSecondary
-                                )
-                            }
-                        }
+                        )
 
-                        if (!selectedActivityDef?.startingPosition.isNullOrBlank()) {
-                            Spacer(modifier = Modifier.height(12.dp))
-                            Surface(
-                                shape = RoundedCornerShape(12.dp),
-                                color = Color(0xFFF8FAFC),
-                                border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Column(modifier = Modifier.padding(12.dp)) {
-                                    Text(
-                                        text = "🎯 Clinical Starting Position:",
-                                        fontSize = 11.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = SelforaPrimary
-                                    )
-                                    Spacer(modifier = Modifier.height(4.dp))
-                                    Text(
-                                        text = selectedActivityDef!!.startingPosition,
-                                        fontSize = 12.sp,
-                                        color = SelforaTextPrimary,
-                                        lineHeight = 17.sp
-                                    )
+                        Spacer(modifier = Modifier.height(14.dp))
+
+                        // =========================================================================
+                        // SECTION 2: ADL Category Tabs (Dresses, Footwear, Food) + Grid/Shelf Toggle
+                        // =========================================================================
+                        AdlCategorySelector(
+                            selectedCategory = selectedCategory,
+                            onSelectCategory = { cat ->
+                                selectedCategory = cat
+                                selectedActivityId = when (cat) {
+                                    "DRESSING" -> if (childGender == "GIRL") 17L else 1L
+                                    "SHOES" -> 8L
+                                    "EATING" -> 11L
+                                    else -> 1L
+                                }
+                            },
+                            isShelfLayout = isShelfLayout,
+                            onToggleLayout = { isShelfLayout = !isShelfLayout }
+                        )
+
+                        Spacer(modifier = Modifier.height(14.dp))
+
+                        // =========================================================================
+                        // SECTION 3: Structured Activity Boxes by Category and Gender
+                        // =========================================================================
+                        AnimatedContent(
+                            targetState = Pair(selectedCategory, childGender),
+                            transitionSpec = {
+                                (fadeIn(animationSpec = tween(240)) + slideInHorizontally(animationSpec = tween(240)) { it / 6 })
+                                    .togetherWith(fadeOut(animationSpec = tween(180)) + slideOutHorizontally(animationSpec = tween(180)) { -it / 6 })
+                            },
+                            label = "CategoryAndGenderContent"
+                        ) { (cat, gender) ->
+                            if (cat == "DRESSING" && gender == null) {
+                                Surface(
+                                    shape = RoundedCornerShape(16.dp),
+                                    color = Color(0xFFFEF3C7),
+                                    border = BorderStroke(1.dp, Color(0xFFF59E0B)),
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Column(modifier = Modifier.padding(16.dp)) {
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Text("⚠️", fontSize = 18.sp)
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                            Text(
+                                                text = "Gender Pathway Required",
+                                                fontWeight = FontWeight.Bold,
+                                                fontSize = 14.sp,
+                                                color = Color(0xFF92400E)
+                                            )
+                                        }
+                                        Spacer(modifier = Modifier.height(6.dp))
+                                        Text(
+                                            text = "Dressing activities are gender-specific. Please choose a pathway above or select common Footwear or Food activities.",
+                                            fontSize = 12.sp,
+                                            color = Color(0xFF78350F),
+                                            lineHeight = 16.sp
+                                        )
+                                        Spacer(modifier = Modifier.height(10.dp))
+                                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                            Button(
+                                                onClick = {
+                                                    manualGenderOverride = "BOY"
+                                                    selectedActivityId = 1L
+                                                },
+                                                colors = ButtonDefaults.buttonColors(containerColor = SelforaPrimary),
+                                                shape = RoundedCornerShape(8.dp)
+                                            ) {
+                                                Text("👦 Boy Pathway", fontSize = 11.5.sp, fontWeight = FontWeight.Bold)
+                                            }
+                                            Button(
+                                                onClick = {
+                                                    manualGenderOverride = "GIRL"
+                                                    selectedActivityId = 17L
+                                                },
+                                                colors = ButtonDefaults.buttonColors(containerColor = SelforaSecondary),
+                                                shape = RoundedCornerShape(8.dp)
+                                            ) {
+                                                Text("👧 Girl Pathway", fontSize = 11.5.sp, fontWeight = FontWeight.Bold)
+                                            }
+                                        }
+                                    }
+                                }
+                            } else {
+                                val activitySections = remember(cat, gender) {
+                                    SelfidoCatalogue.getActivitiesForGenderAndCategory(gender ?: "BOY", cat)
+                                }
+
+                                Column(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                                ) {
+                                    activitySections.forEach { (sectionTitle, activities) ->
+                                        val sectionIcon = when {
+                                            sectionTitle.contains("Upper", ignoreCase = true) || sectionTitle.contains("Top", ignoreCase = true) -> "👕"
+                                            sectionTitle.contains("Lower", ignoreCase = true) || sectionTitle.contains("Bottom", ignoreCase = true) -> "👖"
+                                            sectionTitle.contains("Sock", ignoreCase = true) -> "🧦"
+                                            sectionTitle.contains("Shoe", ignoreCase = true) -> "👟"
+                                            sectionTitle.contains("Hand", ignoreCase = true) -> "🍛"
+                                            else -> "🥣"
+                                        }
+
+                                        Column(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            verticalArrangement = Arrangement.spacedBy(10.dp)
+                                        ) {
+                                            AdlSectionHeader(
+                                                title = sectionTitle,
+                                                icon = sectionIcon,
+                                                activityCount = activities.size
+                                            )
+
+                                            if (isShelfLayout) {
+                                                // SHELF VIEW: Horizontal notebook sketch row of uniform cards
+                                                Row(
+                                                    modifier = Modifier
+                                                        .fillMaxWidth()
+                                                        .horizontalScroll(rememberScrollState()),
+                                                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                                ) {
+                                                    activities.forEachIndexed { index, act ->
+                                                        val isSelected = act.id == selectedActivityId
+                                                        ActivitySelectionCard(
+                                                            number = index + 1,
+                                                            activity = act,
+                                                            isSelected = isSelected,
+                                                            onClick = { selectedActivityId = act.id },
+                                                            modifier = Modifier.width(148.dp)
+                                                        )
+                                                    }
+                                                }
+                                            } else {
+                                                // GRID VIEW: Balanced 2-Column Grid
+                                                activities.chunked(2).forEachIndexed { rowIndex, rowActivities ->
+                                                    Row(
+                                                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                                        modifier = Modifier.fillMaxWidth()
+                                                    ) {
+                                                        rowActivities.forEachIndexed { colIndex, act ->
+                                                            val itemNumber = rowIndex * 2 + colIndex + 1
+                                                            val isSelected = act.id == selectedActivityId
+                                                            ActivitySelectionCard(
+                                                                number = itemNumber,
+                                                                activity = act,
+                                                                isSelected = isSelected,
+                                                                onClick = { selectedActivityId = act.id },
+                                                                modifier = Modifier.weight(1f)
+                                                            )
+                                                        }
+                                                        if (rowActivities.size == 1) {
+                                                            Spacer(modifier = Modifier.weight(1f))
+                                                        }
+                                                    }
+                                                    if (rowIndex < activities.chunked(2).size - 1) {
+                                                        Spacer(modifier = Modifier.height(10.dp))
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }
 
-                        Spacer(modifier = Modifier.height(18.dp))
+                        Spacer(modifier = Modifier.height(14.dp))
 
-                        GlassButton(
-                            text = "🚀 Start Assessment",
-                            onClick = {
+                        // =========================================================================
+                        // SECTION 4: Selected Activity Overview & Launch Assessment Button
+                        // =========================================================================
+                        SelectedActivityOverviewCard(
+                            activity = selectedActivityDef,
+                            childGender = childGender,
+                            selectedCategory = selectedCategory,
+                            cardTitle = "SELECTED ADL FOR CLINICAL ASSESSMENT",
+                            buttonText = "Start Clinical Assessment",
+                            onStartSessionClick = {
                                 loadActivitySteps(selectedActivityId)
                                 isStarted = true
-                            },
-                            modifier = Modifier.fillMaxWidth()
+                            }
                         )
+
+                        Spacer(modifier = Modifier.height(16.dp))
                     }
                 } else {
                     // =========================================================================
@@ -599,32 +671,40 @@ fun AssessmentScreen(
                         val totalSteps = stepStates.size
 
                         // Overall Progress & Step Header
-                        GlassCard(modifier = Modifier.fillMaxWidth()) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(selectedActivityTitle, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = SelforaTextPrimary)
-                                    Text("Task Step Assessment ($childGender)", fontSize = 11.5.sp, color = SelforaTextSecondary)
+                        Surface(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(18.dp),
+                            color = Color.White,
+                            border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                            shadowElevation = 1.dp
+                        ) {
+                            Column(modifier = Modifier.padding(16.dp)) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(selectedActivityTitle, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = SelforaTextPrimary)
+                                        Text("Task Step Assessment (${childGender ?: "Common"})", fontSize = 11.5.sp, color = SelforaTextSecondary)
+                                    }
+                                    Surface(shape = RoundedCornerShape(12.dp), color = SelforaPrimary.copy(alpha = 0.12f)) {
+                                        Text("Step ${currentStep.stepNumber} of $totalSteps", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = SelforaPrimary, modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp))
+                                    }
                                 }
-                                Surface(shape = RoundedCornerShape(12.dp), color = SelforaPrimary.copy(alpha = 0.12f)) {
-                                    Text("Step ${currentStep.stepNumber} of $totalSteps", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = SelforaPrimary, modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp))
-                                }
+                                Spacer(modifier = Modifier.height(10.dp))
+                                SelforaLinearProgress(
+                                    progress = ((currentStepIndex + 1).toFloat() / totalSteps.coerceAtLeast(1).toFloat()),
+                                    color = SelforaPrimary,
+                                    height = 8.dp
+                                )
+                                Spacer(modifier = Modifier.height(10.dp))
+                                ActivityStepProgress(
+                                    currentStep = currentStepIndex + 1,
+                                    totalSteps = totalSteps,
+                                    accentColor = SelforaPrimary
+                                )
                             }
-                            Spacer(modifier = Modifier.height(10.dp))
-                            SelforaLinearProgress(
-                                progress = ((currentStepIndex + 1).toFloat() / totalSteps.coerceAtLeast(1).toFloat()),
-                                color = SelforaPrimary,
-                                height = 8.dp
-                            )
-                            Spacer(modifier = Modifier.height(10.dp))
-                            ActivityStepProgress(
-                                currentStep = currentStepIndex + 1,
-                                totalSteps = totalSteps,
-                                accentColor = SelforaPrimary
-                            )
                         }
 
                         Spacer(modifier = Modifier.height(16.dp))
@@ -649,7 +729,7 @@ fun AssessmentScreen(
                                 totalSteps = totalSteps,
                                 stepTitle = step.title,
                                 childInstruction = step.instruction,
-                                gender = childGender,
+                                gender = childGender ?: "BOY",
                                 onSpeakInstruction = {}
                             )
                         }
@@ -657,135 +737,173 @@ fun AssessmentScreen(
                         Spacer(modifier = Modifier.height(18.dp))
 
                         // CLINICAL PROMPT HIERARCHY SELECTION CARD (L0 - L6, Unable, Not Assessed)
-                        GlassCard(
+                        Surface(
                             modifier = Modifier.fillMaxWidth(),
-                            backgroundColor = Color.White.copy(alpha = 0.95f),
-                            borderColor = SelforaPrimary.copy(alpha = 0.4f)
+                            shape = RoundedCornerShape(20.dp),
+                            color = Color.White,
+                            border = BorderStroke(1.5.dp, SelforaPrimary.copy(alpha = 0.3f)),
+                            shadowElevation = 2.dp
                         ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(Icons.Default.Psychology, contentDescription = null, tint = SelforaPrimary, modifier = Modifier.size(22.dp))
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text("CLINICAL ASSISTANCE / PROMPT LEVEL", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = SelforaTextPrimary)
-                            }
+                            Column(modifier = Modifier.padding(16.dp)) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(Icons.Default.Psychology, contentDescription = null, tint = SelforaPrimary, modifier = Modifier.size(22.dp))
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text("CLINICAL ASSISTANCE / PROMPT LEVEL", fontSize = 13.5.sp, fontWeight = FontWeight.Bold, color = SelforaTextPrimary)
+                                }
 
-                            Spacer(modifier = Modifier.height(12.dp))
+                                Spacer(modifier = Modifier.height(12.dp))
 
-                            // Render 7 Prompt Hierarchy Levels
-                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                promptHierarchy.forEach { (levelId, levelTitle) ->
-                                    val isSelected = currentStep.outcome == "COMPLETED" && currentStep.promptLevelId == levelId
-                                    val levelColor = getPromptHierarchyColor(levelTitle)
+                                // Render 7 Prompt Hierarchy Levels
+                                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    promptHierarchy.forEach { (levelId, levelTitle) ->
+                                        val isSelected = currentStep.outcome == "COMPLETED" && currentStep.promptLevelId == levelId
+                                        val levelColor = getPromptHierarchyColor(levelTitle)
 
-                                    Box(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .shadow(if (isSelected) 4.dp else 1.dp, shape = RoundedCornerShape(14.dp))
-                                            .clip(RoundedCornerShape(14.dp))
-                                            .background(if (isSelected) levelColor else Color.White)
-                                            .border(
-                                                width = if (isSelected) 2.dp else 1.dp,
-                                                color = if (isSelected) SelforaPrimary else levelColor.copy(alpha = 0.3f),
-                                                shape = RoundedCornerShape(14.dp)
-                                            )
-                                            .clickable {
-                                                stepStates = stepStates.toMutableList().also {
-                                                    it[currentStepIndex] = currentStep.copy(promptLevelId = levelId, outcome = "COMPLETED")
-                                                }
-                                            }
-                                            .padding(vertical = 12.dp, horizontal = 14.dp),
-                                        contentAlignment = Alignment.CenterStart
-                                    ) {
-                                        Row(verticalAlignment = Alignment.CenterVertically) {
-                                            RadioButton(
-                                                selected = isSelected,
-                                                onClick = {
+                                        Box(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .shadow(if (isSelected) 3.dp else 0.5.dp, shape = RoundedCornerShape(14.dp))
+                                                .clip(RoundedCornerShape(14.dp))
+                                                .background(if (isSelected) levelColor else Color.White)
+                                                .border(
+                                                    width = if (isSelected) 2.dp else 1.dp,
+                                                    color = if (isSelected) SelforaPrimary else Color(0xFFE2E8F0),
+                                                    shape = RoundedCornerShape(14.dp)
+                                                )
+                                                .clickable {
                                                     stepStates = stepStates.toMutableList().also {
                                                         it[currentStepIndex] = currentStep.copy(promptLevelId = levelId, outcome = "COMPLETED")
                                                     }
-                                                },
-                                                colors = RadioButtonDefaults.colors(selectedColor = if (isSelected) Color.White else SelforaPrimary)
-                                            )
-                                            Spacer(modifier = Modifier.width(6.dp))
-                                            Text(
-                                                text = levelTitle,
-                                                fontSize = 14.sp,
-                                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                                color = if (isSelected) Color.White else SelforaTextPrimary
-                                            )
+                                                }
+                                                .padding(vertical = 11.dp, horizontal = 12.dp),
+                                            contentAlignment = Alignment.CenterStart
+                                        ) {
+                                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                                RadioButton(
+                                                    selected = isSelected,
+                                                    onClick = {
+                                                        stepStates = stepStates.toMutableList().also {
+                                                            it[currentStepIndex] = currentStep.copy(promptLevelId = levelId, outcome = "COMPLETED")
+                                                        }
+                                                    },
+                                                    colors = RadioButtonDefaults.colors(selectedColor = if (isSelected) Color.White else SelforaPrimary)
+                                                )
+                                                Spacer(modifier = Modifier.width(6.dp))
+                                                Text(
+                                                    text = levelTitle,
+                                                    fontSize = 13.5.sp,
+                                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                                    color = if (isSelected) Color.White else SelforaTextPrimary
+                                                )
+                                            }
+                                        }
+                                    }
+
+                                    // Separate Options: Unable & Not Assessed
+                                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                        val isUnableSelected = currentStep.outcome == "UNABLE"
+                                        Button(
+                                            onClick = {
+                                                stepStates = stepStates.toMutableList().also {
+                                                    it[currentStepIndex] = currentStep.copy(outcome = "UNABLE", promptLevelId = 7)
+                                                }
+                                            },
+                                            shape = RoundedCornerShape(12.dp),
+                                            colors = ButtonDefaults.buttonColors(
+                                                containerColor = if (isUnableSelected) SelforaError else Color(0xFFFEE2E2),
+                                                contentColor = if (isUnableSelected) Color.White else SelforaError
+                                            ),
+                                            border = BorderStroke(1.dp, if (isUnableSelected) SelforaError else Color(0xFFFCA5A5)),
+                                            modifier = Modifier.weight(1f).height(46.dp)
+                                        ) {
+                                            Text(if (isUnableSelected) "✓ Unable" else "Unable", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                        }
+
+                                        val isNotAssessedSelected = currentStep.outcome == "NOT_ASSESSED"
+                                        Button(
+                                            onClick = {
+                                                notAssessedReasonInput = currentStep.notAssessedReason
+                                                showNotAssessedDialog = true
+                                            },
+                                            shape = RoundedCornerShape(12.dp),
+                                            colors = ButtonDefaults.buttonColors(
+                                                containerColor = if (isNotAssessedSelected) SelforaWarning else Color(0xFFFEF3C7),
+                                                contentColor = if (isNotAssessedSelected) Color.White else Color(0xFF92400E)
+                                            ),
+                                            border = BorderStroke(1.dp, if (isNotAssessedSelected) SelforaWarning else Color(0xFFFDE68A)),
+                                            modifier = Modifier.weight(1f).height(46.dp)
+                                        ) {
+                                            Text(if (isNotAssessedSelected) "✓ Not Assessed" else "Not Assessed", fontWeight = FontWeight.Bold, fontSize = 13.sp)
                                         }
                                     }
                                 }
 
-                                // Separate Options: Unable & Not Assessed
-                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    val isUnableSelected = currentStep.outcome == "UNABLE"
-                                    GlassOutlinedButton(
-                                        text = if (isUnableSelected) "✓ Unable" else "Unable",
-                                        accentColor = SelforaError,
-                                        onClick = {
-                                            stepStates = stepStates.toMutableList().also {
-                                                it[currentStepIndex] = currentStep.copy(outcome = "UNABLE", promptLevelId = 7)
-                                            }
-                                        },
-                                        modifier = Modifier.weight(1f)
-                                    )
+                                Spacer(modifier = Modifier.height(16.dp))
 
-                                    val isNotAssessedSelected = currentStep.outcome == "NOT_ASSESSED"
-                                    GlassOutlinedButton(
-                                        text = if (isNotAssessedSelected) "✓ Not Assessed" else "Not Assessed",
-                                        accentColor = SelforaWarning,
-                                        onClick = {
-                                            notAssessedReasonInput = currentStep.notAssessedReason
-                                            showNotAssessedDialog = true
-                                        },
-                                        modifier = Modifier.weight(1f)
-                                    )
-                                }
-                            }
-
-                            Spacer(modifier = Modifier.height(16.dp))
-
-                            // Therapist Notes Input
-                            GlassTextField(
-                                value = currentStep.notes,
-                                onValueChange = { newNotes ->
-                                    stepStates = stepStates.toMutableList().also {
-                                        it[currentStepIndex] = currentStep.copy(notes = newNotes)
-                                    }
-                                },
-                                label = "Therapist Observation Notes (Optional)",
-                                placeholder = "Record specific clinical observations for this step...",
-                                singleLine = false,
-                                leadingIcon = Icons.Default.EditNote
-                            )
-
-                            Spacer(modifier = Modifier.height(20.dp))
-
-                            // Step Navigation Controls (Prev / Next / Finish)
-                            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                                if (currentStepIndex > 0) {
-                                    GlassOutlinedButton(
-                                        text = "← Previous",
-                                        onClick = { currentStepIndex-- },
-                                        modifier = Modifier.weight(1f)
-                                    )
-                                }
-
-                                GlassButton(
-                                    text = if (currentStepIndex == totalSteps - 1) "Review Assessment ✓" else "Next Step →",
-                                    onClick = {
-                                        if (currentStep.outcome == "PENDING") {
-                                            Toast.makeText(context, "Please select an assistance level or status for Step ${currentStep.stepNumber}", Toast.LENGTH_SHORT).show()
-                                        } else {
-                                            if (currentStepIndex < totalSteps - 1) {
-                                                currentStepIndex++
-                                            } else {
-                                                showConfirmationDialog = true
-                                            }
+                                // Therapist Observation Notes Input
+                                OutlinedTextField(
+                                    value = currentStep.notes,
+                                    onValueChange = { newNotes ->
+                                        stepStates = stepStates.toMutableList().also {
+                                            it[currentStepIndex] = currentStep.copy(notes = newNotes)
                                         }
                                     },
-                                    modifier = Modifier.weight(1.5f)
+                                    label = { Text("Therapist Observation Notes (Optional)", fontSize = 12.sp) },
+                                    placeholder = { Text("Record specific clinical observations for this step...", fontSize = 12.sp) },
+                                    singleLine = false,
+                                    maxLines = 3,
+                                    leadingIcon = {
+                                        Icon(Icons.Default.EditNote, contentDescription = null, tint = SelforaPrimary)
+                                    },
+                                    shape = RoundedCornerShape(14.dp),
+                                    colors = OutlinedTextFieldDefaults.colors(
+                                        focusedBorderColor = SelforaPrimary,
+                                        unfocusedBorderColor = Color(0xFFCBD5E1),
+                                        focusedContainerColor = Color.White,
+                                        unfocusedContainerColor = Color(0xFFF8FAFC)
+                                    ),
+                                    modifier = Modifier.fillMaxWidth()
                                 )
+
+                                Spacer(modifier = Modifier.height(20.dp))
+
+                                // Step Navigation Controls (Prev / Next / Finish)
+                                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                                    if (currentStepIndex > 0) {
+                                        OutlinedButton(
+                                            onClick = { currentStepIndex-- },
+                                            shape = RoundedCornerShape(12.dp),
+                                            border = BorderStroke(1.dp, Color(0xFFCBD5E1)),
+                                            colors = ButtonDefaults.outlinedButtonColors(contentColor = SelforaTextPrimary),
+                                            modifier = Modifier.weight(1f).height(48.dp)
+                                        ) {
+                                            Text("← Previous", fontWeight = FontWeight.SemiBold)
+                                        }
+                                    }
+
+                                    Button(
+                                        onClick = {
+                                            if (currentStep.outcome == "PENDING") {
+                                                Toast.makeText(context, "Please select an assistance level or status for Step ${currentStep.stepNumber}", Toast.LENGTH_SHORT).show()
+                                            } else {
+                                                if (currentStepIndex < totalSteps - 1) {
+                                                    currentStepIndex++
+                                                } else {
+                                                    showConfirmationDialog = true
+                                                }
+                                            }
+                                        },
+                                        colors = ButtonDefaults.buttonColors(containerColor = SelforaPrimary),
+                                        shape = RoundedCornerShape(12.dp),
+                                        modifier = Modifier.weight(1.5f).height(48.dp)
+                                    ) {
+                                        Text(
+                                            text = if (currentStepIndex == totalSteps - 1) "Review Assessment ✓" else "Next Step →",
+                                            fontWeight = FontWeight.Bold,
+                                            color = Color.White
+                                        )
+                                    }
+                                }
                             }
                         }
                     }
@@ -882,13 +1000,14 @@ fun AssessmentScreen(
                 ) {
                     Text("Provide clinical explanation for skipping this step:", fontSize = 13.sp, color = SelforaTextSecondary)
                     Spacer(modifier = Modifier.height(8.dp))
-                    GlassTextField(
+                    OutlinedTextField(
                         value = notAssessedReasonInput,
                         onValueChange = { notAssessedReasonInput = it },
-                        label = "Reason",
-                        placeholder = "e.g. Physical constraint, sensory aversion...",
+                        label = { Text("Reason") },
+                        placeholder = { Text("e.g. Physical constraint, sensory aversion...") },
                         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                         keyboardActions = KeyboardActions(onDone = { confirmNotAssessed() }),
+                        shape = RoundedCornerShape(12.dp),
                         modifier = Modifier.fillMaxWidth()
                     )
                 }
@@ -923,7 +1042,7 @@ fun AssessmentScreen(
             },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("Activity: $selectedActivityTitle ($childGender)", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+                    Text("Activity: $selectedActivityTitle (${childGender ?: "Common"})", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
                     Text("Total Steps Evaluated: ${stepStates.size}", fontSize = 13.sp)
                     HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
                     Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
@@ -969,7 +1088,7 @@ fun AssessmentScreen(
                         scope.launch {
                             try {
                                 val req = CreateAssessmentRequest(
-                                    childId = childId,
+                                    childId = activeChildId,
                                     activityId = selectedActivityId,
                                     notes = "Clinical assessment for $selectedActivityTitle",
                                     stepResults = stepStates.map {
@@ -1006,8 +1125,7 @@ fun AssessmentScreen(
 }
 
 /**
- * Visual Box Component corresponding directly to the handwritten boxes diagram.
- * Guaranteed fixed height and baseline alignment for 100% uniform visual presentation.
+ * Backward-compatible helper for ActivitySelectionCard.
  */
 @Composable
 fun ActivitySelectionBox(
