@@ -221,6 +221,135 @@ class DressingRepository {
         )
     }
 
+    fun getBoyShirtActivity(): DressingActivity {
+        val titles = listOf(
+            "Look at the shirt",
+            "Pick up the shirt with both hands",
+            "Identify the front and back of the shirt",
+            "Identify the collar/neck opening",
+            "Hold the shirt by the shoulder areas",
+            "Put one arm into the corresponding sleeve",
+            "Pull the sleeve up toward the shoulder",
+            "Put the other arm into the corresponding sleeve",
+            "Pull the second sleeve up toward the shoulder",
+            "Pull the shirt onto both shoulders",
+            "Straighten the shirt at the shoulders",
+            "Pull the front panels down",
+            "Find the top button and corresponding buttonhole",
+            "Hold the buttonhole with one hand",
+            "Hold the button with the other hand",
+            "Push the button through the buttonhole",
+            "Check that the button is secured",
+            "Repeat the buttoning sequence from top to bottom",
+            "Continue until all required buttons are fastened",
+            "Pull the shirt down toward the waist",
+            "Straighten the collar",
+            "Straighten the sleeves and front panels",
+            "Check that the shirt is correctly positioned and comfortable"
+        )
+        val childGuidance = listOf(
+            "Look at your nice shirt!",
+            "Pick up your shirt with two hands!",
+            "Find the buttons in the front!",
+            "Find the shirt collar!",
+            "Hold the shirt at the shoulders!",
+            "Slide your arm into the sleeve!",
+            "Pull the sleeve up onto your shoulder!",
+            "Slide your other arm into the other sleeve!",
+            "Pull this sleeve up onto your shoulder!",
+            "Pull the shirt onto both shoulders!",
+            "Straighten the shirt on your shoulders!",
+            "Pull the front panels down!",
+            "Find the top button and buttonhole!",
+            "Hold the buttonhole with one hand!",
+            "Hold the button with your other hand!",
+            "Push the button through the buttonhole!",
+            "Check that the button is through and safe!",
+            "Now button the next button down!",
+            "Fasten all the buttons all the way down!",
+            "Pull your shirt down to your waist!",
+            "Fix your collar nice and neat!",
+            "Smooth your sleeves and front!",
+            "Look at that! You look so handsome in your shirt!"
+        )
+        val visualDescriptions = listOf(
+            "Show the boy focusing attention on the button-up shirt placed flat.",
+            "Show the boy picking up the shirt holding with both hands.",
+            "Show the boy identifying collar and front button placket.",
+            "Show the boy locating the top collar area.",
+            "Show the boy holding shirt firmly by both shoulder seams.",
+            "Show the boy inserting first arm into the corresponding sleeve.",
+            "Show the boy pulling the sleeve securely up onto the shoulder.",
+            "Show the boy reaching and inserting other arm into sleeve.",
+            "Show the boy pulling the second sleeve securely up onto shoulder.",
+            "Show the boy settling shirt onto both shoulders comfortably.",
+            "Show the boy adjusting and aligning fabric across shoulders.",
+            "Show the boy pulling both front panels straight and flat.",
+            "Show the boy matching top button to corresponding buttonhole.",
+            "Show the boy gripping buttonhole with fingers.",
+            "Show the boy gripping button with opposite fingers.",
+            "Show the boy pushing button smoothly through buttonhole.",
+            "Show the boy ensuring button is fully through the hole.",
+            "Show the boy repeating sequence downward for each button.",
+            "Show the boy ensuring all buttons on front are fastened.",
+            "Show the boy pulling lower hem down toward waist.",
+            "Show the boy folding collar neatly around neck.",
+            "Show the boy smoothing front placket and sleeves.",
+            "Show the boy admiring fully dressed neat shirt in mirror."
+        )
+        val visualHighlights = listOf(
+            "Shirt on Surface",
+            "Both Hands on Shirt",
+            "Front Buttons & Collar",
+            "Collar Opening",
+            "Shoulder Seams",
+            "Arm in First Sleeve",
+            "Sleeve on Shoulder",
+            "Arm in Second Sleeve",
+            "Both Sleeves on Shoulders",
+            "Shirt over Shoulders",
+            "Straightened Shoulders",
+            "Front Panels Down",
+            "Top Button & Hole",
+            "Holding Buttonhole",
+            "Holding Button",
+            "Button in Hole",
+            "Secured Button",
+            "Buttoning Sequence",
+            "All Buttons Fastened",
+            "Shirt at Waist",
+            "Neat Collar",
+            "Smooth Front & Sleeves",
+            "Fully Dressed Handsome Boy"
+        )
+
+        val steps = titles.mapIndexed { idx, title ->
+            val stepNumber = idx + 1
+            DressingStep(
+                stepId = "boy_shirt_${String.format("%02d", stepNumber)}",
+                activityId = "boy_shirt_activity",
+                stepNumber = stepNumber,
+                title = title,
+                childGuidance = childGuidance[idx],
+                visualDescription = visualDescriptions[idx],
+                visualHighlight = visualHighlights[idx],
+                assetPath = "file:///android_asset/dressing/boy/shirt/step_${String.format("%02d", stepNumber)}.gif"
+            )
+        }
+
+        return DressingActivity(
+            activityId = "boy_shirt_activity",
+            title = "Boy Shirt Dressing",
+            category = "Dressing",
+            gender = GenderCategory.BOY,
+            garmentType = "Shirt",
+            totalSteps = 23,
+            iconName = "ic_boy_shirt",
+            description = "23 Clinical task-analysis steps for independent button-up shirt dressing.",
+            steps = steps
+        )
+    }
+
     fun getGirlFrockActivity(): DressingActivity {
         val steps = listOf(
             DressingStep(
@@ -509,6 +638,7 @@ class DressingRepository {
     fun getActivityById(activityId: String): DressingActivity {
         return when {
             activityId.contains("girl", ignoreCase = true) || activityId.contains("frock", ignoreCase = true) -> getGirlFrockActivity()
+            activityId.contains("shirt", ignoreCase = true) && !activityId.contains("tshirt", ignoreCase = true) && !activityId.contains("t-shirt", ignoreCase = true) -> getBoyShirtActivity()
             activityId.contains("eating", ignoreCase = true) || activityId.contains("food", ignoreCase = true) -> getEatingActivity()
             activityId.contains("shoes", ignoreCase = true) || activityId.contains("socks", ignoreCase = true) -> getShoesActivity()
             else -> getBoyTShirtActivity()

@@ -52,9 +52,11 @@ fun VisualStepGuidanceCard(
     val cardBg = if (isGirlMode) ChildRewardsCardBg else ChildDressingCardBg
     val themeColor = if (isGirlMode) SelforaSecondary else SelforaPrimary
 
-    // Auto-resolve GIF for Boy T-Shirt steps 1..20 if mediaUrl is not explicitly supplied
+    // Auto-resolve GIF for Boy T-Shirt (1..20) or Boy Shirt (1..23) if mediaUrl is not explicitly supplied
     val resolvedMediaUrl = if (!mediaUrl.isNullOrBlank()) {
         mediaUrl
+    } else if (!isGirlMode && (activityTitle.contains("Shirt", ignoreCase = true) && !activityTitle.contains("T-Shirt", ignoreCase = true) && !activityTitle.contains("T-shirt", ignoreCase = true) && !activityTitle.contains("டி-சர்ட்")) && stepNumber in 1..23) {
+        "file:///android_asset/dressing/boy/shirt/step_${String.format("%02d", stepNumber)}.gif"
     } else if (!isGirlMode && stepNumber in 1..20 && (
             activityTitle.isBlank() ||
             activityTitle.contains("T-shirt", ignoreCase = true) ||
@@ -239,123 +241,206 @@ fun StepVisualIllustrationView(
         label = "pulse"
     )
 
-    // Accurate 20-step mapping with vector icons and child-friendly action descriptors
+    // Accurate step mapping with vector icons and child-friendly action descriptors
     val (illustrationIcon, actionBadgeText, bgTint) = when {
-        // Step 1: Stand or sit in front of T-shirt
+        // --- BOY SHIRT (BUTTON-UP) SPECIFIC STEPS ---
+        titleLower.contains("top button") || (titleLower.contains("button") && titleLower.contains("find")) -> Triple(
+            Icons.Default.RadioButtonChecked,
+            "Finding top button & buttonhole 🔘🔍",
+            ChildRewardsCardBg
+        )
+        titleLower.contains("buttonhole") && (titleLower.contains("hold") || titleLower.contains("hand")) -> Triple(
+            Icons.Default.TouchApp,
+            "Holding buttonhole with one hand 🤏",
+            ChildRewardsCardBg
+        )
+        titleLower.contains("button") && (titleLower.contains("hold") || titleLower.contains("other hand")) -> Triple(
+            Icons.Default.TouchApp,
+            "Holding button with other hand 🤌",
+            ChildRewardsCardBg
+        )
+        titleLower.contains("push") && titleLower.contains("button") -> Triple(
+            Icons.Default.CheckCircle,
+            "Pushing button through buttonhole 🔘➡️",
+            ChildRewardsCardBg
+        )
+        titleLower.contains("secured") || titleLower.contains("button is secured") -> Triple(
+            Icons.Default.CheckCircle,
+            "Checking button is fastened securely ✔️",
+            ChildRewardsCardBg
+        )
+        titleLower.contains("repeat") && titleLower.contains("button") -> Triple(
+            Icons.Default.Done,
+            "Buttoning down from top to bottom 🔘⬇️",
+            ChildRewardsCardBg
+        )
+        titleLower.contains("fastened") || titleLower.contains("required buttons") -> Triple(
+            Icons.Default.Done,
+            "All buttons fastened neatly 🔘👔✔️",
+            ChildRewardsCardBg
+        )
+        titleLower.contains("collar") && (titleLower.contains("straighten") || titleLower.contains("fix")) -> Triple(
+            Icons.Default.Checkroom,
+            "Straightening collar neatly around neck 👔✨",
+            ChildEatingCardBg
+        )
+        titleLower.contains("collar") || titleLower.contains("collar/neck") -> Triple(
+            Icons.Default.CropFree,
+            "Finding collar & neck opening 👔",
+            ChildDressingCardBg
+        )
+        titleLower.contains("one arm") || (titleLower.contains("arm into") && !titleLower.contains("other")) -> Triple(
+            Icons.Default.PanTool,
+            "Sliding first arm into sleeve 💪👔",
+            ChildDressingCardBg
+        )
+        titleLower.contains("other arm") -> Triple(
+            Icons.Default.PanTool,
+            "Sliding other arm into sleeve 💪👔",
+            ChildDressingCardBg
+        )
+        titleLower.contains("second sleeve") -> Triple(
+            Icons.Default.ArrowUpward,
+            "Pulling second sleeve onto shoulder 👕",
+            ChildDressingCardBg
+        )
+        titleLower.contains("sleeve") && titleLower.contains("toward the shoulder") -> Triple(
+            Icons.Default.ArrowUpward,
+            "Pulling sleeve up onto shoulder 👕",
+            ChildDressingCardBg
+        )
+        titleLower.contains("onto both shoulders") -> Triple(
+            Icons.Default.AccessibilityNew,
+            "Settling shirt onto both shoulders 👔✨",
+            ChildDressingCardBg
+        )
+        titleLower.contains("straighten") && titleLower.contains("shoulders") -> Triple(
+            Icons.Default.AutoFixHigh,
+            "Straightening shirt at the shoulders 👔✨",
+            ChildEatingCardBg
+        )
+        titleLower.contains("front panels") && titleLower.contains("down") -> Triple(
+            Icons.Default.ArrowDownward,
+            "Pulling front panels down flat 🔽",
+            ChildShoesCardBg
+        )
+        titleLower.contains("sleeves and front") -> Triple(
+            Icons.Default.AutoFixHigh,
+            "Smoothing sleeves & front panels ✨",
+            ChildEatingCardBg
+        )
+        titleLower.contains("waist") && titleLower.contains("shirt down") -> Triple(
+            Icons.Default.ArrowDownward,
+            "Pulling shirt down to waist 🔽",
+            ChildShoesCardBg
+        )
+        stepNumber == 23 || (titleLower.contains("positioned and comfortable") && titleLower.contains("shirt")) -> Triple(
+            Icons.Default.EmojiEvents,
+            "Boy 👦 handsome and neatly dressed in Shirt! 🎉👔⭐",
+            ChildRewardsCardBg
+        )
+
+        // --- BOY T-SHIRT & GENERAL DRESSING STEPS ---
         stepNumber == 1 || titleLower.contains("stand") || titleLower.contains("sit in front") -> Triple(
             Icons.Default.AccessibilityNew,
             if (isGirl) "Girl 👧 standing calmly in front of Frock" else "Boy 👦 standing calmly in front of T-Shirt 👕",
             if (isGirl) ChildRewardsCardBg else ChildDressingCardBg
         )
-        // Step 2: Look at T-shirt
         stepNumber == 2 || titleLower.contains("look at") -> Triple(
             Icons.Default.Visibility,
-            if (isGirl) "Examining the Frock carefully 👧✨" else "Examining the T-shirt carefully 👀👕",
+            if (isGirl) "Examining the Frock carefully 👧✨" else if (titleLower.contains("t-shirt") || titleLower.contains("tshirt")) "Examining the T-shirt carefully 👀👕" else "Examining button-up shirt 👀👔",
             if (isGirl) ChildRewardsCardBg else ChildDressingCardBg
         )
-        // Step 3: Pick up T-shirt
         stepNumber == 3 || titleLower.contains("pick up") -> Triple(
             Icons.Default.FrontHand,
-            if (isGirl) "Picking up Frock with both hands 🤲" else "Picking up T-shirt with both hands 🤲👕",
+            if (isGirl) "Picking up Frock with both hands 🤲" else if (titleLower.contains("t-shirt") || titleLower.contains("tshirt")) "Picking up T-shirt with both hands 🤲👕" else "Picking up shirt with both hands 🤲👔",
             ChildEatingCardBg
         )
-        // Step 4: Identify front and back
         stepNumber == 4 || (titleLower.contains("front") && titleLower.contains("back")) -> Triple(
             Icons.Default.Checkroom,
-            "Finding back collar tag & front graphic 🏷️",
+            if (titleLower.contains("t-shirt") || titleLower.contains("tshirt")) "Finding back collar tag & front graphic 🏷️" else "Finding collar & front buttons 🏷️🔘",
             ChildDressingCardBg
         )
-        // Step 5: Find bottom edge
         stepNumber == 5 || titleLower.contains("bottom edge") || titleLower.contains("bottom opening") -> Triple(
             Icons.Default.South,
             "Locating bottom hem opening 🔽",
             ChildEatingCardBg
         )
-        // Step 6: Find neck opening
+        (titleLower.contains("head") && titleLower.contains("neck")) || titleLower.contains("head through") -> Triple(
+            Icons.Default.Face,
+            if (isGirl) "Ananya popping head through frock! 👧✨" else "Aarav popping head through neck hole! 👦✨",
+            ChildShoesCardBg
+        )
         stepNumber == 6 || titleLower.contains("neck opening") || titleLower.contains("neck hole") -> Triple(
             Icons.Default.CropFree,
             "Finding the round neck opening ⭕",
             ChildEatingCardBg
         )
-        // Step 7: Hold T-shirt at shoulders
         stepNumber == 7 || titleLower.contains("shoulder areas") || titleLower.contains("hold") -> Triple(
             Icons.Default.PanTool,
             "Holding shoulder seams firmly 👕💪",
             ChildDressingCardBg
         )
-        // Step 8: Lift T-shirt to chest level
         stepNumber == 8 || titleLower.contains("chest level") || titleLower.contains("lift") -> Triple(
             Icons.Default.North,
             "Lifting T-shirt up to chest level ⬆️",
             ChildShoesCardBg
         )
-        // Step 9: Put head through neck opening
-        stepNumber == 9 || (titleLower.contains("head") && titleLower.contains("neck")) -> Triple(
+        stepNumber == 9 -> Triple(
             Icons.Default.Face,
             if (isGirl) "Ananya popping head through frock! 👧✨" else "Aarav popping head through neck hole! 👦✨",
             ChildShoesCardBg
         )
-        // Step 10: Pull T-shirt down over head
         stepNumber == 10 || (titleLower.contains("pull") && titleLower.contains("over the head")) -> Triple(
             Icons.Default.ArrowDownward,
             "Pulling collar smoothly past head onto neck 🔽",
             ChildShoesCardBg
         )
-        // Step 11: Find right sleeve opening
         stepNumber == 11 || (titleLower.contains("right") && titleLower.contains("find")) -> Triple(
             Icons.Default.Search,
             "Locating right sleeve opening 🔎",
             ChildDressingCardBg
         )
-        // Step 12: Put right arm through right sleeve
         stepNumber == 12 || (titleLower.contains("right") && titleLower.contains("through")) -> Triple(
             Icons.Default.PanTool,
             "Pushing right arm through right sleeve 💪👕",
             ChildDressingCardBg
         )
-        // Step 13: Pull right sleeve up to shoulder
         stepNumber == 13 || (titleLower.contains("right") && titleLower.contains("shoulder")) -> Triple(
             Icons.Default.ArrowUpward,
             "Pulling right sleeve securely onto shoulder 👕",
             ChildDressingCardBg
         )
-        // Step 14: Find left sleeve opening
         stepNumber == 14 || (titleLower.contains("left") && titleLower.contains("find")) -> Triple(
             Icons.Default.Search,
             "Locating left sleeve opening 🔎",
             ChildDressingCardBg
         )
-        // Step 15: Put left arm through left sleeve
         stepNumber == 15 || (titleLower.contains("left") && titleLower.contains("through")) -> Triple(
             Icons.Default.PanTool,
             "Pushing left arm through left sleeve 💪👕",
             ChildDressingCardBg
         )
-        // Step 16: Pull left sleeve up to shoulder
         stepNumber == 16 || (titleLower.contains("left") && titleLower.contains("shoulder")) -> Triple(
             Icons.Default.ArrowUpward,
             "Pulling left sleeve securely onto shoulder 👕",
             ChildDressingCardBg
         )
-        // Step 17: Pull front down
         stepNumber == 17 || (titleLower.contains("front") && titleLower.contains("down")) -> Triple(
             Icons.Default.ArrowDownward,
             "Pulling front of shirt down over tummy 🔽",
             ChildShoesCardBg
         )
-        // Step 18: Pull back down
         stepNumber == 18 || (titleLower.contains("back") && titleLower.contains("down")) -> Triple(
             Icons.Default.ArrowDownward,
             "Pulling back of shirt down over waist 🔽",
             ChildShoesCardBg
         )
-        // Step 19: Straighten T-shirt
         stepNumber == 19 || titleLower.contains("straighten") -> Triple(
             Icons.Default.AutoFixHigh,
             "Straightening fabric at shoulders & waist ✨",
             ChildEatingCardBg
         )
-        // Step 20: Completion check
         stepNumber == 20 || titleLower.contains("comfortable") || titleLower.contains("correctly") || titleLower.contains("mirror") -> Triple(
             Icons.Default.EmojiEvents,
             if (isGirl) "Girl 👧 completely dressed up! Looking great! 🎉⭐" else "Boy 👦 completely dressed up! Looking awesome! 🎉⭐",

@@ -146,7 +146,9 @@ class TherapySessionViewModel : ViewModel() {
                 startTimer()
             } catch (e: Exception) {
                 // Fallback graceful initialization
-                val loadedSteps = if (activityId == 5L) getSampleToothBrushingSteps() else getSampleTShirtSteps()
+                val loadedSteps = SelfidoCatalogue.getStepsForActivity(activityId).ifEmpty {
+                    if (activityId == 2L) getSampleShirtSteps() else if (activityId == 5L) getSampleToothBrushingSteps() else getSampleTShirtSteps()
+                }
                 val recordsMap = loadedSteps.mapIndexed { idx, st ->
                     idx to StepRecordState(
                         stepId = st.id,
