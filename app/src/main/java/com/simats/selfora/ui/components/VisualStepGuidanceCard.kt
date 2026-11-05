@@ -52,9 +52,11 @@ fun VisualStepGuidanceCard(
     val cardBg = if (isGirlMode) ChildRewardsCardBg else ChildDressingCardBg
     val themeColor = if (isGirlMode) SelforaSecondary else SelforaPrimary
 
-    // Auto-resolve GIF for Boy T-Shirt (1..20) or Boy Shirt (1..23) if mediaUrl is not explicitly supplied
+    // Auto-resolve GIF for Boy T-Shirt (1..20), Boy Shirt (1..23), or Boy Jacket (1..26) if mediaUrl is not explicitly supplied
     val resolvedMediaUrl = if (!mediaUrl.isNullOrBlank()) {
         mediaUrl
+    } else if (!isGirlMode && (activityTitle.contains("Jacket", ignoreCase = true) || activityTitle.contains("ஜாக்கெட்")) && stepNumber in 1..26) {
+        "file:///android_asset/dressing/boy/jacket/step_${String.format("%02d", stepNumber)}.gif"
     } else if (!isGirlMode && (activityTitle.contains("Shirt", ignoreCase = true) && !activityTitle.contains("T-Shirt", ignoreCase = true) && !activityTitle.contains("T-shirt", ignoreCase = true) && !activityTitle.contains("டி-சர்ட்")) && stepNumber in 1..23) {
         "file:///android_asset/dressing/boy/shirt/step_${String.format("%02d", stepNumber)}.gif"
     } else if (!isGirlMode && stepNumber in 1..20 && (
@@ -243,6 +245,118 @@ fun StepVisualIllustrationView(
 
     // Accurate step mapping with vector icons and child-friendly action descriptors
     val (illustrationIcon, actionBadgeText, bgTint) = when {
+        // --- BOY ZIP-UP JACKET SPECIFIC STEPS ---
+        titleLower.contains("slider") && titleLower.contains("find") -> Triple(
+            Icons.Default.Search,
+            "Finding the zipper slider at bottom 🔍",
+            ChildRewardsCardBg
+        )
+        titleLower.contains("insertion pin") && titleLower.contains("find") -> Triple(
+            Icons.Default.Search,
+            "Finding the zipper insertion pin 📍",
+            ChildRewardsCardBg
+        )
+        titleLower.contains("slider") && titleLower.contains("hold") -> Triple(
+            Icons.Default.TouchApp,
+            "Holding zipper slider steady 🤏",
+            ChildRewardsCardBg
+        )
+        titleLower.contains("insertion pin") && titleLower.contains("hold") -> Triple(
+            Icons.Default.TouchApp,
+            "Holding insertion pin with other hand 🤌",
+            ChildRewardsCardBg
+        )
+        titleLower.contains("insert the pin") || (titleLower.contains("pin") && titleLower.contains("slider")) -> Triple(
+            Icons.Default.CheckCircle,
+            "Clicking pin fully into slider! Click! 🔒",
+            ChildRewardsCardBg
+        )
+        titleLower.contains("bottom of the jacket") || (titleLower.contains("bottom") && titleLower.contains("steady")) -> Triple(
+            Icons.Default.FrontHand,
+            "Holding bottom of jacket steady 🧥⚓",
+            ChildRewardsCardBg
+        )
+        titleLower.contains("slider upward") || (titleLower.contains("zipper") && titleLower.contains("upward")) -> Triple(
+            Icons.Default.ArrowUpward,
+            "Zipping upward! Pull up! ⬆️",
+            ChildRewardsCardBg
+        )
+        titleLower.contains("chest") && titleLower.contains("zipper") -> Triple(
+            Icons.Default.ArrowUpward,
+            "Zipping up past chest level ⬆️",
+            ChildRewardsCardBg
+        )
+        titleLower.contains("neck") && titleLower.contains("zipper") -> Triple(
+            Icons.Default.ArrowUpward,
+            "Zipping all the way to neck! ⬆️",
+            ChildRewardsCardBg
+        )
+        titleLower.contains("comfortably closed") || titleLower.contains("stop when") -> Triple(
+            Icons.Default.CheckCircle,
+            "Stopping zipper at comfortable height ✔️",
+            ChildRewardsCardBg
+        )
+        titleLower.contains("release") && titleLower.contains("zipper") -> Triple(
+            Icons.Default.Done,
+            "Releasing zipper pull tab 👍",
+            ChildRewardsCardBg
+        )
+        titleLower.contains("front sides") && titleLower.contains("together") -> Triple(
+            Icons.Default.ViewAgenda,
+            "Bringing both front sides together 🧥",
+            ChildDressingCardBg
+        )
+        titleLower.contains("jacket") && (titleLower.contains("stand") || titleLower.contains("sit in front")) -> Triple(
+            Icons.Default.AccessibilityNew,
+            "Boy 👦 standing calmly in front of Jacket 🧥",
+            ChildDressingCardBg
+        )
+        titleLower.contains("jacket") && titleLower.contains("look at") -> Triple(
+            Icons.Default.Visibility,
+            "Examining open jacket & zipper 👀🧥",
+            ChildDressingCardBg
+        )
+        titleLower.contains("jacket") && titleLower.contains("pick up") -> Triple(
+            Icons.Default.FrontHand,
+            "Picking up jacket with both hands 🤲🧥",
+            ChildEatingCardBg
+        )
+        titleLower.contains("jacket") && (titleLower.contains("front and back") || titleLower.contains("front with")) -> Triple(
+            Icons.Default.Checkroom,
+            "Finding front zipper & back panel 🏷️🧥",
+            ChildDressingCardBg
+        )
+        titleLower.contains("jacket") && titleLower.contains("collar") -> Triple(
+            Icons.Default.CropFree,
+            "Locating jacket collar at the top 🧥",
+            ChildDressingCardBg
+        )
+        titleLower.contains("jacket") && (titleLower.contains("by the shoulders") || (titleLower.contains("hold") && titleLower.contains("shoulder"))) -> Triple(
+            Icons.Default.PanTool,
+            "Holding jacket by both shoulder seams 🧥💪",
+            ChildDressingCardBg
+        )
+        titleLower.contains("jacket") && titleLower.contains("onto both shoulders") -> Triple(
+            Icons.Default.AccessibilityNew,
+            "Settling jacket onto both shoulders 🧥✨",
+            ChildDressingCardBg
+        )
+        titleLower.contains("jacket") && titleLower.contains("straighten") && titleLower.contains("shoulders") && !titleLower.contains("waist") -> Triple(
+            Icons.Default.AutoFixHigh,
+            "Straightening jacket at shoulders 🧥✨",
+            ChildEatingCardBg
+        )
+        titleLower.contains("jacket") && (titleLower.contains("shoulders and waist") || titleLower.contains("waist")) -> Triple(
+            Icons.Default.AutoFixHigh,
+            "Smoothing jacket around shoulders & waist ✨",
+            ChildEatingCardBg
+        )
+        stepNumber == 26 || (titleLower.contains("jacket") && (titleLower.contains("comfortable") || titleLower.contains("positioned"))) -> Triple(
+            Icons.Default.EmojiEvents,
+            "Boy 👦 handsome and warm in Zip-Up Jacket! 🎉🧥⭐",
+            ChildRewardsCardBg
+        )
+
         // --- BOY SHIRT (BUTTON-UP) SPECIFIC STEPS ---
         titleLower.contains("top button") || (titleLower.contains("button") && titleLower.contains("find")) -> Triple(
             Icons.Default.RadioButtonChecked,

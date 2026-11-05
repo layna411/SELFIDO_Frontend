@@ -64,6 +64,7 @@ import com.simats.selfora.ui.therapist.getSampleShoesSteps
 
 import com.simats.selfora.ui.therapist.getSampleTShirtSteps
 import com.simats.selfora.ui.therapist.getSampleShirtSteps
+import com.simats.selfora.ui.therapist.getSampleJacketSteps
 
 import com.simats.selfora.utils.LanguageManager
 
@@ -146,6 +147,7 @@ fun ChildActivityStepScreen(
         val fallbackSteps = when (activityId) {
             13L -> getSampleEatingSteps()
             9L -> getSampleShoesSteps()
+            3L -> getSampleJacketSteps()
             2L -> if (gender.equals("GIRL", ignoreCase = true)) getSampleGirlFrockSteps() else getSampleShirtSteps()
             else -> getSampleTShirtSteps()
         }

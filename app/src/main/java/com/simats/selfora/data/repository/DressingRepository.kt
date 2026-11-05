@@ -350,6 +350,147 @@ class DressingRepository {
         )
     }
 
+    fun getBoyJacketActivity(): DressingActivity {
+        val titles = listOf(
+            "Stand or sit in front of the jacket",
+            "Look at the jacket",
+            "Pick up the jacket",
+            "Identify the front and back",
+            "Identify the collar/neck opening",
+            "Hold the jacket by the shoulders",
+            "Put one arm into the corresponding sleeve",
+            "Pull the sleeve toward the shoulder",
+            "Put the other arm into the corresponding sleeve",
+            "Pull the second sleeve toward the shoulder",
+            "Pull the jacket onto both shoulders",
+            "Straighten the jacket at the shoulders",
+            "Bring both front sides of the jacket together",
+            "Find the zipper slider",
+            "Find the zipper insertion pin",
+            "Hold the zipper slider with one hand",
+            "Hold the insertion pin with the other hand",
+            "Insert the pin fully into the zipper slider",
+            "Hold the bottom of the jacket steady",
+            "Pull the zipper slider upward",
+            "Continue pulling the zipper toward the chest",
+            "Pull the zipper toward the neck",
+            "Stop when the jacket is comfortably closed",
+            "Release the zipper",
+            "Straighten the jacket around the shoulders and waist",
+            "Check that the jacket is properly positioned and comfortable"
+        )
+        val childGuidance = listOf(
+            "Stand or sit in front of your jacket!",
+            "Look at the jacket!",
+            "Pick up your jacket!",
+            "Find the front with the zipper!",
+            "Find the collar at the top!",
+            "Hold the jacket by the shoulders!",
+            "Put your arm into the sleeve!",
+            "Pull the sleeve up high!",
+            "Put your other arm in the sleeve!",
+            "Pull this sleeve up too!",
+            "Settle the jacket on your shoulders!",
+            "Smooth out the shoulders!",
+            "Bring the two front sides together!",
+            "Find the zipper slider at the bottom!",
+            "Find the pin on the other side!",
+            "Hold the zipper slider steady!",
+            "Hold the insertion pin!",
+            "Click the pin all the way into the slider!",
+            "Hold the bottom of the jacket tight!",
+            "Zip it up! Pull up!",
+            "Keep pulling up to your chest!",
+            "Pull up toward your neck!",
+            "Stop when it feels cozy!",
+            "Let go of the zipper!",
+            "Straighten your jacket nicely!",
+            "Zipped up and ready! Great job!"
+        )
+        val visualDescriptions = listOf(
+            "Show the boy taking a stable posture facing the jacket.",
+            "Show the boy observing the open jacket and components.",
+            "Show the boy lifting the jacket using two hands.",
+            "Show the boy distinguishing the open zipper front from the solid back.",
+            "Show the boy locating the collar and neck opening at the top.",
+            "Show the boy gripping the shoulder seams of the jacket firmly.",
+            "Show the boy slipping the first arm into the corresponding sleeve.",
+            "Show the boy pulling the sleeve completely up onto the shoulder.",
+            "Show the boy inserting the second arm into the other sleeve.",
+            "Show the boy pulling the second sleeve up onto the shoulder.",
+            "Show the boy settling the jacket comfortably over both shoulders.",
+            "Show the boy smoothing and aligning the fabric on the shoulders.",
+            "Show the boy bringing left and right zipper tracks together.",
+            "Show the boy locating the movable zipper slider at the bottom.",
+            "Show the boy finding the insertion pin on the opposite track.",
+            "Show the boy holding the slider steady at the bottom of the track.",
+            "Show the boy grasping the insertion pin with the other hand.",
+            "Show the boy pushing the pin completely into the base of the slider.",
+            "Show the boy anchoring the bottom edge of the jacket firmly.",
+            "Show the boy pulling the zipper slider upward smoothly.",
+            "Show the boy pulling the slider past the abdomen to chest level.",
+            "Show the boy pulling the slider up toward the collar and neck.",
+            "Show the boy ceasing pulling at a comfortable, warm height.",
+            "Show the boy releasing the zipper pull tab.",
+            "Show the boy smoothing the jacket around the waist and shoulders.",
+            "Show the boy admiring the fully zipped, comfortable jacket."
+        )
+        val visualHighlights = listOf(
+            "Jacket on Surface",
+            "Open Jacket & Components",
+            "Both Hands Lifting Jacket",
+            "Front Zipper & Back",
+            "Collar at Top",
+            "Shoulder Grips",
+            "Arm in First Sleeve",
+            "First Sleeve on Shoulder",
+            "Arm in Second Sleeve",
+            "Second Sleeve on Shoulder",
+            "Jacket on Shoulders",
+            "Smooth Shoulders",
+            "Zipper Tracks Aligned",
+            "Zipper Slider at Base",
+            "Insertion Pin",
+            "Holding Zipper Slider",
+            "Holding Insertion Pin",
+            "Pin Clicked into Slider",
+            "Anchoring Jacket Bottom",
+            "Zipper Pulling Up",
+            "Zipper at Chest Level",
+            "Zipper at Neck Collar",
+            "Comfortable Height",
+            "Releasing Zipper Tab",
+            "Smooth Waist & Shoulders",
+            "Fully Dressed in Jacket"
+        )
+
+        val steps = titles.mapIndexed { idx, title ->
+            val stepNumber = idx + 1
+            DressingStep(
+                stepId = "boy_jacket_${String.format("%02d", stepNumber)}",
+                activityId = "boy_jacket_activity",
+                stepNumber = stepNumber,
+                title = title,
+                childGuidance = childGuidance[idx],
+                visualDescription = visualDescriptions[idx],
+                visualHighlight = visualHighlights[idx],
+                assetPath = "file:///android_asset/dressing/boy/jacket/step_${String.format("%02d", stepNumber)}.gif"
+            )
+        }
+
+        return DressingActivity(
+            activityId = "boy_jacket_activity",
+            title = "Boy Jacket Dressing",
+            category = "Dressing",
+            gender = GenderCategory.BOY,
+            garmentType = "Jacket",
+            totalSteps = 26,
+            iconName = "ic_boy_jacket",
+            description = "26 Clinical task-analysis steps for independent zip-up jacket dressing.",
+            steps = steps
+        )
+    }
+
     fun getGirlFrockActivity(): DressingActivity {
         val steps = listOf(
             DressingStep(
@@ -638,6 +779,7 @@ class DressingRepository {
     fun getActivityById(activityId: String): DressingActivity {
         return when {
             activityId.contains("girl", ignoreCase = true) || activityId.contains("frock", ignoreCase = true) -> getGirlFrockActivity()
+            activityId.contains("jacket", ignoreCase = true) -> getBoyJacketActivity()
             activityId.contains("shirt", ignoreCase = true) && !activityId.contains("tshirt", ignoreCase = true) && !activityId.contains("t-shirt", ignoreCase = true) -> getBoyShirtActivity()
             activityId.contains("eating", ignoreCase = true) || activityId.contains("food", ignoreCase = true) -> getEatingActivity()
             activityId.contains("shoes", ignoreCase = true) || activityId.contains("socks", ignoreCase = true) -> getShoesActivity()
