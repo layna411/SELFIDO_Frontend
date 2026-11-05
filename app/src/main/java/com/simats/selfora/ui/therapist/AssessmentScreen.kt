@@ -306,150 +306,129 @@ fun AssessmentScreen(
                         }
                     } else {
                         // =========================================================================
-                        // CASELOAD & SEARCH SELECTOR (Fast child search & instant switching)
+                        // PATIENT CASELOAD & REAL-TIME SEARCH (Clean, Pixel-Perfect Alignment)
                         // =========================================================================
                         if (assignedChildren.isNotEmpty()) {
-                            Surface(
+                            Column(
                                 modifier = Modifier.fillMaxWidth(),
-                                shape = RoundedCornerShape(18.dp),
-                                color = Color.White,
-                                border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
-                                shadowElevation = 1.dp
+                                verticalArrangement = Arrangement.spacedBy(10.dp)
                             ) {
-                                Column(modifier = Modifier.padding(14.dp)) {
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        horizontalArrangement = Arrangement.SpaceBetween,
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Row(verticalAlignment = Alignment.CenterVertically) {
-                                            Surface(
-                                                shape = CircleShape,
-                                                color = SelforaPrimary.copy(alpha = 0.10f),
-                                                modifier = Modifier.size(26.dp)
-                                            ) {
-                                                Box(contentAlignment = Alignment.Center) {
-                                                    Icon(
-                                                        imageVector = Icons.Default.PersonSearch,
-                                                        contentDescription = null,
-                                                        tint = SelforaPrimary,
-                                                        modifier = Modifier.size(15.dp)
-                                                    )
-                                                }
-                                            }
-                                            Spacer(modifier = Modifier.width(8.dp))
-                                            Text(
-                                                text = "SELECT PATIENT FOR ASSESSMENT",
-                                                fontSize = 11.5.sp,
-                                                fontWeight = FontWeight.Bold,
-                                                color = SelforaPrimary,
-                                                letterSpacing = 0.5.sp
-                                            )
-                                        }
+                                // Section Header Row
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = "SELECT PATIENT CASELOAD",
+                                        fontSize = 11.5.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = SelforaPrimary,
+                                        letterSpacing = 0.5.sp
+                                    )
 
-                                        Surface(
-                                            shape = RoundedCornerShape(8.dp),
-                                            color = if (childSearchQuery.isNotBlank() && filteredChildren.isEmpty()) SelforaError.copy(alpha = 0.1f) else SelforaPrimary.copy(alpha = 0.08f)
+                                    Surface(
+                                        shape = RoundedCornerShape(8.dp),
+                                        color = if (childSearchQuery.isNotBlank() && filteredChildren.isEmpty()) SelforaError.copy(alpha = 0.12f) else SelforaPrimary.copy(alpha = 0.08f)
+                                    ) {
+                                        Text(
+                                            text = if (childSearchQuery.isNotBlank()) "${filteredChildren.size} of ${assignedChildren.size} Found" else "${assignedChildren.size} Children Assigned",
+                                            fontSize = 10.5.sp,
+                                            color = if (childSearchQuery.isNotBlank() && filteredChildren.isEmpty()) SelforaError else SelforaPrimary,
+                                            fontWeight = FontWeight.Bold,
+                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.5.dp)
+                                        )
+                                    }
+                                }
+
+                                // Pixel-perfect Real-time Child Search Input
+                                GlassSearchBar(
+                                    query = childSearchQuery,
+                                    onQueryChange = { childSearchQuery = it },
+                                    placeholder = "Search patient by name, ID (e.g. Kevin, #13)...",
+                                    onClear = { childSearchQuery = "" },
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+
+                                // Real-time Filtered Children Pills
+                                if (filteredChildren.isEmpty()) {
+                                    Surface(
+                                        shape = RoundedCornerShape(14.dp),
+                                        color = Color.White,
+                                        border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                                        shadowElevation = 1.dp,
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 11.dp),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.SpaceBetween
                                         ) {
                                             Text(
-                                                text = if (childSearchQuery.isNotBlank()) "${filteredChildren.size} of ${assignedChildren.size}" else "${assignedChildren.size} Assigned",
-                                                fontSize = 10.5.sp,
-                                                color = if (childSearchQuery.isNotBlank() && filteredChildren.isEmpty()) SelforaError else SelforaPrimary,
+                                                text = "No children match \"$childSearchQuery\"",
+                                                fontSize = 12.5.sp,
+                                                color = SelforaTextSecondary
+                                            )
+                                            Text(
+                                                text = "Clear search",
+                                                fontSize = 12.sp,
                                                 fontWeight = FontWeight.Bold,
-                                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                                                color = SelforaPrimary,
+                                                modifier = Modifier.clickable { childSearchQuery = "" }
                                             )
                                         }
                                     }
-
-                                    Spacer(modifier = Modifier.height(10.dp))
-
-                                    // Real-time Child Search Input
-                                    GlassSearchBar(
-                                        query = childSearchQuery,
-                                        onQueryChange = { childSearchQuery = it },
-                                        placeholder = "Search child by name, ID or caregiver...",
-                                        onClear = { childSearchQuery = "" },
-                                        modifier = Modifier.fillMaxWidth()
-                                    )
-
-                                    Spacer(modifier = Modifier.height(10.dp))
-
-                                    if (filteredChildren.isEmpty()) {
-                                        Surface(
-                                            shape = RoundedCornerShape(12.dp),
-                                            color = Color(0xFFF8FAFC),
-                                            border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
-                                            modifier = Modifier.fillMaxWidth()
-                                        ) {
-                                            Row(
-                                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
-                                                verticalAlignment = Alignment.CenterVertically,
-                                                horizontalArrangement = Arrangement.SpaceBetween
-                                            ) {
-                                                Text(
-                                                    text = "No children match \"$childSearchQuery\"",
-                                                    fontSize = 12.sp,
-                                                    color = SelforaTextSecondary
-                                                )
-                                                Text(
-                                                    text = "Clear filter",
-                                                    fontSize = 12.sp,
-                                                    fontWeight = FontWeight.Bold,
-                                                    color = SelforaPrimary,
-                                                    modifier = Modifier.clickable { childSearchQuery = "" }
-                                                )
-                                            }
-                                        }
-                                    } else {
-                                        Row(
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .horizontalScroll(rememberScrollState()),
-                                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                        ) {
-                                            filteredChildren.forEach { childItem ->
-                                                val isSelected = childItem.id == activeChildId
-                                                val childGenderShort = childItem.gender.trim().uppercase()
-                                                val avatarEmoji = if (childGenderShort.startsWith("G") || childGenderShort.startsWith("F")) "👧" else "👦"
-                                                Surface(
-                                                    shape = RoundedCornerShape(12.dp),
-                                                    color = if (isSelected) SelforaPrimary else Color(0xFFF8FAFC),
-                                                    border = BorderStroke(1.dp, if (isSelected) SelforaPrimary else Color(0xFFE2E8F0)),
-                                                    shadowElevation = if (isSelected) 1.5.dp else 0.dp,
-                                                    modifier = Modifier.clickable {
+                                } else {
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .horizontalScroll(rememberScrollState()),
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        filteredChildren.forEach { childItem ->
+                                            val isSelected = childItem.id == activeChildId
+                                            val childGenderShort = childItem.gender.trim().uppercase()
+                                            val avatarEmoji = if (childGenderShort.startsWith("G") || childGenderShort.startsWith("F")) "👧" else "👦"
+                                            Surface(
+                                                shape = RoundedCornerShape(12.dp),
+                                                color = if (isSelected) SelforaPrimary else Color.White,
+                                                border = BorderStroke(1.dp, if (isSelected) SelforaPrimary else Color(0xFFE2E8F0)),
+                                                shadowElevation = if (isSelected) 2.dp else 1.dp,
+                                                modifier = Modifier
+                                                    .height(42.dp)
+                                                    .clickable {
                                                         activeChildId = childItem.id
                                                         manualGenderOverride = null
                                                         onChildSelected?.invoke(childItem.id)
                                                     }
+                                            ) {
+                                                Row(
+                                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                                                    verticalAlignment = Alignment.CenterVertically
                                                 ) {
-                                                    Row(
-                                                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp),
-                                                        verticalAlignment = Alignment.CenterVertically
-                                                    ) {
-                                                        Text(avatarEmoji, fontSize = 14.sp)
+                                                    Text(avatarEmoji, fontSize = 15.sp)
+                                                    Spacer(modifier = Modifier.width(6.dp))
+                                                    Text(
+                                                        text = childItem.name,
+                                                        fontSize = 12.5.sp,
+                                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                                        color = if (isSelected) Color.White else SelforaTextPrimary
+                                                    )
+                                                    Spacer(modifier = Modifier.width(5.dp))
+                                                    Text(
+                                                        text = "#${childItem.id}",
+                                                        fontSize = 11.sp,
+                                                        fontWeight = FontWeight.SemiBold,
+                                                        color = if (isSelected) Color.White.copy(alpha = 0.85f) else SelforaTextSecondary
+                                                    )
+                                                    if (isSelected) {
                                                         Spacer(modifier = Modifier.width(6.dp))
-                                                        Text(
-                                                            text = childItem.name,
-                                                            fontSize = 12.sp,
-                                                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                                            color = if (isSelected) Color.White else SelforaTextPrimary
+                                                        Icon(
+                                                            imageVector = Icons.Default.Check,
+                                                            contentDescription = "Selected",
+                                                            tint = Color.White,
+                                                            modifier = Modifier.size(14.dp)
                                                         )
-                                                        Spacer(modifier = Modifier.width(4.dp))
-                                                        Text(
-                                                            text = "#${childItem.id}",
-                                                            fontSize = 10.5.sp,
-                                                            fontWeight = FontWeight.SemiBold,
-                                                            color = if (isSelected) Color.White.copy(alpha = 0.85f) else SelforaTextSecondary
-                                                        )
-                                                        if (isSelected) {
-                                                            Spacer(modifier = Modifier.width(6.dp))
-                                                            Icon(
-                                                                imageVector = Icons.Default.Check,
-                                                                contentDescription = "Selected",
-                                                                tint = Color.White,
-                                                                modifier = Modifier.size(14.dp)
-                                                            )
-                                                        }
                                                     }
                                                 }
                                             }

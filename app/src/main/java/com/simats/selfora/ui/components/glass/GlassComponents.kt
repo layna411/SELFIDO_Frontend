@@ -14,6 +14,7 @@ import androidx.compose.foundation.relocation.BringIntoViewRequester
 import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -31,11 +32,13 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
@@ -614,27 +617,20 @@ fun GlassSearchBar(
     onClear: (() -> Unit)? = null,
     accentColor: Color = SelforaPrimary
 ) {
-    Box(
+    Surface(
         modifier = modifier
             .fillMaxWidth()
-            .shadow(
-                elevation = 1.dp,
-                shape = RoundedCornerShape(14.dp),
-                ambientColor = Color(0x0A172033),
-                spotColor = Color(0x10172033)
-            )
-            .clip(RoundedCornerShape(14.dp))
-            .background(Color.White)
-            .border(
-                width = 1.dp,
-                color = Color(0xFFE2E8F0),
-                shape = RoundedCornerShape(14.dp)
-            )
-            .padding(horizontal = 14.dp, vertical = 2.dp)
+            .height(48.dp),
+        shape = RoundedCornerShape(14.dp),
+        color = Color.White,
+        border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+        shadowElevation = 1.dp
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 14.dp)
         ) {
             Icon(
                 imageVector = Icons.Default.Search,
@@ -642,34 +638,58 @@ fun GlassSearchBar(
                 tint = accentColor,
                 modifier = Modifier.size(20.dp)
             )
-            Spacer(modifier = Modifier.width(8.dp))
-            OutlinedTextField(
+            Spacer(modifier = Modifier.width(10.dp))
+            BasicTextField(
                 value = query,
                 onValueChange = onQueryChange,
-                placeholder = { Text(placeholder, color = SelforaTextSecondary.copy(alpha = 0.65f), fontSize = 14.sp) },
                 singleLine = true,
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = Color.Transparent,
-                    unfocusedBorderColor = Color.Transparent,
-                    focusedContainerColor = Color.Transparent,
-                    unfocusedContainerColor = Color.Transparent
+                textStyle = TextStyle(
+                    fontSize = 13.5.sp,
+                    color = SelforaTextPrimary,
+                    fontWeight = FontWeight.Medium
                 ),
-                modifier = Modifier.weight(1f)
+                cursorBrush = SolidColor(accentColor),
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth(),
+                decorationBox = { innerTextField ->
+                    Box(
+                        contentAlignment = Alignment.CenterStart,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        if (query.isEmpty()) {
+                            Text(
+                                text = placeholder,
+                                color = SelforaTextSecondary.copy(alpha = 0.65f),
+                                fontSize = 13.5.sp,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                        innerTextField()
+                    }
+                }
             )
             if (query.isNotEmpty()) {
-                IconButton(
-                    onClick = {
-                        onQueryChange("")
-                        onClear?.invoke()
-                    },
-                    modifier = Modifier.size(28.dp)
+                Spacer(modifier = Modifier.width(8.dp))
+                Surface(
+                    shape = CircleShape,
+                    color = Color(0xFFF1F5F9),
+                    modifier = Modifier
+                        .size(24.dp)
+                        .clickable {
+                            onQueryChange("")
+                            onClear?.invoke()
+                        }
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Close,
-                        contentDescription = "Clear",
-                        tint = SelforaTextSecondary,
-                        modifier = Modifier.size(16.dp)
-                    )
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            imageVector = Icons.Default.Close,
+                            contentDescription = "Clear",
+                            tint = SelforaTextSecondary,
+                            modifier = Modifier.size(14.dp)
+                        )
+                    }
                 }
             }
         }

@@ -48,7 +48,8 @@ fun TherapistMainSwipeableScreen(
     ) {
         HorizontalPager(
             state = pagerState,
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier.fillMaxSize(),
+            userScrollEnabled = false
         ) { page ->
             when (tabs[page]) {
                 TherapistTab.DASHBOARD -> TherapistDashboardScreen(

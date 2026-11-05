@@ -62,7 +62,8 @@ fun CaregiverMainSwipeableScreen(
         ) {
             HorizontalPager(
                 state = pagerState,
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier.fillMaxSize(),
+                userScrollEnabled = false
             ) { page ->
                 when (tabs[page]) {
                     CaregiverTab.Home -> CaregiverDashboardScreen(
