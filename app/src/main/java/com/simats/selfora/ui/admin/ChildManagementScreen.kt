@@ -6,6 +6,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -170,7 +171,7 @@ fun ChildManagementScreen(
                 }
             } else {
                 LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    items(filteredList, key = { it.id }) { child ->
+                    itemsIndexed(filteredList, key = { index, child -> "${child.id}_$index" }) { _, child ->
                         AdminChildCard(
                             child = child,
                             onClick = { onNavigateToChildDetails(child.id) }

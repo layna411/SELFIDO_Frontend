@@ -89,187 +89,181 @@ fun SuperAdminDashboardScreen(
         loadDashboardData()
     }
 
+    val currentLanguage by com.simats.selfora.utils.LanguageManager.currentLanguage.collectAsState()
+    val isTamil = currentLanguage == "ta"
+
     Scaffold(
-        containerColor = SelforaBackground
-    ) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .verticalScroll(scrollState)
-        ) {
-            // Modern Clean Executive Top Bar
+        containerColor = SelforaBackground,
+        topBar = {
             Surface(
                 modifier = Modifier.fillMaxWidth(),
                 color = Color.White,
                 shadowElevation = 2.dp,
                 border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0))
             ) {
-                Column(
+                Row(
                     modifier = Modifier
+                        .fillMaxWidth()
                         .statusBarsPadding()
-                        .padding(start = 20.dp, end = 20.dp, top = 14.dp, bottom = 14.dp)
+                        .padding(horizontal = 14.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    val currentLanguage by com.simats.selfora.utils.LanguageManager.currentLanguage.collectAsState()
-                    val isTamil = currentLanguage == "ta"
-
-                    // Header Brand & Action Icons
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
+                        modifier = Modifier.weight(1f)
                     ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.weight(1f)
+                        Box(
+                            modifier = Modifier
+                                .size(36.dp)
+                                .clip(CircleShape)
+                                .background(blueAccent.copy(alpha = 0.12f)),
+                            contentAlignment = Alignment.Center
                         ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(38.dp)
-                                    .clip(CircleShape)
-                                    .background(blueAccent.copy(alpha = 0.12f)),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.AdminPanelSettings,
-                                    contentDescription = null,
-                                    tint = blueAccent,
-                                    modifier = Modifier.size(22.dp)
-                                )
-                            }
-                            Spacer(modifier = Modifier.width(10.dp))
-                            Column(modifier = Modifier.weight(1f, fill = false)) {
-                                Text(
-                                    text = if (isTamil) "செல்பொரா அட்மின்" else "SELFIDO ADMIN",
-                                    fontSize = 17.sp,
-                                    fontWeight = FontWeight.ExtraBold,
-                                    color = textPrimary,
-                                    letterSpacing = 0.5.sp,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
-                                )
-                                Text(
-                                    text = if (isTamil) "நிர்வாகக் கன்சோல்" else "Platform Operations Console",
-                                    fontSize = 11.sp,
-                                    color = textSecondary,
-                                    fontWeight = FontWeight.Medium,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
-                                )
-                            }
+                            Icon(
+                                imageVector = Icons.Default.AdminPanelSettings,
+                                contentDescription = null,
+                                tint = blueAccent,
+                                modifier = Modifier.size(20.dp)
+                            )
                         }
-
-                        Spacer(modifier = Modifier.width(8.dp))
-
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(6.dp)
-                        ) {
-                            // Language Toggle Pill
-                            LanguageTogglePill(isCompact = true)
-
-                            // Settings Icon
-                            IconButton(
-                                onClick = onNavigateToSettings,
-                                modifier = Modifier
-                                    .size(36.dp)
-                                    .clip(CircleShape)
-                                    .background(Color(0xFFF8FAFC))
-                                    .border(1.dp, Color(0xFFE2E8F0), CircleShape)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Settings,
-                                    contentDescription = "Settings",
-                                    tint = textSecondary,
-                                    modifier = Modifier.size(18.dp)
-                                )
-                            }
-
-                            // Logout Button
-                            IconButton(
-                                onClick = onLogout,
-                                modifier = Modifier
-                                    .size(36.dp)
-                                    .clip(CircleShape)
-                                    .background(Color(0xFFFEF2F2))
-                                    .border(1.dp, Color(0xFFFEE2E2), CircleShape)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.AutoMirrored.Filled.Logout,
-                                    contentDescription = "Logout",
-                                    tint = Color(0xFFEF4444),
-                                    modifier = Modifier.size(18.dp)
-                                )
-                            }
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Column(modifier = Modifier.weight(1f, fill = false)) {
+                            Text(
+                                text = if (isTamil) "செல்பொரா அட்மின்" else "SELFIDO ADMIN",
+                                fontSize = 16.5.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = textPrimary,
+                                letterSpacing = 0.5.sp,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                            Text(
+                                text = if (isTamil) "நிர்வாகக் கன்சோல்" else "Platform Operations Console",
+                                fontSize = 11.sp,
+                                color = textSecondary,
+                                fontWeight = FontWeight.Medium,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(14.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
 
-                    // Welcome Greeting Banner (Pastel Blue)
-                    Surface(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(16.dp),
-                        color = Color(0xFFF0F7FF),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFDBEAFE))
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
-                        Row(
+                        LanguageTogglePill(isCompact = true)
+
+                        IconButton(
+                            onClick = onNavigateToSettings,
                             modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(14.dp),
-                            verticalAlignment = Alignment.CenterVertically
+                                .size(36.dp)
+                                .clip(CircleShape)
+                                .background(Color(0xFFF8FAFC))
+                                .border(1.dp, Color(0xFFE2E8F0), CircleShape)
                         ) {
+                            Icon(
+                                imageVector = Icons.Default.Settings,
+                                contentDescription = "Settings",
+                                tint = textSecondary,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+
+                        IconButton(
+                            onClick = onLogout,
+                            modifier = Modifier
+                                .size(36.dp)
+                                .clip(CircleShape)
+                                .background(Color(0xFFFEF2F2))
+                                .border(1.dp, Color(0xFFFEE2E2), CircleShape)
+                        ) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.Logout,
+                                contentDescription = "Logout",
+                                tint = Color(0xFFEF4444),
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    ) { padding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .verticalScroll(scrollState)
+                .padding(horizontal = 16.dp, vertical = 12.dp)
+        ) {
+            // Welcome Greeting Banner (Pastel Blue)
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                color = Color(0xFFF0F7FF),
+                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFDBEAFE))
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(14.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(44.dp)
+                            .clip(CircleShape)
+                            .background(blueAccent.copy(alpha = 0.14f))
+                            .border(1.2.dp, blueAccent.copy(alpha = 0.3f), CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "SA",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = blueAccent
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.width(12.dp))
+
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Welcome back, Administrator",
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = textPrimary
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Row(verticalAlignment = Alignment.CenterVertically) {
                             Box(
                                 modifier = Modifier
-                                    .size(44.dp)
-                                    .clip(CircleShape)
-                                    .background(blueAccent.copy(alpha = 0.14f))
-                                    .border(1.2.dp, blueAccent.copy(alpha = 0.3f), CircleShape),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    text = "SA",
-                                    fontSize = 16.sp,
-                                    fontWeight = FontWeight.ExtraBold,
-                                    color = blueAccent
-                                )
-                            }
-
-                            Spacer(modifier = Modifier.width(12.dp))
-
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = "Welcome back, Administrator",
-                                    fontSize = 15.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = textPrimary
-                                )
-                                Spacer(modifier = Modifier.height(2.dp))
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(7.dp)
-                                            .background(Color(0xFF10B981), CircleShape)
-                                    )
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    Text(
-                                        text = "System Operational • Administrator Console",
-                                        fontSize = 11.sp,
-                                        color = textSecondary,
-                                        fontWeight = FontWeight.Medium
-                                    )
-                                }
-                            }
+                                    .size(7.dp)
+                                    .background(Color(0xFF10B981), CircleShape)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = "System Operational • Administrator Console",
+                                fontSize = 11.sp,
+                                color = textSecondary,
+                                fontWeight = FontWeight.Medium
+                            )
                         }
                     }
                 }
             }
 
+            Spacer(modifier = Modifier.height(14.dp))
+
             // Main Content Area
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 28.dp)
+                    .padding(top = 2.dp, bottom = 28.dp)
             ) {
                 // Error Banner with Retry Action
                 if (errorMessage != null) {

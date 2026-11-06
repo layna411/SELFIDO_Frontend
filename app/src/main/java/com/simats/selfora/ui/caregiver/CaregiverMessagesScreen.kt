@@ -10,6 +10,7 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -500,7 +501,7 @@ fun CaregiverMessagesScreen(
             }
 
             // Message Items
-            items(messages, key = { it.id }) { msg ->
+            itemsIndexed(messages, key = { index, msg -> "${msg.id}_${msg.sentAt}_$index" }) { _, msg ->
                 val isCaregiverMsg = msg.senderId == currentUserId || msg.senderName.contains("Caregiver", ignoreCase = true)
 
                 Box(

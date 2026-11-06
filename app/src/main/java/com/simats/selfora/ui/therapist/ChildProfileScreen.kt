@@ -488,7 +488,20 @@ fun ChildProfileScreen(
                         Spacer(modifier = Modifier.height(12.dp))
 
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text("👨‍👩‍👦", fontSize = 28.sp)
+                            Surface(
+                                shape = CircleShape,
+                                color = SelforaSecondary.copy(alpha = 0.12f),
+                                modifier = Modifier.size(44.dp)
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Icon(
+                                        imageVector = Icons.Default.FamilyRestroom,
+                                        contentDescription = null,
+                                        tint = SelforaSecondary,
+                                        modifier = Modifier.size(22.dp)
+                                    )
+                                }
+                            }
                             Spacer(modifier = Modifier.width(12.dp))
                             Column {
                                 Text(caregiverName, fontSize = 15.sp, fontWeight = FontWeight.Bold, color = SelforaTextPrimary)

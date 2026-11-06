@@ -195,7 +195,12 @@ fun TherapistDashboardScreen(
                         modifier = Modifier.size(54.dp)
                     ) {
                         Box(contentAlignment = Alignment.Center) {
-                            Text("👩‍⚕️", fontSize = 28.sp)
+                            Icon(
+                                imageVector = Icons.Default.HealthAndSafety,
+                                contentDescription = null,
+                                tint = SelforaPrimary,
+                                modifier = Modifier.size(28.dp)
+                            )
                         }
                     }
                     Spacer(modifier = Modifier.width(14.dp))
@@ -569,7 +574,12 @@ fun TherapistDashboardScreen(
                             modifier = Modifier.size(48.dp)
                         ) {
                             Box(contentAlignment = Alignment.Center) {
-                                Text("👩‍⚕️", fontSize = 24.sp)
+                                Icon(
+                                    imageVector = Icons.Default.HealthAndSafety,
+                                    contentDescription = null,
+                                    tint = SelforaPrimary,
+                                    modifier = Modifier.size(24.dp)
+                                )
                             }
                         }
                         Spacer(modifier = Modifier.width(12.dp))
