@@ -46,6 +46,11 @@ class TtsManager(context: Context) : TextToSpeech.OnInitListener {
         }
     }
 
+    fun speakInLanguage(text: String, languageCode: String, isAudioEnabled: Boolean = true) {
+        setLanguage(languageCode)
+        speak(text, isAudioEnabled)
+    }
+
     fun stop() {
         tts?.stop()
     }

@@ -128,6 +128,36 @@ class DressingModuleTest {
     }
 
     @Test
+    fun testBoyVestActivityHas20Steps() {
+        val activity = repository.getBoyVestActivity()
+        assertEquals("Boy Undergarment – Vest", activity.title)
+        assertEquals(20, activity.totalSteps)
+        assertEquals(20, activity.steps.size)
+
+        // Verify Step 1
+        val step1 = activity.steps[0]
+        assertEquals(1, step1.stepNumber)
+        assertEquals("Move to a private changing area", step1.title)
+
+        // Verify Step 8 (Put head through neck opening)
+        val step8 = activity.steps[7]
+        assertEquals(8, step8.stepNumber)
+        assertEquals("Put the head through the neck opening", step8.title)
+
+        // Verify Step 20 (Completion)
+        val step20 = activity.steps[19]
+        assertEquals(20, step20.stepNumber)
+        assertEquals("Check that the vest is correctly positioned and comfortable", step20.title)
+
+        // Verify asset paths
+        activity.steps.forEach { step ->
+            assertTrue(step.assetPath.startsWith("file:///android_asset/dressing/boy/vest/"))
+            assertTrue(step.childGuidance.isNotEmpty())
+            assertTrue(step.visualHighlight.isNotEmpty())
+        }
+    }
+
+    @Test
     fun testRoleBasedClinicalControlsPermissions() {
         val childRole = "ROLE_CHILD"
         val caregiverRole = "ROLE_CAREGIVER"

@@ -93,7 +93,6 @@ fun PromptFadingScreen(
             GlassTopBar(
                 title = "Prompt Fading Management",
                 subtitle = "Clinical Hierarchy & Auditable History",
-                onBackClick = onBack,
                 accentColor = SelforaPrimary
             )
         },

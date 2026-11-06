@@ -35,6 +35,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.simats.selfora.ui.theme.*
+import com.simats.selfora.ui.components.LanguageTogglePill
 
 // ============================================================================
 // 1. APP TOP BAR (Clean, iPhone-inspired, with Status Bar Insets)
@@ -46,7 +47,8 @@ fun AppTopBar(
     subtitle: String? = null,
     onBackClick: (() -> Unit)? = null,
     actions: @Composable (RowScope.() -> Unit)? = null,
-    accentColor: Color = SelforaPrimary
+    accentColor: Color = SelforaPrimary,
+    showLanguageToggle: Boolean = true
 ) {
     Surface(
         modifier = modifier
@@ -59,7 +61,7 @@ fun AppTopBar(
             modifier = Modifier
                 .fillMaxWidth()
                 .statusBarsPadding()
-                .padding(horizontal = 16.dp, vertical = 11.dp),
+                .padding(horizontal = 14.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
@@ -73,7 +75,7 @@ fun AppTopBar(
                         color = Color(0xFFF8FAFC),
                         border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
                         modifier = Modifier
-                            .size(40.dp)
+                            .size(36.dp)
                             .clickable(onClick = onBackClick)
                     ) {
                         Box(contentAlignment = Alignment.Center) {
@@ -81,17 +83,17 @@ fun AppTopBar(
                                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                                 contentDescription = "Back",
                                 tint = accentColor,
-                                modifier = Modifier.size(20.dp)
+                                modifier = Modifier.size(18.dp)
                             )
                         }
                     }
-                    Spacer(modifier = Modifier.width(12.dp))
+                    Spacer(modifier = Modifier.width(10.dp))
                 }
 
-                Column {
+                Column(modifier = Modifier.weight(1f, fill = false)) {
                     Text(
                         text = title,
-                        fontSize = 18.sp,
+                        fontSize = 17.sp,
                         fontWeight = FontWeight.Bold,
                         color = SelforaTextPrimary,
                         maxLines = 1,
@@ -101,7 +103,7 @@ fun AppTopBar(
                         Spacer(modifier = Modifier.height(1.dp))
                         Text(
                             text = subtitle,
-                            fontSize = 12.sp,
+                            fontSize = 11.sp,
                             fontWeight = FontWeight.Medium,
                             color = SelforaTextSecondary,
                             maxLines = 1,
@@ -111,13 +113,16 @@ fun AppTopBar(
                 }
             }
 
-            if (actions != null) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    actions()
+            Spacer(modifier = Modifier.width(8.dp))
+
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                if (showLanguageToggle) {
+                    LanguageTogglePill(isCompact = true)
                 }
+                actions?.invoke(this)
             }
         }
     }

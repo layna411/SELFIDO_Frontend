@@ -107,7 +107,6 @@ fun ChildListScreen(
             GlassTopBar(
                 title = "Select Child",
                 subtitle = "Active Pediatric Cases & ADL Goals",
-                onBackClick = onBack,
                 accentColor = SelforaPrimary,
                 actions = {
                     GlassIconButton(

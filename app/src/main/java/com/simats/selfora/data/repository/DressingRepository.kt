@@ -491,6 +491,123 @@ class DressingRepository {
         )
     }
 
+    fun getBoyVestActivity(): DressingActivity {
+        val titles = listOf(
+            "Move to a private changing area",
+            "Pick up the vest",
+            "Identify the front and back",
+            "Identify the neck opening",
+            "Identify the right and left arm openings",
+            "Hold the vest near the shoulder areas",
+            "Lift the vest to chest level",
+            "Put the head through the neck opening",
+            "Pull the vest down over the head",
+            "Find the right arm opening",
+            "Put the right arm through the opening",
+            "Pull the vest toward the right shoulder",
+            "Find the left arm opening",
+            "Put the left arm through the opening",
+            "Pull the vest toward the left shoulder",
+            "Pull the vest down over the chest",
+            "Pull the vest down over the abdomen",
+            "Straighten the vest around the shoulders",
+            "Straighten the lower edge around the waist",
+            "Check that the vest is correctly positioned and comfortable"
+        )
+        val childGuidance = listOf(
+            "Let us step into your dressing area!",
+            "Pick up your vest!",
+            "Find the tag on the back!",
+            "Find the neck hole!",
+            "Find both arm holes!",
+            "Hold the vest at the shoulders!",
+            "Lift the vest up to your chest!",
+            "Pop your head through the hole!",
+            "Pull the vest down over your head!",
+            "Find the right arm hole!",
+            "Push your right arm through!",
+            "Pull the strap on your right shoulder!",
+            "Find the left arm hole!",
+            "Push your left arm through!",
+            "Pull the strap on your left shoulder!",
+            "Pull the vest down over your chest!",
+            "Pull it all the way down over your tummy!",
+            "Fix the straps on your shoulders!",
+            "Straighten the bottom around your waist!",
+            "All done! You are comfy in your vest!"
+        )
+        val visualDescriptions = listOf(
+            "Show the boy moving calmly to a private dressing space.",
+            "Show the boy picking up the clean vest using two hands.",
+            "Show the boy distinguishing the front lower scoop from the back collar and tag.",
+            "Show the boy identifying the center neck opening of the vest.",
+            "Show the boy locating both sleeveless arm openings.",
+            "Show the boy gripping the vest firmly by the upper shoulder straps.",
+            "Show the boy raising the vest upward toward chest level.",
+            "Show the boy ducking head cleanly through the center neck opening.",
+            "Show the boy pulling the vest opening past the head down onto the neck.",
+            "Show the boy locating the right strap armhole.",
+            "Show the boy pushing the right arm and hand through the right opening.",
+            "Show the boy pulling the strap securely up onto the right shoulder.",
+            "Show the boy locating the left strap armhole.",
+            "Show the boy pushing the left arm and hand through the left opening.",
+            "Show the boy pulling the strap securely up onto the left shoulder.",
+            "Show the boy smoothing the vest down flat over the chest.",
+            "Show the boy pulling the lower edge of the vest down past the tummy.",
+            "Show the boy checking that both shoulder straps lie flat and neat.",
+            "Show the boy straightening the lower hem smoothly around the waist.",
+            "Show the boy standing comfortably with the undergarment vest properly positioned."
+        )
+        val visualHighlights = listOf(
+            "Private Dressing Area",
+            "Both Hands on Vest",
+            "Front Scoop & Back Tag",
+            "Center Neck Opening",
+            "Both Arm Openings",
+            "Upper Shoulder Straps",
+            "Vest at Chest Level",
+            "Head Through Neck Hole",
+            "Vest Around Neck",
+            "Right Armhole",
+            "Right Arm Through",
+            "Right Strap on Shoulder",
+            "Left Armhole",
+            "Left Arm Through",
+            "Left Strap on Shoulder",
+            "Vest Over Chest",
+            "Vest Over Abdomen",
+            "Flat Shoulder Straps",
+            "Straight Waist Hem",
+            "Comfortable Vest Fit"
+        )
+
+        val steps = titles.mapIndexed { idx, title ->
+            val stepNumber = idx + 1
+            DressingStep(
+                stepId = "boy_vest_${String.format("%02d", stepNumber)}",
+                activityId = "boy_vest_activity",
+                stepNumber = stepNumber,
+                title = title,
+                childGuidance = childGuidance[idx],
+                visualDescription = visualDescriptions[idx],
+                visualHighlight = visualHighlights[idx],
+                assetPath = "file:///android_asset/dressing/boy/vest/step_${String.format("%02d", stepNumber)}.gif"
+            )
+        }
+
+        return DressingActivity(
+            activityId = "boy_vest_activity",
+            title = "Boy Undergarment – Vest",
+            category = "Dressing",
+            gender = GenderCategory.BOY,
+            garmentType = "Vest",
+            totalSteps = 20,
+            iconName = "ic_boy_vest",
+            description = "20 Clinical task-analysis steps for independent undergarment vest dressing.",
+            steps = steps
+        )
+    }
+
     fun getGirlFrockActivity(): DressingActivity {
         val steps = listOf(
             DressingStep(
@@ -779,6 +896,7 @@ class DressingRepository {
     fun getActivityById(activityId: String): DressingActivity {
         return when {
             activityId.contains("girl", ignoreCase = true) || activityId.contains("frock", ignoreCase = true) -> getGirlFrockActivity()
+            activityId.contains("vest", ignoreCase = true) || (activityId.contains("undergarment", ignoreCase = true) && !activityId.contains("brief", ignoreCase = true) && !activityId.contains("pant", ignoreCase = true)) -> getBoyVestActivity()
             activityId.contains("jacket", ignoreCase = true) -> getBoyJacketActivity()
             activityId.contains("shirt", ignoreCase = true) && !activityId.contains("tshirt", ignoreCase = true) && !activityId.contains("t-shirt", ignoreCase = true) -> getBoyShirtActivity()
             activityId.contains("eating", ignoreCase = true) || activityId.contains("food", ignoreCase = true) -> getEatingActivity()

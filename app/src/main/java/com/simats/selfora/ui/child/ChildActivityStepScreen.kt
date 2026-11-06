@@ -65,6 +65,7 @@ import com.simats.selfora.ui.therapist.getSampleShoesSteps
 import com.simats.selfora.ui.therapist.getSampleTShirtSteps
 import com.simats.selfora.ui.therapist.getSampleShirtSteps
 import com.simats.selfora.ui.therapist.getSampleJacketSteps
+import com.simats.selfora.ui.therapist.getSampleVestSteps
 
 import com.simats.selfora.utils.LanguageManager
 
@@ -147,6 +148,7 @@ fun ChildActivityStepScreen(
         val fallbackSteps = when (activityId) {
             13L -> getSampleEatingSteps()
             9L -> getSampleShoesSteps()
+            4L -> getSampleVestSteps()
             3L -> getSampleJacketSteps()
             2L -> if (gender.equals("GIRL", ignoreCase = true)) getSampleGirlFrockSteps() else getSampleShirtSteps()
             else -> getSampleTShirtSteps()
@@ -354,7 +356,7 @@ fun ChildActivityStepScreen(
 
                         Text(
 
-                            text = if (isTamil) "🇮🇳 தமிழ்" else "🇬🇧 EN",
+                            text = if (isTamil) "தமிழ்" else "EN",
 
                             fontSize = 11.sp,
 
@@ -460,28 +462,22 @@ fun ChildActivityStepScreen(
 
 
 
-                // Visual Step Guidance Card
-
+                                // Visual Step Guidance Card
                 VisualStepGuidanceCard(
-
                     stepNumber = currentStepIndex + 1,
-
                     totalSteps = steps.size,
-
-                    stepTitle = displayStepTitle,
-
-                    childInstruction = displayInstruction,
-
+                    stepTitle = step.title,
+                    childInstruction = step.childInstruction,
                     gender = gender,
-
                     activityTitle = displayActivityTitle,
-
                     isTamil = isTamil,
-
+                    stepTitleTa = step.titleTa,
+                    childInstructionTa = step.childInstructionTa,
                     mediaUrl = step.media.firstOrNull()?.mediaUrl,
-
-                    onSpeakInstruction = { ttsManager.speak(displayInstruction) }
-
+                    onSpeakInstruction = { ttsManager.speak(displayInstruction) },
+                    onSpeakCustomInstruction = { text, isTa ->
+                        ttsManager.speakInLanguage(text, if (isTa) "ta" else "en")
+                    }
                 )
 
 

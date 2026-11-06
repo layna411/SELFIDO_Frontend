@@ -100,7 +100,6 @@ fun TherapistManagementScreen(
             AppTopBar(
                 title = "Therapist & Clinician Management",
                 subtitle = "Onboard, Configure & Audit Clinicians",
-                onBackClick = onBack,
                 actions = {
                     IconButton(onClick = { fetchTherapists() }) {
                         Icon(Icons.Default.Refresh, contentDescription = "Refresh", tint = blueAccent)

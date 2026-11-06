@@ -116,12 +116,12 @@ fun ChildSettingsScreen(
                         FilterChip(
                             selected = language == "EN",
                             onClick = { language = "EN" },
-                            label = { Text("English 🇬🇧") }
+                            label = { Text("English") }
                         )
                         FilterChip(
                             selected = language == "TA",
                             onClick = { language = "TA" },
-                            label = { Text("Tamil (தமிழ்) 🇮🇳") }
+                            label = { Text("தமிழ் (Tamil)") }
                         )
                     }
 

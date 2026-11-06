@@ -98,7 +98,6 @@ fun CaregiverManagementScreen(
             AppTopBar(
                 title = "Caregiver & Parent Accounts",
                 subtitle = "Linked Parent Logins & Access Status",
-                onBackClick = onBack,
                 accentColor = purpleAccent,
                 actions = {
                     IconButton(onClick = { loadCaregivers() }) {

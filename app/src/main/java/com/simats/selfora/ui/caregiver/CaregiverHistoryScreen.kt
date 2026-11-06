@@ -63,7 +63,6 @@ fun CaregiverHistoryScreen(
             GlassTopBar(
                 title = "Practice History",
                 subtitle = "Past Records & Therapist Feedback",
-                onBackClick = onBack,
                 accentColor = SelforaPrimary
             )
         }

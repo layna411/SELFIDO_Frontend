@@ -38,7 +38,6 @@ fun CaregiverProfileScreen(
             GlassTopBar(
                 title = "Profile",
                 subtitle = "Caregiver & Family Account",
-                onBackClick = onBack,
                 accentColor = SelforaPrimary
             )
         }

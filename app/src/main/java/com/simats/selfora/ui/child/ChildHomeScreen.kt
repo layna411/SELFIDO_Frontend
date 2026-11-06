@@ -181,28 +181,37 @@ fun ChildHomeScreen(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.weight(1f)
+            ) {
                 ChildAvatarImage(
                     avatarId = if (isGirl) "ananya_girl" else "aarav_boy",
                     gender = if (isGirl) "GIRL" else "BOY",
-                    size = 56.dp,
+                    size = 48.dp,
                     animateWave = true
                 )
-                Spacer(modifier = Modifier.width(12.dp))
-                Column {
+                Spacer(modifier = Modifier.width(10.dp))
+                Column(modifier = Modifier.weight(1f, fill = false)) {
                     Text(
                         text = if (isTamil) "வணக்கம், $childName! ✨" else "Hi, $childName! ✨",
                         fontWeight = FontWeight.Bold,
-                        fontSize = 22.sp,
-                        color = primaryThemeColor
+                        fontSize = 20.sp,
+                        color = primaryThemeColor,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                     Text(
                         text = if (isTamil) "இன்று மகிழ்ச்சியாகக் கற்போமா?" else "Ready for fun learning?",
-                        fontSize = 12.sp,
-                        color = SelforaTextSecondary
+                        fontSize = 11.sp,
+                        color = SelforaTextSecondary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
             }
+
+            Spacer(modifier = Modifier.width(8.dp))
 
             Row(
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
@@ -210,19 +219,19 @@ fun ChildHomeScreen(
             ) {
                 // Immediate Language Switcher Toggle Pill
                 Surface(
-                    shape = RoundedCornerShape(18.dp),
+                    shape = RoundedCornerShape(16.dp),
                     color = if (isTamil) Color(0xFFFEF3C7) else Color(0xFFEFF6FF),
-                    border = BorderStroke(1.2.dp, if (isTamil) Color(0xFFF59E0B) else SelforaPrimary),
+                    border = BorderStroke(1.dp, if (isTamil) Color(0xFFF59E0B) else SelforaPrimary),
                     modifier = Modifier.clickable {
                         LanguageManager.toggleLanguage()
                     }
                 ) {
                     Text(
-                        text = if (isTamil) "🇮🇳 தமிழ்" else "🇬🇧 English",
+                        text = if (isTamil) "தமிழ்" else "English",
                         fontSize = 11.sp,
                         fontWeight = FontWeight.ExtraBold,
                         color = if (isTamil) Color(0xFFB45309) else SelforaPrimary,
-                        modifier = Modifier.padding(horizontal = 9.dp, vertical = 6.dp)
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp)
                     )
                 }
 
@@ -230,14 +239,14 @@ fun ChildHomeScreen(
                     icon = Icons.Default.Settings,
                     onClick = onOpenSettings,
                     tint = SelforaTextSecondary,
-                    size = 38.dp,
+                    size = 36.dp,
                     iconSize = 18.dp
                 )
                 GlassIconButton(
                     icon = Icons.Default.ExitToApp,
                     onClick = { showExitDialog = true },
                     tint = SelforaError,
-                    size = 38.dp,
+                    size = 36.dp,
                     iconSize = 18.dp
                 )
             }

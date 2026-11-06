@@ -223,4 +223,29 @@ object SessionManager {
     fun isTamilActive(userId: Long = getUserId()): Boolean {
         return getUserLanguage(userId).equals("ta", ignoreCase = true)
     }
+
+    // ==========================================
+    // Notification Read State Tracking
+    // ==========================================
+    private const val KEY_READ_NOTIFICATION_IDS = "read_notification_ids"
+
+    fun getReadNotificationIds(): Set<Long> {
+        if (!::prefs.isInitialized) return emptySet()
+        val set = prefs.getStringSet(KEY_READ_NOTIFICATION_IDS, emptySet()) ?: emptySet()
+        return set.mapNotNull { it.toLongOrNull() }.toSet()
+    }
+
+    fun markNotificationIdAsRead(id: Long) {
+        if (!::prefs.isInitialized) return
+        val current = getReadNotificationIds().toMutableSet()
+        current.add(id)
+        prefs.edit().putStringSet(KEY_READ_NOTIFICATION_IDS, current.map { it.toString() }.toSet()).apply()
+    }
+
+    fun markAllNotificationIdsAsRead(ids: Collection<Long>) {
+        if (!::prefs.isInitialized) return
+        val current = getReadNotificationIds().toMutableSet()
+        current.addAll(ids)
+        prefs.edit().putStringSet(KEY_READ_NOTIFICATION_IDS, current.map { it.toString() }.toSet()).apply()
+    }
 }

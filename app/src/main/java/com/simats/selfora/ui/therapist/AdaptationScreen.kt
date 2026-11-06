@@ -126,7 +126,6 @@ fun AdaptationScreen(
             GlassTopBar(
                 title = "Analyze & Adapt",
                 subtitle = session?.let { "${it.childName} • ${it.activityTitle}" } ?: "Session #$sessionId",
-                onBackClick = onBack,
                 accentColor = SelforaPrimary
             )
         },

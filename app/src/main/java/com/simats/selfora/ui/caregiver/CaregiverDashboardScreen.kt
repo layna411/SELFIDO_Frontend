@@ -19,6 +19,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.simats.selfora.data.api.ApiClient
+import com.simats.selfora.data.repository.NotificationRepository
 import com.simats.selfora.data.local.SessionManager
 import com.simats.selfora.data.model.HomeProgramResponse
 import com.simats.selfora.data.model.LinkedChildInfo
@@ -70,25 +71,51 @@ fun CaregiverDashboardScreen(
         }
     }
 
+    val unreadNotificationCount by NotificationRepository.unreadCount.collectAsState()
+
     LaunchedEffect(Unit) {
         loadDashboardData()
+        NotificationRepository.fetchNotifications()
     }
 
     Scaffold(
         containerColor = SelforaBackground,
         topBar = {
+            val currentLanguage by com.simats.selfora.utils.LanguageManager.currentLanguage.collectAsState()
+            val isTamil = currentLanguage == "ta"
             GlassTopBar(
-                title = "Caregiver Home",
-                subtitle = "Home Practice & Guidance",
+                title = if (isTamil) "பராமரிப்பாளர் முகப்பு" else "Caregiver Home",
+                subtitle = if (isTamil) "வீட்டுப் பயிற்சி & வழிகாட்டுதல்" else "Home Practice & Guidance",
                 accentColor = SelforaPrimary,
                 actions = {
-                    GlassIconButton(
-                        icon = Icons.Default.Notifications,
-                        onClick = onNavigateToNotifications,
-                        tint = SelforaPrimary,
-                        size = 40.dp,
-                        iconSize = 20.dp
-                    )
+                    if (unreadNotificationCount > 0) {
+                        BadgedBox(
+                            badge = {
+                                Badge(
+                                    containerColor = Color(0xFFEF4444),
+                                    contentColor = Color.White
+                                ) {
+                                    Text("$unreadNotificationCount", fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                                }
+                            }
+                        ) {
+                            GlassIconButton(
+                                icon = Icons.Default.Notifications,
+                                onClick = onNavigateToNotifications,
+                                tint = SelforaPrimary,
+                                size = 36.dp,
+                                iconSize = 18.dp
+                            )
+                        }
+                    } else {
+                        GlassIconButton(
+                            icon = Icons.Default.Notifications,
+                            onClick = onNavigateToNotifications,
+                            tint = SelforaPrimary,
+                            size = 36.dp,
+                            iconSize = 18.dp
+                        )
+                    }
                 }
             )
         }

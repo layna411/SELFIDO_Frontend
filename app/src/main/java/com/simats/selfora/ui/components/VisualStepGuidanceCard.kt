@@ -4,6 +4,7 @@ import android.os.Build
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -45,16 +46,28 @@ fun VisualStepGuidanceCard(
     gender: String = "BOY", // BOY or GIRL
     activityTitle: String = "",
     isTamil: Boolean = false,
+    stepTitleTa: String? = null,
+    childInstructionTa: String? = null,
     mediaUrl: String? = null,
-    onSpeakInstruction: () -> Unit
+    onSpeakInstruction: () -> Unit = {},
+    onSpeakCustomInstruction: ((text: String, isTamil: Boolean) -> Unit)? = null
 ) {
     val isGirlMode = gender.uppercase().contains("GIRL") || gender.uppercase().contains("FEMALE")
     val cardBg = if (isGirlMode) ChildRewardsCardBg else ChildDressingCardBg
     val themeColor = if (isGirlMode) SelforaSecondary else SelforaPrimary
 
-    // Auto-resolve GIF for Boy T-Shirt (1..20), Boy Shirt (1..23), or Boy Jacket (1..26) if mediaUrl is not explicitly supplied
+    // Active audio/display language selector on the card (defaults to global isTamil, user can toggle directly)
+    var activeAudioLang by remember(isTamil) { mutableStateOf(if (isTamil) "ta" else "en") }
+    val isAudioTamil = activeAudioLang == "ta"
+
+    val displayStepTitle = if (isAudioTamil && !stepTitleTa.isNullOrBlank()) stepTitleTa else stepTitle
+    val displayInstruction = if (isAudioTamil && !childInstructionTa.isNullOrBlank()) childInstructionTa else childInstruction
+
+    // Auto-resolve GIF for Boy T-Shirt (1..20), Boy Shirt (1..23), Boy Jacket (1..26), or Boy Vest (1..20) if mediaUrl is not explicitly supplied
     val resolvedMediaUrl = if (!mediaUrl.isNullOrBlank()) {
         mediaUrl
+    } else if (!isGirlMode && (activityTitle.contains("Vest", ignoreCase = true) || activityTitle.contains("பனியன்") || (activityTitle.contains("Undergarment", ignoreCase = true) && !activityTitle.contains("Brief", ignoreCase = true) && !activityTitle.contains("Pant", ignoreCase = true))) && stepNumber in 1..20) {
+        "file:///android_asset/dressing/boy/vest/step_${String.format("%02d", stepNumber)}.gif"
     } else if (!isGirlMode && (activityTitle.contains("Jacket", ignoreCase = true) || activityTitle.contains("ஜாக்கெட்")) && stepNumber in 1..26) {
         "file:///android_asset/dressing/boy/jacket/step_${String.format("%02d", stepNumber)}.gif"
     } else if (!isGirlMode && (activityTitle.contains("Shirt", ignoreCase = true) && !activityTitle.contains("T-Shirt", ignoreCase = true) && !activityTitle.contains("T-shirt", ignoreCase = true) && !activityTitle.contains("டி-சர்ட்")) && stepNumber in 1..23) {
@@ -92,7 +105,7 @@ fun VisualStepGuidanceCard(
                     shape = RoundedCornerShape(10.dp),
                     color = cardBg
                 ) {
-                    val headerText = if (isTamil) {
+                    val headerText = if (isAudioTamil) {
                         if (activityTitle.isNotBlank()) "$activityTitle • படி $stepNumber / $totalSteps"
                         else "படி $stepNumber / $totalSteps"
                     } else {
@@ -112,7 +125,7 @@ fun VisualStepGuidanceCard(
                     shape = RoundedCornerShape(8.dp),
                     color = SelforaBackground
                 ) {
-                    val genderLabel = if (isTamil) {
+                    val genderLabel = if (isAudioTamil) {
                         if (isGirlMode) "சிறுமி 👧" else "சிறுவன் 👦"
                     } else {
                         if (isGirlMode) "Girl Mode 👧" else "Boy Mode 👦"
@@ -140,61 +153,144 @@ fun VisualStepGuidanceCard(
 
             Spacer(modifier = Modifier.height(14.dp))
 
-            // Step Wording Title
+            // Step Wording Title (in selected language with secondary subtitle if Tamil)
             Text(
-                text = stepTitle,
+                text = displayStepTitle,
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,
                 color = SelforaTextPrimary,
                 textAlign = TextAlign.Center
             )
+            if (isAudioTamil && !stepTitleTa.isNullOrBlank() && stepTitle.isNotBlank() && stepTitle != stepTitleTa) {
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = stepTitle,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = SelforaTextSecondary,
+                    textAlign = TextAlign.Center
+                )
+            }
 
             Spacer(modifier = Modifier.height(10.dp))
 
-            // Child Spoken Guidance Container with Voice Speaker Button
+            // Child Spoken Guidance Container with Bilingual Choice Selector and Voice Speaker Button
             Surface(
-                shape = RoundedCornerShape(14.dp),
+                shape = RoundedCornerShape(16.dp),
                 color = cardBg,
+                border = androidx.compose.foundation.BorderStroke(1.dp, themeColor.copy(alpha = 0.3f)),
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Row(
+                Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(12.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
+                        .padding(14.dp)
                 ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = if (isTamil) "வழிகாட்டுதல் உரை:" else "SPOKEN INSTRUCTION:",
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = themeColor
-                        )
-                        Spacer(modifier = Modifier.height(2.dp))
-                        Text(
-                            text = "\"$childInstruction\"",
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = SelforaTextPrimary
-                        )
+                    // Top row: Label & Bilingual Decision Selector [ EN ] [ தமிழ் ]
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Text(
+                                text = "🗣️",
+                                fontSize = 12.sp
+                            )
+                            Text(
+                                text = if (isAudioTamil) "வழிகாட்டுதல் உரை:" else "SPOKEN INSTRUCTION:",
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = themeColor
+                            )
+                        }
+
+                        // Direct Bilingual Decision Switcher [ EN ] [ தமிழ் ]
+                        Row(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(20.dp))
+                                .background(Color.White)
+                                .border(1.dp, themeColor.copy(alpha = 0.3f), RoundedCornerShape(20.dp))
+                                .padding(2.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            // English Option
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(16.dp))
+                                    .background(if (!isAudioTamil) themeColor else Color.Transparent)
+                                    .clickable { activeAudioLang = "en" }
+                                    .padding(horizontal = 9.dp, vertical = 4.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = "EN",
+                                    fontSize = 11.sp,
+                                    fontWeight = if (!isAudioTamil) FontWeight.ExtraBold else FontWeight.Medium,
+                                    color = if (!isAudioTamil) Color.White else SelforaTextSecondary
+                                )
+                            }
+
+                            // Tamil Option
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(16.dp))
+                                    .background(if (isAudioTamil) themeColor else Color.Transparent)
+                                    .clickable { activeAudioLang = "ta" }
+                                    .padding(horizontal = 9.dp, vertical = 4.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = "தமிழ்",
+                                    fontSize = 11.sp,
+                                    fontWeight = if (isAudioTamil) FontWeight.ExtraBold else FontWeight.Medium,
+                                    color = if (isAudioTamil) Color.White else SelforaTextSecondary
+                                )
+                            }
+                        }
                     }
 
-                    Spacer(modifier = Modifier.width(8.dp))
+                    Spacer(modifier = Modifier.height(8.dp))
 
-                    IconButton(
-                        onClick = onSpeakInstruction,
-                        modifier = Modifier
-                            .size(42.dp)
-                            .clip(CircleShape)
-                            .background(themeColor)
+                    // Instruction Text and Large Speaker Action Button
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.VolumeUp,
-                            contentDescription = "Speak",
-                            tint = Color.White,
-                            modifier = Modifier.size(22.dp)
+                        Text(
+                            text = "\"$displayInstruction\"",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = SelforaTextPrimary,
+                            modifier = Modifier.weight(1f)
                         )
+
+                        Spacer(modifier = Modifier.width(10.dp))
+
+                        IconButton(
+                            onClick = {
+                                if (onSpeakCustomInstruction != null) {
+                                    onSpeakCustomInstruction(displayInstruction, isAudioTamil)
+                                } else {
+                                    onSpeakInstruction()
+                                }
+                            },
+                            modifier = Modifier
+                                .size(44.dp)
+                                .clip(CircleShape)
+                                .background(themeColor)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.VolumeUp,
+                                contentDescription = if (isAudioTamil) "தமிழில் கேட்க" else "Listen in English",
+                                tint = Color.White,
+                                modifier = Modifier.size(23.dp)
+                            )
+                        }
                     }
                 }
             }
@@ -245,6 +341,93 @@ fun StepVisualIllustrationView(
 
     // Accurate step mapping with vector icons and child-friendly action descriptors
     val (illustrationIcon, actionBadgeText, bgTint) = when {
+        // --- BOY UNDERGARMENT - VEST SPECIFIC STEPS ---
+        titleLower.contains("private") || titleLower.contains("changing area") -> Triple(
+            Icons.Default.Lock,
+            "Moving to private dressing area 🚪🚶‍♂️",
+            ChildDressingCardBg
+        )
+        titleLower.contains("arm openings") || (titleLower.contains("right and left") && titleLower.contains("arm")) -> Triple(
+            Icons.Default.Search,
+            "Finding both sleeveless arm openings 🔎",
+            ChildDressingCardBg
+        )
+        titleLower.contains("vest") && titleLower.contains("pick up") -> Triple(
+            Icons.Default.FrontHand,
+            "Picking up clean vest with two hands 🤲🎽",
+            ChildEatingCardBg
+        )
+        titleLower.contains("vest") && (titleLower.contains("shoulder areas") || titleLower.contains("hold")) && !titleLower.contains("straighten") -> Triple(
+            Icons.Default.PanTool,
+            "Holding vest by upper shoulder straps 🎽💪",
+            ChildDressingCardBg
+        )
+        titleLower.contains("vest") && titleLower.contains("chest level") -> Triple(
+            Icons.Default.North,
+            "Lifting vest upward to chest level ⬆️",
+            ChildShoesCardBg
+        )
+        titleLower.contains("vest") && titleLower.contains("over the head") -> Triple(
+            Icons.Default.ArrowDownward,
+            "Pulling vest past head onto neck 🔽",
+            ChildShoesCardBg
+        )
+        titleLower.contains("vest toward the right shoulder") || (titleLower.contains("right shoulder") && titleLower.contains("strap")) -> Triple(
+            Icons.Default.ArrowUpward,
+            "Pulling strap securely onto right shoulder 🎽",
+            ChildDressingCardBg
+        )
+        titleLower.contains("vest toward the left shoulder") || (titleLower.contains("left shoulder") && titleLower.contains("strap")) -> Triple(
+            Icons.Default.ArrowUpward,
+            "Pulling strap securely onto left shoulder 🎽",
+            ChildDressingCardBg
+        )
+        titleLower.contains("vest down over the chest") || (titleLower.contains("chest") && titleLower.contains("down") && titleLower.contains("vest")) -> Triple(
+            Icons.Default.ArrowDownward,
+            "Smoothing vest down over chest 🔽",
+            ChildShoesCardBg
+        )
+        titleLower.contains("vest down over the abdomen") || titleLower.contains("abdomen") || titleLower.contains("tummy") -> Triple(
+            Icons.Default.ArrowDownward,
+            "Pulling vest down over tummy 🔽",
+            ChildShoesCardBg
+        )
+        titleLower.contains("vest around the shoulders") || (titleLower.contains("shoulders") && titleLower.contains("straighten") && titleLower.contains("vest")) -> Triple(
+            Icons.Default.AutoFixHigh,
+            "Flattening straps on both shoulders ✨",
+            ChildEatingCardBg
+        )
+        titleLower.contains("lower edge") || (titleLower.contains("waist") && titleLower.contains("straighten") && titleLower.contains("lower")) -> Triple(
+            Icons.Default.AutoFixHigh,
+            "Straightening lower hem around waist ✨",
+            ChildEatingCardBg
+        )
+        (stepNumber == 20 && titleLower.contains("vest")) || (titleLower.contains("vest") && titleLower.contains("comfortable")) -> Triple(
+            Icons.Default.EmojiEvents,
+            "Boy 👦 comfy and ready in undergarment vest! 🎉🎽⭐",
+            ChildRewardsCardBg
+        )
+        titleLower.contains("right arm opening") || (titleLower.contains("right") && titleLower.contains("arm opening")) -> Triple(
+            Icons.Default.Search,
+            "Locating right strap armhole 🔎",
+            ChildDressingCardBg
+        )
+        titleLower.contains("right arm through") && !titleLower.contains("sleeve") -> Triple(
+            Icons.Default.PanTool,
+            "Pushing right arm through opening 💪🎽",
+            ChildDressingCardBg
+        )
+        titleLower.contains("left arm opening") || (titleLower.contains("left") && titleLower.contains("arm opening")) -> Triple(
+            Icons.Default.Search,
+            "Locating left strap armhole 🔎",
+            ChildDressingCardBg
+        )
+        titleLower.contains("left arm through") && !titleLower.contains("sleeve") -> Triple(
+            Icons.Default.PanTool,
+            "Pushing left arm through opening 💪🎽",
+            ChildDressingCardBg
+        )
+
         // --- BOY ZIP-UP JACKET SPECIFIC STEPS ---
         titleLower.contains("slider") && titleLower.contains("find") -> Triple(
             Icons.Default.Search,

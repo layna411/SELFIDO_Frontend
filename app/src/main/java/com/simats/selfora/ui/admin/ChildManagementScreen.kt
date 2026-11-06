@@ -92,7 +92,6 @@ fun ChildManagementScreen(
             AppTopBar(
                 title = "Centralized Child Records",
                 subtitle = "Clinical Profiles & Caseload Management",
-                onBackClick = onBack,
                 actions = {
                     IconButton(onClick = { fetchChildren() }) {
                         Icon(Icons.Default.Refresh, contentDescription = "Refresh", tint = blueAccent)

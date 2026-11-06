@@ -92,8 +92,7 @@ fun AdminReportsScreen(
             AppTopBar(
                 title = "Reports & Analytics Export",
                 subtitle = "Authorized Clinical & Operational PDF Reports",
-                onBackClick = onBack
-            )
+                )
         },
         containerColor = SelforaBackground
     ) { padding ->

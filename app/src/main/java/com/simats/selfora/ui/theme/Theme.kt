@@ -55,6 +55,22 @@ fun SELFORATheme(
 ) {
     val colors = if (darkTheme) DarkColorScheme else LightColorScheme
 
+    val view = androidx.compose.ui.platform.LocalView.current
+    if (!view.isInEditMode) {
+        androidx.compose.runtime.SideEffect {
+            val window = (view.context as? android.app.Activity)?.window
+            if (window != null) {
+                androidx.core.view.WindowCompat.setDecorFitsSystemWindows(window, false)
+                window.statusBarColor = android.graphics.Color.TRANSPARENT
+                window.navigationBarColor = android.graphics.Color.TRANSPARENT
+                val insetsController = androidx.core.view.WindowCompat.getInsetsController(window, view)
+                // Set light status bars so clock time and system icons are dark and fully visible
+                insetsController.isAppearanceLightStatusBars = true
+                insetsController.isAppearanceLightNavigationBars = true
+            }
+        }
+    }
+
     MaterialTheme(
         colorScheme = colors,
         typography = Typography,

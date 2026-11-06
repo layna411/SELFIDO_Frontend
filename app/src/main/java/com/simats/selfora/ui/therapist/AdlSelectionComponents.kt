@@ -41,7 +41,7 @@ fun StartSessionTopBar(
     therapistName: String,
     therapistDesignation: String = "Occupational Therapist (OT)",
     title: String = "Start New Session",
-    onBackClick: () -> Unit,
+    onBackClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     Surface(
@@ -67,26 +67,27 @@ fun StartSessionTopBar(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.weight(1f)
                 ) {
-                    // Circular back button
-                    Surface(
-                        shape = CircleShape,
-                        color = Color(0xFFF8FAFC),
-                        border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
-                        modifier = Modifier
-                            .size(40.dp)
-                            .clickable(onClick = onBackClick)
-                    ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = "Back",
-                                tint = SelforaPrimary,
-                                modifier = Modifier.size(20.dp)
-                            )
+                    // Circular back button (conditionally displayed)
+                    if (onBackClick != null) {
+                        Surface(
+                            shape = CircleShape,
+                            color = Color(0xFFF8FAFC),
+                            border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                            modifier = Modifier
+                                .size(40.dp)
+                                .clickable(onClick = onBackClick)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                    contentDescription = "Back",
+                                    tint = SelforaPrimary,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
                         }
+                        Spacer(modifier = Modifier.width(12.dp))
                     }
-
-                    Spacer(modifier = Modifier.width(12.dp))
 
                     Column {
                         Text(

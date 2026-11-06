@@ -64,6 +64,10 @@ fun getSampleJacketSteps(): List<TaskStepResponse> {
     return SelfidoCatalogue.getStepsForActivity(3L)
 }
 
+fun getSampleVestSteps(): List<TaskStepResponse> {
+    return SelfidoCatalogue.getStepsForActivity(4L)
+}
+
 
 
 

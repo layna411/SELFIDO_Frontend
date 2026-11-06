@@ -65,7 +65,7 @@ fun LanguageTogglePill(
             )
             Spacer(modifier = Modifier.width(6.dp))
             Text(
-                text = if (isTamil) "🇮🇳 தமிழ்" else "🇬🇧 English",
+                text = if (isTamil) "தமிழ்" else if (isCompact) "EN" else "English",
                 color = bgColor,
                 fontWeight = FontWeight.Bold,
                 fontSize = if (isCompact) 11.sp else 12.sp

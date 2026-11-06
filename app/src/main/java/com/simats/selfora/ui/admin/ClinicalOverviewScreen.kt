@@ -38,8 +38,7 @@ fun ClinicalOverviewScreen(
             AppTopBar(
                 title = "Clinical Overview",
                 subtitle = "Prompt Fading & Adaptation Auditing",
-                onBackClick = onBack
-            )
+                )
         },
         containerColor = SelforaBackground
     ) { padding ->

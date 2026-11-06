@@ -21,6 +21,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.simats.selfora.data.api.ApiClient
+import com.simats.selfora.data.repository.NotificationRepository
 import com.simats.selfora.data.model.ChildSummaryItem
 import com.simats.selfora.data.model.PendingReviewItem
 import com.simats.selfora.data.model.ScheduledSessionItem
@@ -78,43 +79,64 @@ fun TherapistDashboardScreen(
         }
     }
 
+    val unreadNotificationCount by NotificationRepository.unreadCount.collectAsState()
+
     LaunchedEffect(Unit) {
         loadDashboardData()
+        NotificationRepository.fetchNotifications()
     }
 
     Scaffold(
         topBar = {
             GlassTopBar(
                 title = "${getTimeBasedGreeting()} 👋",
-                subtitle = "${summary.therapistName.ifBlank { "Therapist" }} (${summary.designation})",
+                subtitle = "${summary.therapistName.ifBlank { "Therapist" }} • ${summary.designation.ifBlank { "OT" }}",
                 accentColor = SelforaPrimary,
                 actions = {
                     GlassIconButton(
                         icon = Icons.Default.Refresh,
-                        onClick = { loadDashboardData() },
+                        onClick = {
+                            loadDashboardData()
+                            scope.launch { NotificationRepository.fetchNotifications() }
+                        },
                         tint = SelforaPrimary,
-                        size = 40.dp,
-                        iconSize = 20.dp
+                        size = 36.dp,
+                        iconSize = 18.dp
                     )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    BadgedBox(
-                        badge = { Badge { Text("3") } }
-                    ) {
+                    if (unreadNotificationCount > 0) {
+                        BadgedBox(
+                            badge = {
+                                Badge(
+                                    containerColor = Color(0xFFEF4444),
+                                    contentColor = Color.White
+                                ) {
+                                    Text("$unreadNotificationCount", fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                                }
+                            }
+                        ) {
+                            GlassIconButton(
+                                icon = Icons.Default.Notifications,
+                                onClick = onNavigateToNotifications,
+                                tint = SelforaPrimary,
+                                size = 36.dp,
+                                iconSize = 18.dp
+                            )
+                        }
+                    } else {
                         GlassIconButton(
                             icon = Icons.Default.Notifications,
                             onClick = onNavigateToNotifications,
                             tint = SelforaPrimary,
-                            size = 40.dp,
-                            iconSize = 20.dp
+                            size = 36.dp,
+                            iconSize = 18.dp
                         )
                     }
-                    Spacer(modifier = Modifier.width(8.dp))
                     GlassIconButton(
                         icon = Icons.Default.Person,
                         onClick = { showProfileDialog = true },
                         tint = SelforaPrimary,
-                        size = 40.dp,
-                        iconSize = 20.dp
+                        size = 36.dp,
+                        iconSize = 18.dp
                     )
                 }
             )

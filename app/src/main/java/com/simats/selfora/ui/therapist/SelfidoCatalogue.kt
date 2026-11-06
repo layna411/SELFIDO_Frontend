@@ -1154,6 +1154,16 @@ object SelfidoCatalogue {
                         caption = s.first
                     )
                 )
+            } else if (activityId == 4L) {
+                listOf(
+                    MediaResponse(
+                        id = 4000L + stepNum,
+                        mediaType = "IMAGE_GIF",
+                        mediaUrl = "file:///android_asset/dressing/boy/vest/step_${String.format("%02d", stepNum)}.gif",
+                        thumbnailUrl = "file:///android_asset/dressing/boy/vest/step_${String.format("%02d", stepNum)}.gif",
+                        caption = s.first
+                    )
+                )
             } else {
                 emptyList()
             }

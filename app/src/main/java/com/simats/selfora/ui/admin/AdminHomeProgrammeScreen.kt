@@ -51,8 +51,7 @@ fun AdminHomeProgrammeScreen(
             AppTopBar(
                 title = "Home Programmes Oversight",
                 subtitle = "Caregiver ADL Practice Compliance",
-                onBackClick = onBack
-            )
+                )
         },
         containerColor = SelforaBackground
     ) { padding ->

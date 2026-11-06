@@ -17,6 +17,11 @@ data class StepRecordState(
     val stepNumber: Int,
     val title: String,
     val instruction: String,
+    val titleTa: String? = null,
+    val instructionTa: String? = null,
+    val childInstruction: String? = null,
+    val childInstructionTa: String? = null,
+    val media: List<MediaResponse> = emptyList(),
     val selectedLevel: ClinicalPromptLevel? = null,
     val outcome: String = "PENDING", // COMPLETED, UNABLE, NOT_ASSESSED
     val notes: String = "",
@@ -113,6 +118,11 @@ class TherapySessionViewModel : ViewModel() {
                             stepNumber = st.stepNumber,
                             title = st.title,
                             instruction = st.instructionText ?: st.childInstruction ?: "",
+                            titleTa = st.titleTa,
+                            instructionTa = st.instructionTextTa ?: st.childInstructionTa,
+                            childInstruction = st.childInstruction,
+                            childInstructionTa = st.childInstructionTa,
+                            media = st.media,
                             selectedLevel = promptLevel,
                             outcome = existing.outcome,
                             notes = existing.therapistNote ?: "",
@@ -125,6 +135,11 @@ class TherapySessionViewModel : ViewModel() {
                             stepNumber = st.stepNumber,
                             title = st.title,
                             instruction = st.instructionText ?: st.childInstruction ?: "",
+                            titleTa = st.titleTa,
+                            instructionTa = st.instructionTextTa ?: st.childInstructionTa,
+                            childInstruction = st.childInstruction,
+                            childInstructionTa = st.childInstructionTa,
+                            media = st.media,
                             selectedLevel = null,
                             outcome = "PENDING",
                             notes = "",
@@ -147,7 +162,7 @@ class TherapySessionViewModel : ViewModel() {
             } catch (e: Exception) {
                 // Fallback graceful initialization
                 val loadedSteps = SelfidoCatalogue.getStepsForActivity(activityId).ifEmpty {
-                    if (activityId == 2L) getSampleShirtSteps() else if (activityId == 3L) getSampleJacketSteps() else if (activityId == 5L) getSampleToothBrushingSteps() else getSampleTShirtSteps()
+                    if (activityId == 2L) getSampleShirtSteps() else if (activityId == 3L) getSampleJacketSteps() else if (activityId == 4L) getSampleVestSteps() else if (activityId == 5L) getSampleToothBrushingSteps() else getSampleTShirtSteps()
                 }
                 val recordsMap = loadedSteps.mapIndexed { idx, st ->
                     idx to StepRecordState(

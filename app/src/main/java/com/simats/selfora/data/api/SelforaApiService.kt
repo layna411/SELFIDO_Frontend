@@ -293,6 +293,16 @@ interface SelforaApiService {
         @Path("id") id: Long,
         @Body request: ResetPasswordRequest
     ): Response<Unit>
+
+    // Realtime Dynamic Notifications Endpoints
+    @GET("api/notifications")
+    suspend fun getNotifications(): Response<List<com.simats.selfora.data.model.NotificationItem>>
+
+    @POST("api/notifications/{id}/read")
+    suspend fun markNotificationAsRead(@Path("id") id: Long): Response<Unit>
+
+    @POST("api/notifications/read-all")
+    suspend fun markAllNotificationsAsRead(): Response<Unit>
 }
 
 

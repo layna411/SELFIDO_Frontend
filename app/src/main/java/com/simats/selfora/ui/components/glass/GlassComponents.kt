@@ -49,6 +49,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.simats.selfora.ui.theme.*
+import com.simats.selfora.ui.components.LanguageTogglePill
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -343,7 +344,8 @@ fun GlassTopBar(
     onBackClick: (() -> Unit)? = null,
     actions: @Composable (RowScope.() -> Unit)? = null,
     backgroundColor: Color = Color.White,
-    accentColor: Color = SelforaPrimary
+    accentColor: Color = SelforaPrimary,
+    showLanguageToggle: Boolean = true
 ) {
     val safeTitle = title ?: ""
     Surface(
@@ -360,7 +362,7 @@ fun GlassTopBar(
             modifier = Modifier
                 .fillMaxWidth()
                 .statusBarsPadding()
-                .padding(horizontal = 16.dp, vertical = 11.dp),
+                .padding(horizontal = 14.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
@@ -373,25 +375,26 @@ fun GlassTopBar(
                         icon = Icons.Default.ArrowBack,
                         onClick = onBackClick,
                         tint = accentColor,
-                        size = 38.dp,
-                        iconSize = 19.dp
+                        size = 36.dp,
+                        iconSize = 18.dp
                     )
-                    Spacer(modifier = Modifier.width(12.dp))
+                    Spacer(modifier = Modifier.width(10.dp))
                 }
 
-                Column {
+                Column(modifier = Modifier.weight(1f, fill = false)) {
                     Text(
                         text = safeTitle,
-                        fontSize = 18.sp,
+                        fontSize = 17.sp,
                         fontWeight = FontWeight.Bold,
                         color = SelforaTextPrimary,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
                     if (!subtitle.isNullOrEmpty()) {
+                        Spacer(modifier = Modifier.height(1.dp))
                         Text(
                             text = subtitle,
-                            fontSize = 12.sp,
+                            fontSize = 11.sp,
                             fontWeight = FontWeight.Medium,
                             color = SelforaTextSecondary,
                             maxLines = 1,
@@ -401,13 +404,16 @@ fun GlassTopBar(
                 }
             }
 
-            if (actions != null) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.End
-                ) {
-                    actions()
+            Spacer(modifier = Modifier.width(8.dp))
+
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                if (showLanguageToggle) {
+                    LanguageTogglePill(isCompact = true)
                 }
+                actions?.invoke(this)
             }
         }
     }

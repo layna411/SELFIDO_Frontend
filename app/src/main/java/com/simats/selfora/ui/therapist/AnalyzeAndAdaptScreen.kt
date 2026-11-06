@@ -96,7 +96,6 @@ fun AnalyzeAndAdaptScreen(
             GlassTopBar(
                 title = "Clinical Analyze & Adapt",
                 subtitle = "Child: $childName (#$childId)",
-                onBackClick = onBack,
                 accentColor = SelforaPrimary
             )
         },

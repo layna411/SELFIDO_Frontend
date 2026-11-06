@@ -529,7 +529,14 @@ fun SelforaNavHost(
 
             composable(NavRoutes.CaregiverMessages.route) {
                 CaregiverMessagesScreen(
-                    onNavigateToTab = { route -> navController.navigate(route) }
+                    onNavigateToTab = { route -> navController.navigate(route) },
+                    onBack = {
+                        if (!navController.popBackStack()) {
+                            navController.navigate(NavRoutes.CaregiverDashboard.route) {
+                                popUpTo(NavRoutes.CaregiverDashboard.route) { inclusive = true }
+                            }
+                        }
+                    }
                 )
             }
 
