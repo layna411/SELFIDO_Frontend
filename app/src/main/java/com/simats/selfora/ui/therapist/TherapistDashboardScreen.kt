@@ -1,9 +1,12 @@
 package com.simats.selfora.ui.therapist
 
 import androidx.compose.animation.*
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -18,27 +21,41 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.simats.selfora.data.api.ApiClient
 import com.simats.selfora.data.repository.NotificationRepository
 import com.simats.selfora.data.model.ChildSummaryItem
+import com.simats.selfora.data.model.HomeProgramResponse
 import com.simats.selfora.data.model.PendingReviewItem
 import com.simats.selfora.data.model.ScheduledSessionItem
+import com.simats.selfora.data.model.SessionResponse
 import com.simats.selfora.data.model.TherapistDashboardSummaryResponse
+import com.simats.selfora.data.model.formatChatTime
 import com.simats.selfora.ui.components.avatar.ChildAvatarImage
 import com.simats.selfora.ui.components.glass.*
 import com.simats.selfora.ui.components.progress.SelforaLinearProgress
 import com.simats.selfora.ui.theme.*
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TherapistDashboardScreen(
     onNavigateToAddChildWorkflow: () -> Unit,
     onNavigateToChildren: () -> Unit,
     onNavigateToChildProfile: (Long) -> Unit = {},
+    onNavigateToSessionSummary: (Long) -> Unit = {},
     onNavigateToAssessment: () -> Unit,
+    onNavigateToCreateHomeProgram: (Long) -> Unit = {},
     onNavigateToHomePrograms: () -> Unit,
+    onNavigateToPendingReviews: (Long) -> Unit = { onNavigateToHomePrograms() },
     onNavigateToProgress: () -> Unit,
     onNavigateToMessages: () -> Unit,
     onNavigateToNotifications: () -> Unit,
@@ -46,10 +63,110 @@ fun TherapistDashboardScreen(
 ) {
     var summary by remember { mutableStateOf(TherapistDashboardSummaryResponse()) }
     var assignedChildren by remember { mutableStateOf<List<ChildSummaryItem>>(emptyList()) }
+    var todaySessionsDetails by remember { mutableStateOf<List<SessionResponse>>(emptyList()) }
+    var assignedHomePrograms by remember { mutableStateOf<List<HomeProgramResponse>>(emptyList()) }
     var isLoading by remember { mutableStateOf(false) }
+    var isLoadingTodaySessions by remember { mutableStateOf(false) }
+    var isLoadingHomePrograms by remember { mutableStateOf(false) }
+    var todaySessionsError by remember { mutableStateOf<String?>(null) }
+    var homeProgramsError by remember { mutableStateOf<String?>(null) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var showProfileDialog by remember { mutableStateOf(false) }
+    var showTodaySessionsSheet by remember { mutableStateOf(false) }
+    var showHomeProgramsSheet by remember { mutableStateOf(false) }
+    var showChildPickerForProgram by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
+    val lifecycleOwner = LocalLifecycleOwner.current
+
+    suspend fun fetchTodaySessionsWithFallback(currentChildren: List<ChildSummaryItem>) {
+        isLoadingTodaySessions = true
+        todaySessionsError = null
+        try {
+            val res = ApiClient.apiService.getTherapistTodaySessions()
+            if (res.isSuccessful && res.body() != null) {
+                todaySessionsDetails = res.body()!!
+                return
+            }
+            val childrenList = currentChildren.ifEmpty {
+                val cr = ApiClient.apiService.getTherapistChildren()
+                if (cr.isSuccessful && cr.body() != null) {
+                    assignedChildren = cr.body()!!
+                    cr.body()!!
+                } else emptyList()
+            }
+            if (childrenList.isNotEmpty()) {
+                val todayPrefix = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
+                val aggregated = mutableListOf<SessionResponse>()
+                for (child in childrenList) {
+                    try {
+                        val sRes = ApiClient.apiService.getSessionsForChild(child.id)
+                        if (sRes.isSuccessful && sRes.body() != null) {
+                            aggregated.addAll(
+                                sRes.body()!!.filter { (it.startTime ?: "").startsWith(todayPrefix) }
+                            )
+                        }
+                    } catch (_: Exception) {}
+                }
+                todaySessionsDetails = aggregated.distinctBy { it.sessionId }.sortedByDescending { it.startTime }
+            } else {
+                todaySessionsError = "Unable to load today's sessions (HTTP ${res.code()})"
+            }
+        } catch (e: Exception) {
+            todaySessionsError = e.localizedMessage ?: "Failed to load today's sessions"
+        } finally {
+            isLoadingTodaySessions = false
+        }
+    }
+
+    suspend fun fetchHomeProgramsWithFallback(currentChildren: List<ChildSummaryItem>) {
+        isLoadingHomePrograms = true
+        homeProgramsError = null
+        try {
+            val res = ApiClient.apiService.getTherapistHomePrograms()
+            if (res.isSuccessful && res.body() != null) {
+                assignedHomePrograms = res.body()!!
+                return
+            }
+            val childrenList = currentChildren.ifEmpty {
+                val cr = ApiClient.apiService.getTherapistChildren()
+                if (cr.isSuccessful && cr.body() != null) {
+                    assignedChildren = cr.body()!!
+                    cr.body()!!
+                } else emptyList()
+            }
+            if (childrenList.isNotEmpty()) {
+                val aggregated = mutableListOf<HomeProgramResponse>()
+                for (child in childrenList) {
+                    try {
+                        val hpRes = ApiClient.apiService.getAllHomeProgramsForChild(child.id)
+                        if (hpRes.isSuccessful && hpRes.body() != null) {
+                            aggregated.addAll(
+                                hpRes.body()!!.filter { p ->
+                                    val st = (p.status ?: "").uppercase(Locale.getDefault())
+                                    p.isActive && st !in listOf("COMPLETED", "CANCELLED", "PAUSED")
+                                }
+                            )
+                        }
+                    } catch (_: Exception) {}
+                }
+                assignedHomePrograms = aggregated.distinctBy { it.id }.sortedByDescending { it.id }
+            } else {
+                homeProgramsError = "Unable to load home programs (HTTP ${res.code()})"
+            }
+        } catch (e: Exception) {
+            homeProgramsError = e.localizedMessage ?: "Failed to load home programs"
+        } finally {
+            isLoadingHomePrograms = false
+        }
+    }
+
+    fun refreshTodaySessionsDetail() {
+        scope.launch { fetchTodaySessionsWithFallback(assignedChildren) }
+    }
+
+    fun refreshHomeProgramsDetail() {
+        scope.launch { fetchHomeProgramsWithFallback(assignedChildren) }
+    }
 
     fun loadDashboardData() {
         isLoading = true
@@ -67,10 +184,14 @@ fun TherapistDashboardScreen(
                     }
                     errorMessage = "Failed to load clinical dashboard (HTTP $code)"
                 }
+                var latestChildren = assignedChildren
                 val childrenResponse = ApiClient.apiService.getTherapistChildren()
                 if (childrenResponse.isSuccessful && childrenResponse.body() != null) {
-                    assignedChildren = childrenResponse.body()!!
+                    latestChildren = childrenResponse.body()!!
+                    assignedChildren = latestChildren
                 }
+                fetchTodaySessionsWithFallback(latestChildren)
+                fetchHomeProgramsWithFallback(latestChildren)
             } catch (e: Exception) {
                 errorMessage = "Network error: ${e.localizedMessage}. Tap Refresh to try again."
             } finally {
@@ -81,9 +202,23 @@ fun TherapistDashboardScreen(
 
     val unreadNotificationCount by NotificationRepository.unreadCount.collectAsState()
 
+    var hasLaunchedInitialLoad by remember { mutableStateOf(false) }
+
     LaunchedEffect(Unit) {
+        hasLaunchedInitialLoad = true
         loadDashboardData()
         NotificationRepository.fetchNotifications()
+    }
+
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME && hasLaunchedInitialLoad) {
+                loadDashboardData()
+                scope.launch { NotificationRepository.fetchNotifications() }
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
     Scaffold(
@@ -240,11 +375,14 @@ fun TherapistDashboardScreen(
                 DashboardSummaryGlassCard(
                     title = "Sessions Today",
                     count = "${summary.todaySessionsCount}",
-                    subtitle = "Scheduled Sessions",
+                    subtitle = if (summary.todaySessionsCount > 0) "Conducted Today" else "Therapy Sessions",
                     emoji = "📅",
                     accentColor = SelforaSecondary,
                     modifier = Modifier.weight(1f),
-                    onClick = onNavigateToAssessment
+                    onClick = {
+                        showTodaySessionsSheet = true
+                        refreshTodaySessionsDetail()
+                    }
                 )
             }
 
@@ -261,7 +399,10 @@ fun TherapistDashboardScreen(
                     emoji = "🏠",
                     accentColor = SelforaSuccess,
                     modifier = Modifier.weight(1f),
-                    onClick = onNavigateToHomePrograms
+                    onClick = {
+                        showHomeProgramsSheet = true
+                        refreshHomeProgramsDetail()
+                    }
                 )
                 DashboardSummaryGlassCard(
                     title = "Pending Reviews",
@@ -270,7 +411,7 @@ fun TherapistDashboardScreen(
                     emoji = "📋",
                     accentColor = SelforaWarning,
                     modifier = Modifier.weight(1f),
-                    onClick = onNavigateToHomePrograms
+                    onClick = { onNavigateToPendingReviews(0L) }
                 )
             }
 
@@ -298,14 +439,23 @@ fun TherapistDashboardScreen(
                     title = "Today's Sessions",
                     icon = Icons.Default.CalendarToday,
                     iconTint = SelforaSecondary,
-                    onClick = onNavigateToAssessment
+                    onClick = {
+                        showTodaySessionsSheet = true
+                        refreshTodaySessionsDetail()
+                    }
                 )
 
                 QuickActionChevronCard(
                     title = "Assign Home Program",
                     icon = Icons.Default.Assignment,
                     iconTint = SelforaSuccess,
-                    onClick = onNavigateToHomePrograms
+                    onClick = {
+                        when {
+                            assignedChildren.isEmpty() -> onNavigateToAddChildWorkflow()
+                            assignedChildren.size == 1 -> onNavigateToCreateHomeProgram(assignedChildren.first().id)
+                            else -> showChildPickerForProgram = true
+                        }
+                    }
                 )
 
                 QuickActionChevronCard(
@@ -494,13 +644,31 @@ fun TherapistDashboardScreen(
             Spacer(modifier = Modifier.height(24.dp))
 
             // Today's Schedule Section
-            Text(
-                text = "TODAY'S SCHEDULE",
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Bold,
-                color = SelforaPrimary,
-                letterSpacing = 1.sp
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "TODAY'S SCHEDULE",
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = SelforaPrimary,
+                    letterSpacing = 1.sp
+                )
+                if (summary.todaySchedule.isNotEmpty() || todaySessionsDetails.isNotEmpty()) {
+                    Text(
+                        text = "View All (${summary.todaySessionsCount}) →",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = SelforaPrimary,
+                        modifier = Modifier.clickable {
+                            showTodaySessionsSheet = true
+                            refreshTodaySessionsDetail()
+                        }
+                    )
+                }
+            }
             Spacer(modifier = Modifier.height(10.dp))
 
             if (summary.todaySchedule.isEmpty()) {
@@ -512,15 +680,24 @@ fun TherapistDashboardScreen(
                         Icon(Icons.Default.EventAvailable, contentDescription = null, tint = SelforaTextSecondary, modifier = Modifier.size(28.dp))
                         Spacer(modifier = Modifier.width(12.dp))
                         Column {
-                            Text("No Scheduled Sessions Today", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = SelforaTextPrimary)
-                            Text("All scheduled therapy sessions for today are completed or unassigned.", fontSize = 12.sp, color = SelforaTextSecondary)
+                            Text("No Sessions Conducted Today", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = SelforaTextPrimary)
+                            Text("Start a clinical session from My Children to see today's sessions here.", fontSize = 12.sp, color = SelforaTextSecondary)
                         }
                     }
                 }
             } else {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    summary.todaySchedule.forEach { session ->
-                        GlassScheduleCard(session = session, onSelectChild = { onNavigateToChildren() })
+                    summary.todaySchedule.take(5).forEach { session ->
+                        GlassScheduleCard(
+                            session = session,
+                            onSelectChild = {
+                                if (session.status == "COMPLETED") {
+                                    onNavigateToSessionSummary(session.sessionId)
+                                } else {
+                                    onNavigateToChildProfile(session.childId)
+                                }
+                            }
+                        )
                     }
                 }
             }
@@ -528,13 +705,28 @@ fun TherapistDashboardScreen(
             Spacer(modifier = Modifier.height(24.dp))
 
             // Pending Home Practice Reviews Section
-            Text(
-                text = "PENDING CAREGIVER REVIEWS",
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Bold,
-                color = SelforaPrimary,
-                letterSpacing = 1.sp
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "PENDING CAREGIVER REVIEWS",
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = SelforaPrimary,
+                    letterSpacing = 1.sp
+                )
+                if (summary.pendingReviews.isNotEmpty() || summary.pendingReviewsCount > 0) {
+                    Text(
+                        text = "Review All (${summary.pendingReviewsCount}) →",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = SelforaWarning,
+                        modifier = Modifier.clickable { onNavigateToPendingReviews(0L) }
+                    )
+                }
+            }
             Spacer(modifier = Modifier.height(10.dp))
 
             if (summary.pendingReviews.isEmpty()) {
@@ -553,14 +745,456 @@ fun TherapistDashboardScreen(
                 }
             } else {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    summary.pendingReviews.forEach { review ->
-                        GlassPendingReviewCard(review = review, onReview = onNavigateToHomePrograms)
+                    summary.pendingReviews.take(5).forEach { review ->
+                        GlassPendingReviewCard(
+                            review = review,
+                            onReview = { onNavigateToPendingReviews(review.childId) }
+                        )
                     }
                 }
             }
 
             Spacer(modifier = Modifier.height(110.dp))
         }
+    }
+
+    if (showTodaySessionsSheet) {
+        ModalBottomSheet(
+            onDismissRequest = { showTodaySessionsSheet = false },
+            containerColor = Color.White,
+            shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp)
+                    .padding(bottom = 24.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Sessions Today (${todaySessionsDetails.size.coerceAtLeast(summary.todaySchedule.size)})",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = SelforaTextPrimary
+                        )
+                        Text(
+                            text = "Live clinical sessions recorded today",
+                            fontSize = 12.sp,
+                            color = SelforaTextSecondary
+                        )
+                    }
+                    IconButton(onClick = { refreshTodaySessionsDetail() }) {
+                        Icon(Icons.Default.Refresh, contentDescription = "Refresh", tint = SelforaPrimary)
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                if (isLoadingTodaySessions && todaySessionsDetails.isEmpty()) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(160.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator(color = SelforaPrimary)
+                    }
+                } else if (todaySessionsError != null && todaySessionsDetails.isEmpty() && summary.todaySchedule.isEmpty()) {
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(16.dp),
+                        color = SelforaBackground,
+                        border = BorderStroke(1.dp, SelforaBorder)
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(20.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Icon(Icons.Default.ErrorOutline, contentDescription = null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(34.dp))
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(todaySessionsError!!, fontSize = 13.sp, color = SelforaTextSecondary)
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Button(
+                                onClick = { refreshTodaySessionsDetail() },
+                                colors = ButtonDefaults.buttonColors(containerColor = SelforaPrimary),
+                                shape = RoundedCornerShape(10.dp)
+                            ) {
+                                Text("Retry", fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    }
+                } else if (todaySessionsDetails.isEmpty() && summary.todaySchedule.isEmpty()) {
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(16.dp),
+                        color = SelforaBackground,
+                        border = BorderStroke(1.dp, SelforaBorder)
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(20.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Icon(Icons.Default.EventAvailable, contentDescription = null, tint = SelforaSecondary, modifier = Modifier.size(36.dp))
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text("No Sessions Today", fontWeight = FontWeight.Bold, fontSize = 15.sp, color = SelforaTextPrimary)
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                "You haven't started any therapy sessions today.",
+                                fontSize = 12.sp,
+                                color = SelforaTextSecondary
+                            )
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Button(
+                                onClick = {
+                                    showTodaySessionsSheet = false
+                                    onNavigateToChildren()
+                                },
+                                colors = ButtonDefaults.buttonColors(containerColor = SelforaPrimary),
+                                shape = RoundedCornerShape(10.dp)
+                            ) {
+                                Text("Select Child to Start Session", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                            }
+                        }
+                    }
+                } else {
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(max = 420.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        if (todaySessionsDetails.isNotEmpty()) {
+                            items(todaySessionsDetails, key = { it.sessionId }) { session ->
+                                val isCompleted = session.endTime != null
+                                Surface(
+                                    onClick = {
+                                        showTodaySessionsSheet = false
+                                        if (isCompleted) onNavigateToSessionSummary(session.sessionId)
+                                        else onNavigateToChildProfile(session.childId)
+                                    },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(16.dp),
+                                    color = SelforaBackground,
+                                    border = BorderStroke(1.dp, SelforaBorder)
+                                ) {
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(14.dp),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Column(modifier = Modifier.weight(1f)) {
+                                            Text(
+                                                text = session.childName,
+                                                fontSize = 15.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = SelforaTextPrimary
+                                            )
+                                            Spacer(modifier = Modifier.height(2.dp))
+                                            Text(
+                                                text = "${session.activityTitle} • ${session.environment}",
+                                                fontSize = 12.sp,
+                                                color = SelforaTextSecondary,
+                                                maxLines = 1,
+                                                overflow = TextOverflow.Ellipsis
+                                            )
+                                            Spacer(modifier = Modifier.height(4.dp))
+                                            val mins = (session.totalDurationSeconds / 60).coerceAtLeast(1)
+                                            val timeLabel = formatChatTime(session.startTime).ifBlank { "Today" }
+                                            val indLabel = session.independencePercentage?.let { " • ${it.toInt()}% Indep." } ?: ""
+                                            Text(
+                                                text = "🕒 $timeLabel • $mins min$indLabel",
+                                                fontSize = 11.sp,
+                                                color = SelforaPrimary,
+                                                fontWeight = FontWeight.SemiBold
+                                            )
+                                        }
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Surface(
+                                            shape = RoundedCornerShape(10.dp),
+                                            color = (if (isCompleted) SelforaSuccess else SelforaPrimary).copy(alpha = 0.14f)
+                                        ) {
+                                            Text(
+                                                text = if (isCompleted) "COMPLETED" else "IN PROGRESS",
+                                                fontSize = 10.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = if (isCompleted) SelforaSuccess else SelforaPrimary,
+                                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        } else {
+                            items(summary.todaySchedule, key = { it.sessionId }) { item ->
+                                GlassScheduleCard(
+                                    session = item,
+                                    onSelectChild = {
+                                        showTodaySessionsSheet = false
+                                        if (item.status == "COMPLETED") onNavigateToSessionSummary(item.sessionId)
+                                        else onNavigateToChildProfile(item.childId)
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    if (showHomeProgramsSheet) {
+        ModalBottomSheet(
+            onDismissRequest = { showHomeProgramsSheet = false },
+            containerColor = Color.White,
+            shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp)
+                    .padding(bottom = 24.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Home Programs (${assignedHomePrograms.size})",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = SelforaTextPrimary
+                        )
+                        Text(
+                            text = "Active home programmes assigned to your children",
+                            fontSize = 12.sp,
+                            color = SelforaTextSecondary
+                        )
+                    }
+                    IconButton(onClick = { refreshHomeProgramsDetail() }) {
+                        Icon(Icons.Default.Refresh, contentDescription = "Refresh", tint = SelforaPrimary)
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                if (isLoadingHomePrograms && assignedHomePrograms.isEmpty()) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(160.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator(color = SelforaPrimary)
+                    }
+                } else if (homeProgramsError != null && assignedHomePrograms.isEmpty()) {
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(16.dp),
+                        color = SelforaBackground,
+                        border = BorderStroke(1.dp, SelforaBorder)
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(20.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Icon(Icons.Default.ErrorOutline, contentDescription = null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(34.dp))
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(homeProgramsError!!, fontSize = 13.sp, color = SelforaTextSecondary)
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Button(
+                                onClick = { refreshHomeProgramsDetail() },
+                                colors = ButtonDefaults.buttonColors(containerColor = SelforaPrimary),
+                                shape = RoundedCornerShape(10.dp)
+                            ) {
+                                Text("Retry", fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    }
+                } else if (assignedHomePrograms.isEmpty()) {
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(16.dp),
+                        color = SelforaBackground,
+                        border = BorderStroke(1.dp, SelforaBorder)
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(20.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Icon(Icons.Default.HomeWork, contentDescription = null, tint = SelforaSuccess, modifier = Modifier.size(36.dp))
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text("No Active Home Programs", fontWeight = FontWeight.Bold, fontSize = 15.sp, color = SelforaTextPrimary)
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                "Assign a structured home ADL programme for your caregiver to practice at home.",
+                                fontSize = 12.sp,
+                                color = SelforaTextSecondary
+                            )
+                        }
+                    }
+                } else {
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(max = 380.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        items(assignedHomePrograms, key = { it.id }) { program ->
+                            Surface(
+                                onClick = {
+                                    showHomeProgramsSheet = false
+                                    onNavigateToChildProfile(program.childId)
+                                },
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(16.dp),
+                                color = SelforaBackground,
+                                border = BorderStroke(1.dp, SelforaBorder)
+                            ) {
+                                Column(modifier = Modifier.padding(14.dp)) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        val safeTitle = (program.title ?: "").ifBlank { program.activityTitle ?: "Home Programme" }
+                                        val safeStatus = (program.status ?: "").ifBlank { "ACTIVE" }
+                                        Text(
+                                            text = safeTitle,
+                                            fontSize = 15.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = SelforaTextPrimary,
+                                            modifier = Modifier.weight(1f),
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Surface(
+                                            shape = RoundedCornerShape(8.dp),
+                                            color = SelforaSuccess.copy(alpha = 0.14f)
+                                        ) {
+                                            Text(
+                                                text = safeStatus,
+                                                fontSize = 10.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = SelforaSuccess,
+                                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                                            )
+                                        }
+                                    }
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    val safeChild = (program.childName ?: "").ifBlank { "Child #${program.childId}" }
+                                    val safeAct = (program.activityTitle ?: "").ifBlank { "ADL Activity" }
+                                    val safePrompt = (program.targetPromptLevelName ?: "").ifBlank { "Visual" }
+                                    val safeStart = program.startDate ?: ""
+                                    val safeEnd = program.endDate ?: ""
+                                    Text(
+                                        text = "Child: $safeChild • $safeAct",
+                                        fontSize = 12.sp,
+                                        color = SelforaTextSecondary
+                                    )
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Text(
+                                        text = "${program.frequencyPerWeek}x/week • ${program.targetDurationMinutes}m • Target: $safePrompt",
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = SelforaPrimary
+                                    )
+                                    if (safeStart.isNotBlank() && safeEnd.isNotBlank()) {
+                                        Text(
+                                            text = "Period: $safeStart → $safeEnd",
+                                            fontSize = 11.sp,
+                                            color = SelforaTextSecondary
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(14.dp))
+                Button(
+                    onClick = {
+                        showHomeProgramsSheet = false
+                        when {
+                            assignedChildren.isEmpty() -> onNavigateToAddChildWorkflow()
+                            assignedChildren.size == 1 -> onNavigateToCreateHomeProgram(assignedChildren.first().id)
+                            else -> showChildPickerForProgram = true
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(containerColor = SelforaPrimary),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("Assign New Home Program", fontWeight = FontWeight.Bold)
+                }
+            }
+        }
+    }
+
+    if (showChildPickerForProgram) {
+        AlertDialog(
+            onDismissRequest = { showChildPickerForProgram = false },
+            containerColor = SelforaSurface,
+            shape = RoundedCornerShape(20.dp),
+            title = {
+                Text(
+                    "Select Child for Home Program",
+                    fontSize = 17.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = SelforaTextPrimary
+                )
+            },
+            text = {
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 280.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    items(assignedChildren, key = { it.id }) { child ->
+                        Surface(
+                            onClick = {
+                                showChildPickerForProgram = false
+                                onNavigateToCreateHomeProgram(child.id)
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp),
+                            color = SelforaBackground,
+                            border = BorderStroke(1.dp, SelforaBorder)
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Column {
+                                    Text(child.name, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = SelforaTextPrimary)
+                                    Text("${child.age} yrs • Caregiver: ${child.caregiverName}", fontSize = 11.sp, color = SelforaTextSecondary)
+                                }
+                                Icon(Icons.Default.ChevronRight, contentDescription = null, tint = SelforaPrimary)
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showChildPickerForProgram = false }) {
+                    Text("Cancel", fontWeight = FontWeight.Bold)
+                }
+            }
+        )
     }
 
     if (showProfileDialog) {

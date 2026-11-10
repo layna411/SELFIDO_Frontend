@@ -48,6 +48,7 @@ object SessionManager {
         }
         if (token.isNotBlank()) {
             ApiClient.setJwtToken(token)
+            com.simats.selfora.data.api.ChatWebSocketClient.ensureConnected()
         }
         // Restore user language preference independently for this authenticated user
         val userLang = getUserLanguage(userId)
@@ -197,6 +198,7 @@ object SessionManager {
             apply()
         }
         ApiClient.setJwtToken(null)
+        com.simats.selfora.data.api.ChatWebSocketClient.disconnect()
     }
 
     // ==========================================

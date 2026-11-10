@@ -109,7 +109,7 @@ fun HomeProgramReviewScreen(
         topBar = {
             GlassTopBar(
                 title = "Home Program Review",
-                subtitle = "Caregiver Home Practice Clinical Review",
+                subtitle = if (childId > 0) "Child Home Practice Clinical Review" else "All Assigned Children • Practice Logs",
                 onBackClick = onBack,
                 accentColor = SelforaPrimary
             )
@@ -202,7 +202,11 @@ fun HomeProgramReviewScreen(
                             )
                             Spacer(modifier = Modifier.height(6.dp))
                             Text(
-                                "There are no pending caregiver practice submissions waiting for clinical review for this child.",
+                                text = if (childId > 0) {
+                                    "There are no pending caregiver practice submissions waiting for clinical review for this child."
+                                } else {
+                                    "There are no pending caregiver practice submissions waiting for clinical review across your assigned children."
+                                },
                                 fontSize = 13.sp,
                                 color = SelforaTextSecondary,
                                 modifier = Modifier.padding(horizontal = 8.dp)

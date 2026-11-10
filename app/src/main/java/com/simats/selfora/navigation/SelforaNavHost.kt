@@ -272,6 +272,8 @@ fun SelforaNavHost(
                     onNavigateToChildProfile = { id -> navController.navigate(NavRoutes.ChildProfile.createRoute(id)) },
                     onNavigateToAssessment = { id -> navController.navigate(NavRoutes.Assessment.createRoute(id)) },
                     onNavigateToSession = { id -> navController.navigate(NavRoutes.TherapySession.createRoute(id, 1L)) },
+                    onNavigateToSessionSummary = { sId -> navController.navigate(NavRoutes.SessionSummary.createRoute(sId)) },
+                    onNavigateToCreateHomeProgram = { id -> navController.navigate(NavRoutes.HomeProgramCreate.createRoute(id)) },
                     onNavigateToHomePrograms = { id -> navController.navigate(NavRoutes.HomeProgramReview.createRoute(id)) },
                     onNavigateToProgress = { id -> navController.navigate(NavRoutes.Progress.createRoute(id)) },
                     onNavigateToMessages = { id -> navController.navigate(NavRoutes.Messages.createRoute(id)) },
@@ -457,7 +459,7 @@ fun SelforaNavHost(
                 route = NavRoutes.Messages.route,
                 arguments = listOf(navArgument("childId") { type = NavType.LongType })
             ) { backStack ->
-                val childId = backStack.arguments?.getLong("childId") ?: 1L
+                val childId = backStack.arguments?.getLong("childId") ?: 0L
                 MessageScreen(
                     childId = childId,
                     onBack = { navController.popBackStack() }

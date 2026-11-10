@@ -1,4 +1,4 @@
-﻿package com.simats.selfora.ui.therapist
+package com.simats.selfora.ui.therapist
 
 
 
@@ -66,6 +66,10 @@ fun getSampleJacketSteps(): List<TaskStepResponse> {
 
 fun getSampleVestSteps(): List<TaskStepResponse> {
     return SelfidoCatalogue.getStepsForActivity(4L)
+}
+
+fun getSampleTrousersSteps(): List<TaskStepResponse> {
+    return SelfidoCatalogue.getStepsForActivity(5L)
 }
 
 

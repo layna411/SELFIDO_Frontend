@@ -274,7 +274,7 @@ fun CaregiverNotificationsScreen(
                                 width = if (!item.isRead) 1.5.dp else 1.dp,
                                 color = if (!item.isRead) SelforaPrimary.copy(alpha = 0.45f) else Color(0xFFE2E8F0)
                             ),
-                            elevation = CardDefaults.cardElevation(defaultElevation = if (!item.isRead) 2.dp else 1.dp)
+                            elevation = CardDefaults.cardElevation(defaultElevation = if (!item.isRead) 2.dp else 0.5.dp)
                         ) {
                             Row(
                                 modifier = Modifier
@@ -284,14 +284,14 @@ fun CaregiverNotificationsScreen(
                             ) {
                                 Surface(
                                     shape = RoundedCornerShape(12.dp),
-                                    color = tintBg,
+                                    color = if (!item.isRead) tintBg else Color(0xFFF1F5F9),
                                     modifier = Modifier.size(42.dp)
                                 ) {
                                     Box(contentAlignment = Alignment.Center) {
                                         Icon(
                                             imageVector = icon,
                                             contentDescription = null,
-                                            tint = tintIcon,
+                                            tint = if (!item.isRead) tintIcon else Color(0xFF94A3B8),
                                             modifier = Modifier.size(22.dp)
                                         )
                                     }

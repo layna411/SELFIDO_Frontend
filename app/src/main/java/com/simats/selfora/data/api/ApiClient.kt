@@ -61,6 +61,14 @@ object ApiClient {
         .readTimeout(15, TimeUnit.SECONDS)
         .build()
 
+    private val wsOkHttpClient = OkHttpClient.Builder()
+        .pingInterval(20, TimeUnit.SECONDS)
+        .connectTimeout(15, TimeUnit.SECONDS)
+        .readTimeout(0, TimeUnit.MILLISECONDS)
+        .build()
+
+    fun getWebSocketClient(): OkHttpClient = wsOkHttpClient
+
     @Volatile
     private var cachedRetrofit: Retrofit? = null
 

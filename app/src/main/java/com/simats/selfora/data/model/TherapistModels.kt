@@ -107,5 +107,9 @@ data class TherapistCaregiverSummaryItem(
     val childId: Long,
     val childName: String,
     val activeHomeProgramsCount: Int = 0,
-    val pendingPracticeReviewsCount: Int = 0
+    val pendingPracticeReviewsCount: Int = 0,
+    val lastMessage: String? = null,
+    val lastMessageAt: String? = null,
+    val lastSenderId: Long? = null,
+    val unreadMessagesCount: Int = 0
 )

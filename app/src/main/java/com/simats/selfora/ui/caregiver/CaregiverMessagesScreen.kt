@@ -1,15 +1,15 @@
 package com.simats.selfora.ui.caregiver
 
+import android.content.Intent
+import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
@@ -18,6 +18,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -33,20 +34,27 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.simats.selfora.data.api.ApiClient
+import com.simats.selfora.data.api.ChatWebSocketClient
+import com.simats.selfora.data.api.ChatWsEvent
 import com.simats.selfora.data.local.SessionManager
 import com.simats.selfora.data.model.MessageResponse
 import com.simats.selfora.data.model.SendMessageRequest
+import com.simats.selfora.data.model.formatChatTime
+import com.simats.selfora.ui.components.LanguageTogglePill
 import com.simats.selfora.ui.components.glass.*
 import com.simats.selfora.ui.theme.*
 import com.simats.selfora.utils.LanguageManager
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 @Composable
 fun CaregiverMessagesScreen(
     onNavigateToTab: (String) -> Unit = {},
     onBack: () -> Unit = {}
 ) {
-    // Intercept hardware and gesture back presses so the app never exits accidentally
+    // Intercept back presses so the app returns cleanly to dashboard instead of exiting
     BackHandler {
         onBack()
     }
@@ -56,93 +64,184 @@ fun CaregiverMessagesScreen(
     val currentLanguage by LanguageManager.currentLanguage.collectAsState()
     val isTamil = currentLanguage == "ta"
 
-    val activeChildId = remember {
-        SessionManager.getActiveChildId().let { if (it > 0L) it else 1L }
-    }
-    val activeChildName = remember {
-        SessionManager.getActiveChildName()
-    }
     val currentUserName = remember {
-        SessionManager.getUsername().ifBlank { "Meena (Caregiver)" }
+        SessionManager.getUsername().ifBlank { "Caregiver" }
     }
     val currentUserId = remember {
-        SessionManager.getUserId().let { if (it > 0L) it else 1L }
+        SessionManager.getUserId()
     }
 
-    var messages by remember {
-        mutableStateOf(
-            listOf(
-                MessageResponse(
-                    id = 1L,
-                    senderId = 2L,
-                    senderName = "Dr. Priya Shanmugam, MOT",
-                    receiverId = currentUserId,
-                    receiverName = currentUserName,
-                    childId = activeChildId,
-                    messageText = if (isTamil)
-                        "வணக்கம்! $activeChildName தினசரி வீட்டுப் பயிற்சியில் மிகச் சிறப்பாக முன்னேறுகிறார். வழிகாட்டப்பட்டபடி உடல் உதவிகளை (Physical Prompts) படிப்படியாகக் குறைத்து சைகை உதவிகளுக்கு (Gestural Prompts) மாற்றவும்."
-                    else
-                        "Hello! $activeChildName is making steady progress with daily home practice routines. Please continue fading physical prompts gradually towards gestural cues as outlined in the clinical plan.",
-                    isRead = true,
-                    sentAt = "Today, 9:30 AM"
-                ),
-                MessageResponse(
-                    id = 2L,
-                    senderId = 2L,
-                    senderName = "Dr. Priya Shanmugam, MOT",
-                    receiverId = currentUserId,
-                    receiverName = currentUserName,
-                    childId = activeChildId,
-                    messageText = if (isTamil)
-                        "ஆடை அணிதல் மற்றும் பல் துலக்குதல் படிநிலை வழிகாட்டி PDF ஆவணம் கீழே இணைக்கப்பட்டுள்ளது. தேவைப்படும்போது சரிபார்க்கவும்."
-                    else
-                        "I have attached the complete step-by-step visual dressing and brushing guidance guide below for reference.",
-                    isRead = true,
-                    sentAt = "Today, 9:32 AM"
-                )
-            )
-        )
+    var activeChildId by remember {
+        mutableStateOf(SessionManager.getActiveChildId().let { if (it > 0L) it else 0L })
     }
+    var activeChildName by remember {
+        mutableStateOf(SessionManager.getActiveChildName())
+    }
+    var therapistId by remember { mutableStateOf(0L) }
+    var therapistName by remember { mutableStateOf("Occupational Therapist") }
+    var therapistInitials by remember { mutableStateOf("OT") }
 
+    var messages by remember { mutableStateOf<List<MessageResponse>>(emptyList()) }
+    var isLoading by remember { mutableStateOf(true) }
     var newMessageText by remember { mutableStateOf("") }
+
+    val wsConnected by ChatWebSocketClient.isConnected.collectAsState()
     val listState = rememberLazyListState()
 
-    LaunchedEffect(activeChildId) {
+    // Ensure WebSocket connects and resolve active child + assigned Therapist + real DB history
+    LaunchedEffect(Unit) {
+        ChatWebSocketClient.ensureConnected()
+        isLoading = true
+
+        // 1. Resolve active child if not cached in SessionManager
+        if (activeChildId <= 0L) {
+            try {
+                val dashRes = ApiClient.apiService.getCaregiverDashboardSummary()
+                if (dashRes.isSuccessful && dashRes.body() != null) {
+                    val firstChild = dashRes.body()!!.linkedChildren.firstOrNull()
+                    if (firstChild != null) {
+                        activeChildId = firstChild.childId
+                        activeChildName = firstChild.name
+                        therapistName = firstChild.therapistName.ifBlank { "Occupational Therapist" }
+                        SessionManager.saveActiveChildContext(firstChild.childId, firstChild.name, firstChild.gender)
+                    }
+                }
+            } catch (_: Exception) {}
+        }
+
+        val cId = if (activeChildId > 0L) activeChildId else 1L
+        activeChildId = cId
+
+        // 2. Resolve assigned Therapist ID & Full Name from backend
         try {
-            val res = ApiClient.apiService.getConversation(activeChildId)
-            if (res.isSuccessful && !res.body().isNullOrEmpty()) {
-                messages = res.body()!!
+            val partnerRes = ApiClient.apiService.getChatPartner(cId)
+            if (partnerRes.isSuccessful && partnerRes.body() != null) {
+                val partner = partnerRes.body()!!
+                therapistId = partner.partnerId
+                therapistName = partner.partnerName
+                if (partner.childName.isNotBlank()) activeChildName = partner.childName
+                val parts = partner.partnerName.trim().split(" ").filter { it.isNotBlank() }
+                therapistInitials = when {
+                    parts.size >= 2 -> "${parts[0].take(1)}${parts[1].take(1)}".uppercase()
+                    parts.size == 1 -> parts[0].take(2).uppercase()
+                    else -> "OT"
+                }
             }
         } catch (_: Exception) {}
+
+        // 3. Mark existing messages as read via WebSocket & REST
+        ChatWebSocketClient.markRead(cId)
+        try { ApiClient.apiService.markConversationAsRead(cId) } catch (_: Exception) {}
+
+        // 4. Load REAL messages from Database (no static fake messages)
+        try {
+            val res = ApiClient.apiService.getConversation(cId)
+            if (res.isSuccessful && res.body() != null) {
+                messages = res.body()!!.sortedWith(compareBy({ it.sentAt }, { it.id }))
+                if (messages.isNotEmpty()) {
+                    listState.scrollToItem(messages.size - 1)
+                }
+            }
+        } catch (e: Exception) {
+            Toast.makeText(context, "Unable to load messages: ${e.localizedMessage}", Toast.LENGTH_SHORT).show()
+        } finally {
+            isLoading = false
+        }
+    }
+
+    // Listen to live real-time WebSocket frames
+    LaunchedEffect(activeChildId) {
+        if (activeChildId <= 0L) return@LaunchedEffect
+        ChatWebSocketClient.events.collect { event ->
+            when (event) {
+                is ChatWsEvent.NewMessage -> {
+                    val incoming = event.message
+                    if (incoming.childId == activeChildId) {
+                        val updated = messages.toMutableList()
+                        val optIdx = updated.indexOfFirst {
+                            it.id < 0L && it.senderId == incoming.senderId && it.messageText == incoming.messageText
+                        }
+                        if (optIdx >= 0) {
+                            updated[optIdx] = incoming
+                        } else if (updated.none { it.id == incoming.id }) {
+                            updated.add(incoming)
+                        }
+                        messages = updated.sortedWith(compareBy({ it.sentAt }, { it.id }))
+                        if (messages.isNotEmpty()) {
+                            listState.animateScrollToItem(messages.size - 1)
+                        }
+                        if (incoming.senderId != currentUserId) {
+                            ChatWebSocketClient.markRead(activeChildId)
+                        }
+                    }
+                }
+
+                is ChatWsEvent.MessagesRead -> {
+                    if (event.childId == activeChildId && event.readByUserId != currentUserId) {
+                        messages = messages.map { m ->
+                            if (m.senderId == currentUserId) m.copy(isRead = true) else m
+                        }
+                    }
+                }
+
+                is ChatWsEvent.ContactsUpdated -> {}
+            }
+        }
     }
 
     val sendCaregiverMessage = {
-        if (newMessageText.isNotBlank()) {
+        if (newMessageText.isNotBlank() && activeChildId > 0L) {
             val textToSend = newMessageText.trim()
-            val newMsg = MessageResponse(
-                id = (messages.size + 1).toLong(),
+            val nowIso = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault()).format(Date())
+            val tempId = -System.currentTimeMillis()
+            val targetTherapistId = therapistId // 0L is auto-resolved by backend to the child's assigned therapist!
+
+            val optimisticMsg = MessageResponse(
+                id = tempId,
                 senderId = currentUserId,
                 senderName = currentUserName,
-                receiverId = 2L,
-                receiverName = "Dr. Priya Shanmugam, MOT",
+                receiverId = targetTherapistId,
+                receiverName = therapistName,
                 childId = activeChildId,
                 messageText = textToSend,
                 isRead = false,
-                sentAt = if (isTamil) "இப்போது" else "Just now"
+                sentAt = nowIso
             )
-            messages = messages + newMsg
+            messages = messages + optimisticMsg
             newMessageText = ""
+
             coroutineScope.launch {
-                listState.animateScrollToItem((messages.size + 1).coerceAtLeast(0))
-                try {
-                    ApiClient.apiService.sendMessage(
-                        SendMessageRequest(
-                            receiverId = 2L,
-                            childId = activeChildId,
-                            messageText = textToSend
+                if (messages.isNotEmpty()) {
+                    listState.animateScrollToItem(messages.size - 1)
+                }
+                val sentViaWs = ChatWebSocketClient.sendMessage(targetTherapistId, activeChildId, textToSend)
+                if (!sentViaWs) {
+                    try {
+                        val res = ApiClient.apiService.sendMessage(
+                            SendMessageRequest(
+                                receiverId = targetTherapistId,
+                                childId = activeChildId,
+                                messageText = textToSend
+                            )
                         )
-                    )
-                } catch (_: Exception) {}
+                        if (res.isSuccessful && res.body() != null) {
+                            val saved = res.body()!!
+                            messages = messages.map { if (it.id == tempId) saved else it }
+                        } else {
+                            Toast.makeText(
+                                context,
+                                if (isTamil) "செய்தி அனுப்புவதில் பிழை (${res.code()})" else "Failed to send message (${res.code()})",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                    } catch (e: Exception) {
+                        Toast.makeText(
+                            context,
+                            if (isTamil) "நெட்வொர்க் பிழை" else "Network error sending message",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                }
             }
         }
     }
@@ -153,52 +252,117 @@ fun CaregiverMessagesScreen(
                 "குழந்தை இன்று படிகளை முடித்தது! 🌟",
                 "பொத்தான்களுக்கு கூடுதல் உதவி தேவை 👕",
                 "உதவிகள் வெற்றிகரமாக குறைக்கப்பட்டது 👍",
-                "சமீபத்திய பயிற்சி வீடியோவை மதிப்பாய்வு செய்யவும் 📋"
+                "சமீபத்திய பயிற்சியை மதிப்பாய்வு செய்யவும் 📋"
             )
         } else {
             listOf(
                 "Child completed today's steps! 🌟",
-                "Needs more practice with buttons 👕",
-                "Reduced physical prompts successfully 👍",
-                "Please review recent session video 📋"
+                "Needs more cues for buttons 👕",
+                "Prompt faded successfully 👍",
+                "Please review our latest practice 📋"
             )
         }
     }
 
     Scaffold(
-        containerColor = SelforaBackground,
+        containerColor = SelforaBackground, // Authentic SELFORA Theme Background
         topBar = {
-            GlassTopBar(
-                title = if (isTamil) "மருத்துவ செய்திகள்" else "Clinical Messages",
-                subtitle = if (isTamil) "Dr. பிரியா OT • நேரடி வழிகாட்டுதல்" else "Dr. Priya OT • Direct Guidance",
-                onBackClick = onBack,
-                accentColor = SelforaPrimary,
-                showLanguageToggle = true,
-                actions = {
+            Surface(
+                color = Color.White,
+                shadowElevation = 2.dp,
+                border = BorderStroke(1.dp, SelforaBorder),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .statusBarsPadding()
+                        .padding(horizontal = 10.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                     GlassIconButton(
-                        icon = Icons.Default.Refresh,
+                        icon = Icons.AutoMirrored.Filled.ArrowBack,
+                        onClick = onBack,
+                        tint = SelforaPrimary,
+                        size = 36.dp,
+                        iconSize = 18.dp
+                    )
+
+                    Spacer(modifier = Modifier.width(8.dp))
+
+                    Surface(
+                        shape = CircleShape,
+                        color = SelforaPrimary.copy(alpha = 0.12f),
+                        border = BorderStroke(1.dp, SelforaPrimary.copy(alpha = 0.35f)),
+                        modifier = Modifier.size(40.dp)
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Text(
+                                text = therapistInitials,
+                                fontSize = 15.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = SelforaPrimary
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.width(10.dp))
+
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = therapistName,
+                            fontSize = 15.5.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = SelforaTextPrimary,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(
+                                modifier = Modifier
+                                    .size(7.dp)
+                                    .clip(CircleShape)
+                                    .background(if (wsConnected) SelforaSuccess else SelforaWarning)
+                            )
+                            Spacer(modifier = Modifier.width(5.dp))
+                            Text(
+                                text = if (wsConnected) {
+                                    if (isTamil) "நேரடி இணைப்பு • சிகிச்சையாளர்" else "Live WebSocket • Occupational Therapist"
+                                } else {
+                                    if (isTamil) "மருத்துவ சிகிச்சையாளர்" else "Occupational Therapist"
+                                },
+                                fontSize = 11.sp,
+                                color = SelforaTextSecondary,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                    }
+
+                    GlassIconButton(
+                        icon = Icons.Default.Call,
                         onClick = {
-                            coroutineScope.launch {
-                                try {
-                                    val res = ApiClient.apiService.getConversation(activeChildId)
-                                    if (res.isSuccessful && !res.body().isNullOrEmpty()) {
-                                        messages = res.body()!!
-                                    }
-                                } catch (_: Exception) {}
+                            val intent = Intent(Intent.ACTION_DIAL).apply {
+                                data = Uri.parse("tel:+919876543210")
                             }
+                            context.startActivity(intent)
                         },
                         tint = SelforaPrimary,
                         size = 36.dp,
                         iconSize = 18.dp
                     )
+
+                    Spacer(modifier = Modifier.width(6.dp))
+
+                    LanguageTogglePill()
                 }
-            )
+            }
         },
         bottomBar = {
             Surface(
                 color = Color.White,
-                shadowElevation = 8.dp,
-                border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                shadowElevation = 6.dp,
+                border = BorderStroke(1.dp, SelforaBorder),
                 modifier = Modifier
                     .fillMaxWidth()
                     .navigationBarsPadding()
@@ -207,9 +371,8 @@ fun CaregiverMessagesScreen(
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 14.dp, vertical = 8.dp)
+                        .padding(horizontal = 12.dp, vertical = 8.dp)
                 ) {
-                    // Quick Reply Chips
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -219,25 +382,22 @@ fun CaregiverMessagesScreen(
                     ) {
                         quickReplies.forEach { reply ->
                             Surface(
-                                shape = RoundedCornerShape(16.dp),
-                                color = Color(0xFFF1F5F9),
-                                border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
-                                modifier = Modifier.clickable {
-                                    newMessageText = reply
-                                }
+                                shape = RoundedCornerShape(14.dp),
+                                color = SelforaSecondary.copy(alpha = 0.08f),
+                                border = BorderStroke(1.dp, SelforaSecondary.copy(alpha = 0.25f)),
+                                modifier = Modifier.clickable { newMessageText = reply }
                             ) {
                                 Text(
                                     text = reply,
                                     fontSize = 11.5.sp,
                                     fontWeight = FontWeight.Medium,
-                                    color = SelforaTextPrimary,
+                                    color = SelforaSecondary,
                                     modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
                                 )
                             }
                         }
                     }
 
-                    // Input Row
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically
@@ -247,17 +407,19 @@ fun CaregiverMessagesScreen(
                             onValueChange = { newMessageText = it },
                             placeholder = {
                                 Text(
-                                    text = if (isTamil) "மருத்துவரிடம் செய்தி அனுப்பவும்..." else "Message Dr. Priya OT...",
-                                    fontSize = 13.5.sp,
+                                    text = if (isTamil) "செய்தியை தட்டச்சு செய்க..." else "Message $therapistName...",
+                                    fontSize = 13.sp,
                                     color = SelforaTextSecondary
                                 )
                             },
                             modifier = Modifier.weight(1f),
-                            maxLines = 3,
-                            shape = RoundedCornerShape(24.dp),
+                            maxLines = 4,
+                            shape = RoundedCornerShape(22.dp),
                             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
                             keyboardActions = KeyboardActions(onSend = { sendCaregiverMessage() }),
                             colors = OutlinedTextFieldDefaults.colors(
+                                focusedContainerColor = Color(0xFFF8FAFC),
+                                unfocusedContainerColor = Color(0xFFF8FAFC),
                                 focusedTextColor = SelforaTextPrimary,
                                 unfocusedTextColor = SelforaTextPrimary,
                                 focusedBorderColor = SelforaPrimary,
@@ -271,7 +433,7 @@ fun CaregiverMessagesScreen(
                             onClick = { sendCaregiverMessage() },
                             enabled = newMessageText.isNotBlank(),
                             modifier = Modifier
-                                .size(46.dp)
+                                .size(44.dp)
                                 .background(
                                     if (newMessageText.isNotBlank()) SelforaPrimary else Color(0xFFCBD5E1),
                                     CircleShape
@@ -281,290 +443,155 @@ fun CaregiverMessagesScreen(
                                 imageVector = Icons.AutoMirrored.Filled.Send,
                                 contentDescription = "Send",
                                 tint = Color.White,
-                                modifier = Modifier.size(20.dp)
+                                modifier = Modifier.size(19.dp)
                             )
                         }
                     }
                 }
             }
         }
-    ) { padding ->
-        LazyColumn(
-            state = listState,
+    ) { paddingValues ->
+        Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding)
-                .padding(horizontal = 16.dp, vertical = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+                .padding(paddingValues)
         ) {
-            // Professional Clinical Profile Header Card
-            item {
-                Surface(
-                    shape = RoundedCornerShape(18.dp),
-                    color = Color.White,
-                    border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
-                    shadowElevation = 1.5.dp,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Column(modifier = Modifier.padding(14.dp)) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Surface(
-                                shape = CircleShape,
-                                color = SelforaPrimary.copy(alpha = 0.10f),
-                                border = BorderStroke(1.5.dp, SelforaPrimary.copy(alpha = 0.25f)),
-                                modifier = Modifier.size(46.dp)
-                            ) {
-                                Box(contentAlignment = Alignment.Center) {
-                                    Icon(
-                                        imageVector = Icons.Default.HealthAndSafety,
-                                        contentDescription = null,
-                                        tint = SelforaPrimary,
-                                        modifier = Modifier.size(24.dp)
-                                    )
-                                }
-                            }
-
-                            Spacer(modifier = Modifier.width(12.dp))
-
-                            Column(modifier = Modifier.weight(1f)) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(4.dp)
-                                ) {
-                                    Text(
-                                        text = "Dr. Priya Shanmugam, MOT",
-                                        fontSize = 15.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = SelforaTextPrimary,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis
-                                    )
-                                    Icon(
-                                        imageVector = Icons.Default.CheckCircle,
-                                        contentDescription = "Verified Therapist",
-                                        tint = SelforaPrimary,
-                                        modifier = Modifier.size(15.dp)
-                                    )
-                                }
-                                Spacer(modifier = Modifier.height(2.dp))
-                                Text(
-                                    text = if (isTamil) "முதுநிலை குழந்தைசார் தொழில்முறை சிகிச்சையாளர்" else "Senior Pediatric Occupational Therapist",
-                                    fontSize = 11.5.sp,
-                                    color = SelforaTextSecondary,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
-                                )
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.height(10.dp))
-
-                        // Patient Context & Security Tag
-                        Surface(
-                            shape = RoundedCornerShape(10.dp),
-                            color = Color(0xFFF8FAFC),
-                            border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Icon(
-                                        imageVector = Icons.Default.ChildCare,
-                                        contentDescription = null,
-                                        tint = SelforaSecondary,
-                                        modifier = Modifier.size(15.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    Text(
-                                        text = if (isTamil) "நோயாளி: $activeChildName (ஐடி #$activeChildId)" else "Patient: $activeChildName (ID #$activeChildId)",
-                                        fontSize = 11.sp,
-                                        fontWeight = FontWeight.SemiBold,
-                                        color = SelforaTextPrimary
-                                    )
-                                }
-
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(7.dp)
-                                            .clip(CircleShape)
-                                            .background(Color(0xFF10B981))
-                                    )
-                                    Spacer(modifier = Modifier.width(4.dp))
-                                    Text(
-                                        text = if (isTamil) "ஆன்லைன்" else "Active",
-                                        fontSize = 10.5.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = Color(0xFF10B981)
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            // Prescription / Step Guide Attachment Card
-            item {
-                Surface(
-                    shape = RoundedCornerShape(14.dp),
-                    color = Color.White,
-                    border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
-                    shadowElevation = 1.dp,
+            // Child Context Header
+            Surface(
+                color = Color.White,
+                border = BorderStroke(1.dp, SelforaBorder),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clickable {
-                            Toast.makeText(
-                                context,
-                                if (isTamil) "ஆடை அணிதல் படி வழிகாட்டி PDF திறக்கப்படுகிறது..." else "Opening Clinical Step Guide PDF...",
-                                Toast.LENGTH_SHORT
-                            ).show()
-                        }
+                        .padding(horizontal = 16.dp, vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(12.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Surface(
-                                shape = RoundedCornerShape(10.dp),
-                                color = Color(0xFFFEE2E2),
-                                modifier = Modifier.size(40.dp)
-                            ) {
-                                Box(contentAlignment = Alignment.Center) {
-                                    Icon(
-                                        imageVector = Icons.Default.PictureAsPdf,
-                                        contentDescription = "PDF Guide",
-                                        tint = Color(0xFFDC2626),
-                                        modifier = Modifier.size(22.dp)
-                                    )
-                                }
-                            }
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = if (isTamil) "ஆடை அணிதல் படிநிலை வழிகாட்டி" else "Visual Dressing Step Guide",
-                                    fontSize = 13.5.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = SelforaTextPrimary,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
-                                )
-                                Spacer(modifier = Modifier.height(2.dp))
-                                Text(
-                                    text = if (isTamil) "1.4 MB • மருத்துவர் பரிந்துரைத்தது" else "1.4 MB • Prescribed Clinical Reference",
-                                    fontSize = 11.sp,
-                                    color = SelforaTextSecondary
-                                )
-                            }
-                        }
-
-                        Surface(
-                            shape = RoundedCornerShape(8.dp),
-                            color = SelforaPrimary.copy(alpha = 0.10f),
-                            border = BorderStroke(1.dp, SelforaPrimary.copy(alpha = 0.25f))
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.FileDownload,
-                                    contentDescription = null,
-                                    tint = SelforaPrimary,
-                                    modifier = Modifier.size(12.dp)
-                                )
-                                Spacer(modifier = Modifier.width(3.dp))
-                                Text(
-                                    text = if (isTamil) "பார்க்க" else "View",
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = SelforaPrimary
-                                )
-                            }
-                        }
-                    }
+                    Text(
+                        text = if (activeChildName.isNotBlank()) "Child: $activeChildName • ADL Routine" else "Active ADL Care Thread",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = SelforaTextPrimary
+                    )
+                    Text(
+                        text = if (wsConnected) "● Live WebSocket" else "Connecting...",
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = if (wsConnected) SelforaSuccess else SelforaWarning
+                    )
                 }
             }
 
-            // Message Items
-            itemsIndexed(messages, key = { index, msg -> "${msg.id}_${msg.sentAt}_$index" }) { _, msg ->
-                val isCaregiverMsg = msg.senderId == currentUserId || msg.senderName.contains("Caregiver", ignoreCase = true)
-
-                Box(
-                    modifier = Modifier.fillMaxWidth(),
-                    contentAlignment = if (isCaregiverMsg) Alignment.CenterEnd else Alignment.CenterStart
-                ) {
-                    Surface(
-                        shape = RoundedCornerShape(
-                            topStart = 16.dp,
-                            topEnd = 16.dp,
-                            bottomStart = if (isCaregiverMsg) 16.dp else 4.dp,
-                            bottomEnd = if (isCaregiverMsg) 4.dp else 16.dp
-                        ),
-                        color = if (isCaregiverMsg) SelforaPrimary else Color.White,
-                        shadowElevation = 1.5.dp,
-                        border = BorderStroke(
-                            1.dp,
-                            if (isCaregiverMsg) SelforaPrimary else Color(0xFFE2E8F0)
-                        ),
-                        modifier = Modifier.widthIn(max = 310.dp)
-                    ) {
-                        Column(modifier = Modifier.padding(12.dp)) {
-                            if (!isCaregiverMsg) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    modifier = Modifier.padding(bottom = 4.dp)
-                                ) {
-                                    Text(
-                                        text = msg.senderName,
-                                        fontSize = 11.5.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = SelforaPrimary
-                                    )
-                                }
-                            }
-
-                            Text(
-                                text = msg.messageText,
-                                fontSize = 13.5.sp,
-                                color = if (isCaregiverMsg) Color.White else SelforaTextPrimary,
-                                lineHeight = 19.sp
-                            )
-
-                            Spacer(modifier = Modifier.height(4.dp))
-
-                            Row(
-                                modifier = Modifier.align(Alignment.End),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(
-                                    text = msg.sentAt,
-                                    fontSize = 10.sp,
-                                    fontWeight = FontWeight.Medium,
-                                    color = if (isCaregiverMsg) Color.White.copy(alpha = 0.80f) else SelforaTextSecondary
+            if (isLoading) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(color = SelforaPrimary)
+                }
+            } else if (messages.isEmpty()) {
+                Box(modifier = Modifier.fillMaxSize().padding(24.dp), contentAlignment = Alignment.Center) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Surface(
+                            shape = CircleShape,
+                            color = SelforaPrimary.copy(alpha = 0.1f),
+                            modifier = Modifier.size(56.dp)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(
+                                    imageVector = Icons.Default.Chat,
+                                    contentDescription = null,
+                                    tint = SelforaPrimary,
+                                    modifier = Modifier.size(28.dp)
                                 )
-                                if (isCaregiverMsg) {
-                                    Spacer(modifier = Modifier.width(3.dp))
-                                    Icon(
-                                        imageVector = Icons.Default.DoneAll,
-                                        contentDescription = "Delivered",
-                                        tint = Color.White.copy(alpha = 0.85f),
-                                        modifier = Modifier.size(12.dp)
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Text(
+                            text = if (isTamil) "இன்னும் செய்திகள் இல்லை" else "No messages yet",
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = SelforaTextPrimary
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = if (isTamil) "சிகிச்சையாளரிடம் உங்கள் கேள்விகளை இங்கே கேட்கலாம்." else "Send a message to $therapistName about home practice updates.",
+                            fontSize = 12.5.sp,
+                            color = SelforaTextSecondary
+                        )
+                    }
+                }
+            } else {
+                LazyColumn(
+                    state = listState,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 14.dp, vertical = 10.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    itemsIndexed(
+                        messages,
+                        key = { index, msg -> "${msg.id}_${msg.sentAt}_$index" }
+                    ) { _, msg ->
+                        val isMe = msg.senderId == currentUserId
+
+                        Box(
+                            modifier = Modifier.fillMaxWidth(),
+                            contentAlignment = if (isMe) Alignment.CenterEnd else Alignment.CenterStart
+                        ) {
+                            Surface(
+                                shape = RoundedCornerShape(
+                                    topStart = 16.dp,
+                                    topEnd = 16.dp,
+                                    bottomStart = if (isMe) 16.dp else 4.dp,
+                                    bottomEnd = if (isMe) 4.dp else 16.dp
+                                ),
+                                color = if (isMe) SelforaPrimary else Color.White,
+                                border = BorderStroke(
+                                    1.dp,
+                                    if (isMe) SelforaPrimary else SelforaBorder
+                                ),
+                                shadowElevation = 1.dp,
+                                modifier = Modifier.widthIn(min = 84.dp, max = 305.dp)
+                            ) {
+                                Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 9.dp)) {
+                                    if (!isMe) {
+                                        Text(
+                                            text = msg.senderName,
+                                            fontSize = 11.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = SelforaPrimary
+                                        )
+                                        Spacer(modifier = Modifier.height(2.dp))
+                                    }
+
+                                    Text(
+                                        text = msg.messageText,
+                                        fontSize = 13.8.sp,
+                                        color = if (isMe) Color.White else SelforaTextPrimary,
+                                        lineHeight = 19.sp
                                     )
+
+                                    Spacer(modifier = Modifier.height(4.dp))
+
+                                    Row(
+                                        modifier = Modifier.align(Alignment.End),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(
+                                            text = formatChatTime(msg.sentAt),
+                                            fontSize = 10.sp,
+                                            color = if (isMe) Color.White.copy(alpha = 0.85f) else SelforaTextSecondary
+                                        )
+                                        if (isMe) {
+                                            Spacer(modifier = Modifier.width(4.dp))
+                                            Icon(
+                                                imageVector = Icons.Default.DoneAll,
+                                                contentDescription = if (msg.isRead) "Read" else "Delivered",
+                                                tint = if (msg.isRead) Color(0xFF93C5FD) else Color.White.copy(alpha = 0.70f),
+                                                modifier = Modifier.size(13.dp)
+                                            )
+                                        }
+                                    }
                                 }
                             }
                         }

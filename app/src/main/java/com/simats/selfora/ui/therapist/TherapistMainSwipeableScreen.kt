@@ -20,6 +20,8 @@ fun TherapistMainSwipeableScreen(
     onNavigateToChildProfile: (Long) -> Unit,
     onNavigateToAssessment: (Long) -> Unit,
     onNavigateToSession: (Long) -> Unit = {},
+    onNavigateToSessionSummary: (Long) -> Unit = {},
+    onNavigateToCreateHomeProgram: (Long) -> Unit = {},
     onNavigateToHomePrograms: (Long) -> Unit,
     onNavigateToProgress: (Long) -> Unit,
     onNavigateToMessages: (Long) -> Unit,
@@ -61,10 +63,13 @@ fun TherapistMainSwipeableScreen(
                         activeChildId = id
                         onNavigateToChildProfile(id)
                     },
+                    onNavigateToSessionSummary = onNavigateToSessionSummary,
                     onNavigateToAssessment = {
                         coroutineScope.launch { pagerState.animateScrollToPage(2) }
                     },
-                    onNavigateToHomePrograms = { onNavigateToHomePrograms(activeChildId ?: 0L) },
+                    onNavigateToCreateHomeProgram = onNavigateToCreateHomeProgram,
+                    onNavigateToHomePrograms = { onNavigateToHomePrograms(0L) },
+                    onNavigateToPendingReviews = { cId -> onNavigateToHomePrograms(cId) },
                     onNavigateToProgress = {
                         coroutineScope.launch { pagerState.animateScrollToPage(3) }
                     },
@@ -110,7 +115,7 @@ fun TherapistMainSwipeableScreen(
                 )
 
                 TherapistTab.MESSAGES -> MessageScreen(
-                    childId = activeChildId ?: 0L,
+                    childId = 0L,
                     onBack = {
                         coroutineScope.launch { pagerState.animateScrollToPage(0) }
                     }

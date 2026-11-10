@@ -1,4 +1,4 @@
-﻿package com.simats.selfora.data.repository
+package com.simats.selfora.data.repository
 
 import com.simats.selfora.data.model.dressing.*
 
@@ -608,6 +608,83 @@ class DressingRepository {
         )
     }
 
+    fun getBoyTrousersActivity(): DressingActivity {
+        val titles = listOf(
+            "Stand in front of the trousers",
+            "Look at the trousers",
+            "Pick up the trousers using both hands",
+            "Identify the front and back",
+            "Find the waistband",
+            "Find the right leg opening",
+            "Find the left leg opening",
+            "Hold the waistband open with both hands",
+            "Step your right leg into the right leg opening",
+            "Step your left leg in and pull the trousers up"
+        )
+        val childGuidance = listOf(
+            "Stand in front of your trousers!",
+            "Look at your trousers!",
+            "Pick up your trousers with both hands!",
+            "Check the front drawstring and the back!",
+            "Find the waistband at the top!",
+            "Find the right leg hole!",
+            "Find the left leg hole!",
+            "Hold the waistband open wide!",
+            "Step your right foot into the right leg hole!",
+            "Step your left foot in and pull your trousers up! Awesome!"
+        )
+        val visualDescriptions = listOf(
+            "Show the boy standing calmly in front of open trousers placed flat.",
+            "Show the boy pointing and looking down at the trousers.",
+            "Show the boy bending down and picking up trousers with both hands.",
+            "Show the boy identifying the front drawstring side vs back panel.",
+            "Show the boy locating and tapping the top waistband.",
+            "Show the boy pointing to the right leg opening.",
+            "Show the boy pointing to the left leg opening.",
+            "Show the boy holding and stretching the waistband open with both hands.",
+            "Show the boy stepping his right foot cleanly into the right leg hole.",
+            "Show the boy stepping his left foot into the left opening and pulling trousers up onto waist."
+        )
+        val visualHighlights = listOf(
+            "Trousers Flat in Front",
+            "Pointing at Trousers",
+            "Both Hands Lifting Trousers",
+            "Front Drawstring & Back Check",
+            "Waistband Identified",
+            "Right Leg Opening",
+            "Left Leg Opening",
+            "Wide Open Waistband",
+            "Right Foot Stepping In",
+            "Left Foot In & Waistband Fit"
+        )
+
+        val steps = titles.mapIndexed { idx, title ->
+            val stepNumber = idx + 1
+            DressingStep(
+                stepId = "boy_trousers_${String.format("%02d", stepNumber)}",
+                activityId = "boy_trousers_activity",
+                stepNumber = stepNumber,
+                title = title,
+                childGuidance = childGuidance[idx],
+                visualDescription = visualDescriptions[idx],
+                visualHighlight = visualHighlights[idx],
+                assetPath = "file:///android_asset/dressing/boy/trousers/step_${String.format("%02d", stepNumber)}.gif"
+            )
+        }
+
+        return DressingActivity(
+            activityId = "boy_trousers_activity",
+            title = "Boy Trousers Dressing",
+            category = "Dressing",
+            gender = GenderCategory.BOY,
+            garmentType = "Trousers",
+            totalSteps = 10,
+            iconName = "ic_boy_trousers",
+            description = "10 Clinical task-analysis steps for independent trousers dressing.",
+            steps = steps
+        )
+    }
+
     fun getGirlFrockActivity(): DressingActivity {
         val steps = listOf(
             DressingStep(
@@ -896,6 +973,7 @@ class DressingRepository {
     fun getActivityById(activityId: String): DressingActivity {
         return when {
             activityId.contains("girl", ignoreCase = true) || activityId.contains("frock", ignoreCase = true) -> getGirlFrockActivity()
+            activityId.contains("trouser", ignoreCase = true) -> getBoyTrousersActivity()
             activityId.contains("vest", ignoreCase = true) || (activityId.contains("undergarment", ignoreCase = true) && !activityId.contains("brief", ignoreCase = true) && !activityId.contains("pant", ignoreCase = true)) -> getBoyVestActivity()
             activityId.contains("jacket", ignoreCase = true) -> getBoyJacketActivity()
             activityId.contains("shirt", ignoreCase = true) && !activityId.contains("tshirt", ignoreCase = true) && !activityId.contains("t-shirt", ignoreCase = true) -> getBoyShirtActivity()

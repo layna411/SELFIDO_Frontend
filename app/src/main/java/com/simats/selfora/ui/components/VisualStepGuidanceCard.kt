@@ -63,9 +63,11 @@ fun VisualStepGuidanceCard(
     val displayStepTitle = if (isAudioTamil && !stepTitleTa.isNullOrBlank()) stepTitleTa else stepTitle
     val displayInstruction = if (isAudioTamil && !childInstructionTa.isNullOrBlank()) childInstructionTa else childInstruction
 
-    // Auto-resolve GIF for Boy T-Shirt (1..20), Boy Shirt (1..23), Boy Jacket (1..26), or Boy Vest (1..20) if mediaUrl is not explicitly supplied
+    // Auto-resolve GIF for Boy T-Shirt (1..20), Boy Shirt (1..23), Boy Jacket (1..26), Boy Vest (1..20), or Boy Trousers (1..10) if mediaUrl is not explicitly supplied
     val resolvedMediaUrl = if (!mediaUrl.isNullOrBlank()) {
         mediaUrl
+    } else if (!isGirlMode && (activityTitle.contains("Trouser", ignoreCase = true) || activityTitle.contains("கால்சட்டை")) && stepNumber in 1..10) {
+        "file:///android_asset/dressing/boy/trousers/step_${String.format("%02d", stepNumber)}.gif"
     } else if (!isGirlMode && (activityTitle.contains("Vest", ignoreCase = true) || activityTitle.contains("பனியன்") || (activityTitle.contains("Undergarment", ignoreCase = true) && !activityTitle.contains("Brief", ignoreCase = true) && !activityTitle.contains("Pant", ignoreCase = true))) && stepNumber in 1..20) {
         "file:///android_asset/dressing/boy/vest/step_${String.format("%02d", stepNumber)}.gif"
     } else if (!isGirlMode && (activityTitle.contains("Jacket", ignoreCase = true) || activityTitle.contains("ஜாக்கெட்")) && stepNumber in 1..26) {
@@ -341,6 +343,53 @@ fun StepVisualIllustrationView(
 
     // Accurate step mapping with vector icons and child-friendly action descriptors
     val (illustrationIcon, actionBadgeText, bgTint) = when {
+        // --- BOY TROUSERS SPECIFIC STEPS ---
+        titleLower.contains("trousers") && titleLower.contains("stand") -> Triple(
+            Icons.Default.AccessibilityNew,
+            "Standing calmly facing the trousers 👖",
+            ChildDressingCardBg
+        )
+        titleLower.contains("trousers") && titleLower.contains("look") -> Triple(
+            Icons.Default.Visibility,
+            "Looking down and pointing at trousers 👀👖",
+            ChildDressingCardBg
+        )
+        titleLower.contains("trousers") && titleLower.contains("pick up") -> Triple(
+            Icons.Default.FrontHand,
+            "Picking up trousers with both hands 🤲👖",
+            ChildEatingCardBg
+        )
+        titleLower.contains("waistband") && titleLower.contains("find") -> Triple(
+            Icons.Default.Search,
+            "Finding the waistband at the top 🔎👖",
+            ChildDressingCardBg
+        )
+        titleLower.contains("right leg opening") -> Triple(
+            Icons.Default.Search,
+            "Locating right leg opening 🔎🦵",
+            ChildDressingCardBg
+        )
+        titleLower.contains("left leg opening") -> Triple(
+            Icons.Default.Search,
+            "Locating left leg opening 🔎🦵",
+            ChildDressingCardBg
+        )
+        titleLower.contains("waistband") && titleLower.contains("open") -> Triple(
+            Icons.Default.PanTool,
+            "Stretching waistband open with both hands ↔️👖",
+            ChildDressingCardBg
+        )
+        titleLower.contains("right leg") && (titleLower.contains("step") || titleLower.contains("insert")) -> Triple(
+            Icons.Default.DirectionsWalk,
+            "Stepping right foot into right leg hole 🦶👖",
+            ChildShoesCardBg
+        )
+        titleLower.contains("left leg") && (titleLower.contains("step") || titleLower.contains("pull")) -> Triple(
+            Icons.Default.EmojiEvents,
+            "Stepping left foot in and pulling trousers up! 🎉👖",
+            ChildRewardsCardBg
+        )
+
         // --- BOY UNDERGARMENT - VEST SPECIFIC STEPS ---
         titleLower.contains("private") || titleLower.contains("changing area") -> Triple(
             Icons.Default.Lock,

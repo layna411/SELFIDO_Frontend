@@ -162,7 +162,13 @@ class TherapySessionViewModel : ViewModel() {
             } catch (e: Exception) {
                 // Fallback graceful initialization
                 val loadedSteps = SelfidoCatalogue.getStepsForActivity(activityId).ifEmpty {
-                    if (activityId == 2L) getSampleShirtSteps() else if (activityId == 3L) getSampleJacketSteps() else if (activityId == 4L) getSampleVestSteps() else if (activityId == 5L) getSampleToothBrushingSteps() else getSampleTShirtSteps()
+                    when (activityId) {
+                        2L -> getSampleShirtSteps()
+                        3L -> getSampleJacketSteps()
+                        4L -> getSampleVestSteps()
+                        5L -> getSampleTrousersSteps()
+                        else -> getSampleTShirtSteps()
+                    }
                 }
                 val recordsMap = loadedSteps.mapIndexed { idx, st ->
                     idx to StepRecordState(
@@ -170,6 +176,11 @@ class TherapySessionViewModel : ViewModel() {
                         stepNumber = st.stepNumber,
                         title = st.title,
                         instruction = st.instructionText ?: st.childInstruction ?: "",
+                        titleTa = st.titleTa,
+                        instructionTa = st.instructionTextTa ?: st.childInstructionTa,
+                        childInstruction = st.childInstruction,
+                        childInstructionTa = st.childInstructionTa,
+                        media = st.media,
                         selectedLevel = null,
                         outcome = "PENDING"
                     )

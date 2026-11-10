@@ -17,6 +17,12 @@ interface SelforaApiService {
     @GET("api/therapist/dashboard-summary")
     suspend fun getTherapistDashboardSummary(): Response<TherapistDashboardSummaryResponse>
 
+    @GET("api/therapist/sessions/today")
+    suspend fun getTherapistTodaySessions(): Response<List<SessionResponse>>
+
+    @GET("api/therapist/home-programs")
+    suspend fun getTherapistHomePrograms(): Response<List<HomeProgramResponse>>
+
     @POST("api/therapist/create-child-with-caregiver")
     suspend fun createChildWithCaregiver(@Body request: CreateChildWithCaregiverRequest): Response<CredentialsSuccessResponse>
 
@@ -196,6 +202,12 @@ interface SelforaApiService {
 
     @GET("api/messages/child/{childId}")
     suspend fun getConversation(@Path("childId") childId: Long): Response<List<MessageResponse>>
+
+    @POST("api/messages/child/{childId}/read")
+    suspend fun markConversationAsRead(@Path("childId") childId: Long): Response<Unit>
+
+    @GET("api/messages/partner/child/{childId}")
+    suspend fun getChatPartner(@Path("childId") childId: Long): Response<ChatPartnerResponse>
 
     // Child Mode Stage 7 Endpoints
     @GET("api/child-mode/dashboard/{childId}")
