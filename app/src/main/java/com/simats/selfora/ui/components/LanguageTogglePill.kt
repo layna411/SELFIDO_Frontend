@@ -41,6 +41,7 @@ fun LanguageTogglePill(
 
     Surface(
         modifier = modifier
+            .height(36.dp)
             .clip(RoundedCornerShape(20.dp))
             .clickable {
                 LanguageManager.toggleLanguage()
@@ -51,8 +52,7 @@ fun LanguageTogglePill(
     ) {
         Row(
             modifier = Modifier.padding(
-                horizontal = if (isCompact) 8.dp else 12.dp,
-                vertical = if (isCompact) 4.dp else 6.dp
+                horizontal = if (isCompact) 10.dp else 12.dp
             ),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.Center

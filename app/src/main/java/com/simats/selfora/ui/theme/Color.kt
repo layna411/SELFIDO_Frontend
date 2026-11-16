@@ -32,6 +32,11 @@ val TherapistPrimaryGradient = listOf(Color(0xFF2563EB), Color(0xFF1D4ED8))
 val CaregiverPrimaryGradient = listOf(Color(0xFF7C3AED), Color(0xFF6D28D9))
 val ChildPrimaryGradient = listOf(Color(0xFF3B82F6), Color(0xFF8B5CF6))
 
+// Official SELFIDO 3D Clay Brand Colors
+val SelfidoPurple = Color(0xFF7E57C2)
+val SelfidoTeal = Color(0xFF26A69A)
+val SelfidoSoftLilac = Color(0xFFE6D7F8)
+
 // Legacy Aliases for Component Backward-Compatibility
 val PrimaryBlue = SelforaPrimary
 val SecondaryPurple = SelforaSecondary

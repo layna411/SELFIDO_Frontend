@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.sp
 import com.simats.selfora.R
 import com.simats.selfora.ui.theme.*
 import com.simats.selfora.ui.components.design.AppTopBar
+import com.simats.selfora.ui.components.design.TopBarActionButton
 import com.simats.selfora.data.api.ApiClient
 import com.simats.selfora.data.model.AdminChildItem
 import com.simats.selfora.ui.components.glass.GlassTextField
@@ -94,9 +95,12 @@ fun ChildManagementScreen(
                 title = "Centralized Child Records",
                 subtitle = "Clinical Profiles & Caseload Management",
                 actions = {
-                    IconButton(onClick = { fetchChildren() }) {
-                        Icon(Icons.Default.Refresh, contentDescription = "Refresh", tint = blueAccent)
-                    }
+                    TopBarActionButton(
+                        icon = Icons.Default.Refresh,
+                        onClick = { fetchChildren() },
+                        contentDescription = "Refresh",
+                        tint = blueAccent
+                    )
                 }
             )
         },

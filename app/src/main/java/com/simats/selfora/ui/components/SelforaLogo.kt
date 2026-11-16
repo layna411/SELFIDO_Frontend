@@ -38,10 +38,6 @@ import com.simats.selfora.ui.theme.*
  * - Tagline: "Little steps, Big wins"
  */
 
-val SelfidoPurple = Color(0xFF7E57C2)
-val SelfidoTeal = Color(0xFF26A69A)
-val SelfidoSoftLilac = Color(0xFFE6D7F8)
-
 @Composable
 fun SelforaLogoBadge(
     modifier: Modifier = Modifier,

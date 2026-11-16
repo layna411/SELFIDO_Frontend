@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.simats.selfora.ui.theme.*
 import com.simats.selfora.ui.components.design.AppTopBar
+import com.simats.selfora.ui.components.design.TopBarActionButton
 import com.simats.selfora.data.api.ApiClient
 import com.simats.selfora.data.model.TherapistItem
 import com.simats.selfora.ui.components.glass.GlassTextField
@@ -102,12 +103,18 @@ fun TherapistManagementScreen(
                 title = "Therapist & Clinician Management",
                 subtitle = "Onboard, Configure & Audit Clinicians",
                 actions = {
-                    IconButton(onClick = { fetchTherapists() }) {
-                        Icon(Icons.Default.Refresh, contentDescription = "Refresh", tint = blueAccent)
-                    }
-                    IconButton(onClick = onNavigateToCreateTherapist) {
-                        Icon(Icons.Default.PersonAdd, contentDescription = "Add Therapist", tint = blueAccent)
-                    }
+                    TopBarActionButton(
+                        icon = Icons.Default.Refresh,
+                        onClick = { fetchTherapists() },
+                        contentDescription = "Refresh",
+                        tint = blueAccent
+                    )
+                    TopBarActionButton(
+                        icon = Icons.Default.PersonAdd,
+                        onClick = onNavigateToCreateTherapist,
+                        contentDescription = "Add Therapist",
+                        tint = blueAccent
+                    )
                 }
             )
         },

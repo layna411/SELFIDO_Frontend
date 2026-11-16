@@ -26,6 +26,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.simats.selfora.ui.theme.*
 import com.simats.selfora.ui.components.design.AppTopBar
+import com.simats.selfora.ui.components.design.TopBarActionButton
 import com.simats.selfora.data.api.ApiClient
 import com.simats.selfora.data.model.CaregiverItem
 import com.simats.selfora.ui.components.glass.GlassTextField
@@ -101,9 +102,12 @@ fun CaregiverManagementScreen(
                 subtitle = "Linked Parent Logins & Access Status",
                 accentColor = purpleAccent,
                 actions = {
-                    IconButton(onClick = { loadCaregivers() }) {
-                        Icon(Icons.Default.Refresh, contentDescription = "Refresh", tint = purpleAccent)
-                    }
+                    TopBarActionButton(
+                        icon = Icons.Default.Refresh,
+                        onClick = { loadCaregivers() },
+                        contentDescription = "Refresh",
+                        tint = purpleAccent
+                    )
                 }
             )
         },

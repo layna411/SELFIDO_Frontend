@@ -41,8 +41,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.simats.selfora.R
-import com.simats.selfora.ui.components.SelfidoPurple
-import com.simats.selfora.ui.components.SelfidoTeal
+import com.simats.selfora.ui.theme.*
 import kotlinx.coroutines.delay
 import kotlin.math.PI
 import kotlin.math.cos

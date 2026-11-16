@@ -111,26 +111,27 @@ fun SuperAdminDashboardScreen(
                 ) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(1f, fill = false)
                     ) {
-                        Box(
-                            modifier = Modifier
-                                .size(36.dp)
-                                .clip(CircleShape)
-                                .background(blueAccent.copy(alpha = 0.12f)),
-                            contentAlignment = Alignment.Center
+                        Surface(
+                            modifier = Modifier.size(36.dp),
+                            shape = CircleShape,
+                            color = blueAccent.copy(alpha = 0.12f),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, blueAccent.copy(alpha = 0.25f))
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.AdminPanelSettings,
-                                contentDescription = null,
-                                tint = blueAccent,
-                                modifier = Modifier.size(20.dp)
-                            )
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(
+                                    imageVector = Icons.Default.AdminPanelSettings,
+                                    contentDescription = null,
+                                    tint = blueAccent,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
                         }
                         Spacer(modifier = Modifier.width(10.dp))
                         Column(modifier = Modifier.weight(1f, fill = false)) {
                             Text(
-                                text = if (isTamil) "செல்பொரா அட்மின்" else "SELFIDO ADMIN",
+                                text = if (isTamil) "செல்ஃபிடோ அட்மின்" else "SELFIDO ADMIN",
                                 fontSize = 16.5.sp,
                                 fontWeight = FontWeight.ExtraBold,
                                 color = textPrimary,
@@ -153,40 +154,46 @@ fun SuperAdminDashboardScreen(
 
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         LanguageTogglePill(isCompact = true)
 
-                        IconButton(
-                            onClick = onNavigateToSettings,
+                        Surface(
                             modifier = Modifier
                                 .size(36.dp)
                                 .clip(CircleShape)
-                                .background(Color(0xFFF8FAFC))
-                                .border(1.dp, Color(0xFFE2E8F0), CircleShape)
+                                .clickable(onClick = onNavigateToSettings),
+                            shape = CircleShape,
+                            color = Color(0xFFF8FAFC),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0))
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.Settings,
-                                contentDescription = "Settings",
-                                tint = textSecondary,
-                                modifier = Modifier.size(18.dp)
-                            )
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(
+                                    imageVector = Icons.Default.Settings,
+                                    contentDescription = "Settings",
+                                    tint = textSecondary,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
                         }
 
-                        IconButton(
-                            onClick = onLogout,
+                        Surface(
                             modifier = Modifier
                                 .size(36.dp)
                                 .clip(CircleShape)
-                                .background(Color(0xFFFEF2F2))
-                                .border(1.dp, Color(0xFFFEE2E2), CircleShape)
+                                .clickable(onClick = onLogout),
+                            shape = CircleShape,
+                            color = Color(0xFFFEF2F2),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFFEE2E2))
                         ) {
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Filled.Logout,
-                                contentDescription = "Logout",
-                                tint = Color(0xFFEF4444),
-                                modifier = Modifier.size(18.dp)
-                            )
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Filled.Logout,
+                                    contentDescription = "Logout",
+                                    tint = Color(0xFFEF4444),
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
                         }
                     }
                 }

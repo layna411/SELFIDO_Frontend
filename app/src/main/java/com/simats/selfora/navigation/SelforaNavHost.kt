@@ -352,6 +352,8 @@ fun SelforaNavHost(
                     onStartSession = { id -> navController.navigate(NavRoutes.TherapySession.createRoute(id, 1L)) },
                     onAssignProgramme = { id -> navController.navigate(NavRoutes.HomeProgramCreate.createRoute(id)) },
                     onViewProgress = { id -> navController.navigate(NavRoutes.Progress.createRoute(id)) },
+                    onNavigateToAnalyzeAndAdapt = { id -> navController.navigate(NavRoutes.AnalyzeAndAdapt.createRoute(id)) },
+                    onNavigateToPromptFading = { id -> navController.navigate(NavRoutes.PromptFading.createRoute(id)) },
                     onMessageCaregiver = { id -> navController.navigate(NavRoutes.Messages.createRoute(id)) },
                     onOpenChildMode = { _ -> navController.navigate(NavRoutes.ChildHome.route) },
                     onBack = { navController.popBackStack() }

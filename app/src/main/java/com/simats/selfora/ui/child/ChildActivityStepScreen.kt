@@ -27,6 +27,7 @@ import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material3.*
 
 import androidx.compose.runtime.*
+import com.simats.selfora.ui.components.dialogs.StepCompletionAchievementDialog
 
 import androidx.compose.ui.Alignment
 
@@ -105,6 +106,10 @@ fun ChildActivityStepScreen(
     var isSubmitting by remember { mutableStateOf(false) }
 
     var submitError by remember { mutableStateOf<String?>(null) }
+
+    var showStepAchievement by remember { mutableStateOf(false) }
+    var completedStepIndexForAchievement by remember { mutableStateOf(0) }
+    var isFinalStepForAchievement by remember { mutableStateOf(false) }
 
     val scope = rememberCoroutineScope()
 
@@ -552,141 +557,11 @@ fun ChildActivityStepScreen(
 
                             val isCompleted = currentStepIndex == steps.size - 1
 
+                            completedStepIndexForAchievement = currentStepIndex
 
+                            isFinalStepForAchievement = isCompleted
 
-                            if (isCompleted) {
-
-                                isSubmitting = true
-
-                                submitError = null
-
-                                scope.launch {
-
-                                    if (activeChildId > 0) {
-
-                                        try {
-
-                                            val response = ApiClient.apiService.recordChildStepProgress(
-
-                                                com.simats.selfora.data.model.RecordStepProgressRequest(
-
-                                                    childId = activeChildId,
-
-                                                    activityId = activityId,
-
-                                                    stepNumber = steps.size,
-
-                                                    isActivityCompleted = true
-
-                                                )
-
-                                            )
-
-                                            if (response.isSuccessful && response.body() != null) {
-
-                                                PracticeSessionStore.setLastStepProgress(response.body())
-
-                                                PracticeSessionStore.clearActivePracticeSession(activeChildId, activityId)
-
-                                                isSubmitting = false
-
-                                                onFinished()
-
-                                                return@launch
-
-                                            } else {
-
-                                                PracticeSessionStore.saveActivePracticeSession(
-
-                                                    com.simats.selfora.data.repository.ActivePracticeSession(
-
-                                                        childId = activeChildId,
-
-                                                        activityId = activityId,
-
-                                                        currentStepIndex = steps.size - 1,
-
-                                                        completedSteps = steps.size,
-
-                                                        totalSteps = steps.size,
-
-                                                        sessionStatus = "PENDING_SYNC"
-
-                                                    )
-
-                                                )
-
-                                                submitError = if (isTamil) "முன்னேற்றம் பாதுகாக்கப்பட்டது! அனுப்ப தட்டவும்." else "Progress safely saved offline! Tap to retry sending."
-
-                                            }
-
-                                        } catch (e: Exception) {
-
-                                            PracticeSessionStore.saveActivePracticeSession(
-
-                                                com.simats.selfora.data.repository.ActivePracticeSession(
-
-                                                    childId = activeChildId,
-
-                                                    activityId = activityId,
-
-                                                    currentStepIndex = steps.size - 1,
-
-                                                    completedSteps = steps.size,
-
-                                                    totalSteps = steps.size,
-
-                                                    sessionStatus = "PENDING_SYNC"
-
-                                                )
-
-                                            )
-
-                                            submitError = if (isTamil) "இணைப்பு தாமதமாகிறது. முன்னேற்றம் பாதுகாக்கப்பட்டது!" else "Connection paused. Progress safely saved! Tap to retry."
-
-                                        }
-
-                                    }
-
-                                    isSubmitting = false
-
-                                }
-
-                            } else {
-
-                                submitError = null
-
-                                if (activeChildId > 0) {
-
-                                    scope.launch {
-
-                                        try {
-
-                                            ApiClient.apiService.recordChildStepProgress(
-
-                                                com.simats.selfora.data.model.RecordStepProgressRequest(
-
-                                                    childId = activeChildId,
-
-                                                    activityId = activityId,
-
-                                                    stepNumber = currentStepIndex + 1,
-
-                                                    isActivityCompleted = false
-
-                                                )
-
-                                            )
-
-                                        } catch (_: Exception) {}
-
-                                    }
-
-                                }
-
-                                currentStepIndex++
-
-                            }
+                            showStepAchievement = true
 
                         },
 
@@ -774,6 +649,89 @@ fun ChildActivityStepScreen(
 
         }
 
+    }
+
+    if (showStepAchievement) {
+        StepCompletionAchievementDialog(
+            stepNumber = completedStepIndexForAchievement + 1,
+            totalSteps = steps.size,
+            stepTitle = steps.getOrNull(completedStepIndexForAchievement)?.let {
+                if (isTamil && !it.titleTa.isNullOrBlank()) it.titleTa!! else it.title
+            } ?: "Step ${completedStepIndexForAchievement + 1}",
+            isFinalStep = isFinalStepForAchievement,
+            isTamil = isTamil,
+            onContinue = {
+                showStepAchievement = false
+                if (isFinalStepForAchievement) {
+                    isSubmitting = true
+                    submitError = null
+                    scope.launch {
+                        if (activeChildId > 0) {
+                            try {
+                                val response = ApiClient.apiService.recordChildStepProgress(
+                                    com.simats.selfora.data.model.RecordStepProgressRequest(
+                                        childId = activeChildId,
+                                        activityId = activityId,
+                                        stepNumber = steps.size,
+                                        isActivityCompleted = true
+                                    )
+                                )
+                                if (response.isSuccessful && response.body() != null) {
+                                    PracticeSessionStore.setLastStepProgress(response.body())
+                                    PracticeSessionStore.clearActivePracticeSession(activeChildId, activityId)
+                                    isSubmitting = false
+                                    onFinished()
+                                    return@launch
+                                } else {
+                                    PracticeSessionStore.saveActivePracticeSession(
+                                        com.simats.selfora.data.repository.ActivePracticeSession(
+                                            childId = activeChildId,
+                                            activityId = activityId,
+                                            currentStepIndex = steps.size - 1,
+                                            completedSteps = steps.size,
+                                            totalSteps = steps.size,
+                                            sessionStatus = "PENDING_SYNC"
+                                        )
+                                    )
+                                    submitError = if (isTamil) "முன்னேற்றம் பாதுகாக்கப்பட்டது! அனுப்ப தட்டவும்." else "Progress safely saved offline! Tap to retry sending."
+                                }
+                            } catch (e: Exception) {
+                                PracticeSessionStore.saveActivePracticeSession(
+                                    com.simats.selfora.data.repository.ActivePracticeSession(
+                                        childId = activeChildId,
+                                        activityId = activityId,
+                                        currentStepIndex = steps.size - 1,
+                                        completedSteps = steps.size,
+                                        totalSteps = steps.size,
+                                        sessionStatus = "PENDING_SYNC"
+                                    )
+                                )
+                                submitError = if (isTamil) "இணைப்பு தாமதமாகிறது. முன்னேற்றம் பாதுகாக்கப்பட்டது!" else "Connection paused. Progress safely saved! Tap to retry."
+                            }
+                        }
+                        isSubmitting = false
+                        onFinished()
+                    }
+                } else {
+                    submitError = null
+                    if (activeChildId > 0) {
+                        scope.launch {
+                            try {
+                                ApiClient.apiService.recordChildStepProgress(
+                                    com.simats.selfora.data.model.RecordStepProgressRequest(
+                                        childId = activeChildId,
+                                        activityId = activityId,
+                                        stepNumber = currentStepIndex + 1,
+                                        isActivityCompleted = false
+                                    )
+                                )
+                            } catch (_: Exception) {}
+                        }
+                    }
+                    currentStepIndex++
+                }
+            }
+        )
     }
 
 }

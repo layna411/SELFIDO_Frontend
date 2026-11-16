@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.sp
 import com.simats.selfora.ui.theme.*
 import com.simats.selfora.data.api.ApiClient
 import com.simats.selfora.data.model.AuditLogItem
+import com.simats.selfora.ui.components.design.AppTopBar
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -63,36 +64,11 @@ fun AdminAuditLogsScreen(
 
     Scaffold(
         topBar = {
-            Surface(
-                modifier = Modifier.fillMaxWidth(),
-                color = Color.White,
-                shadowElevation = 2.dp,
-                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0))
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .statusBarsPadding()
-                        .padding(horizontal = 16.dp, vertical = 10.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    IconButton(
-                        onClick = onBack,
-                        modifier = Modifier
-                            .size(38.dp)
-                            .clip(CircleShape)
-                            .background(Color(0xFFF8FAFC))
-                            .border(1.dp, Color(0xFFE2E8F0), CircleShape)
-                    ) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = SelforaPrimary, modifier = Modifier.size(19.dp))
-                    }
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Column {
-                        Text("System Activity & Audit Logs", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = SelforaTextPrimary)
-                        Text("Immutable Security & Compliance Trail", fontSize = 11.5.sp, color = SelforaTextSecondary)
-                    }
-                }
-            }
+            AppTopBar(
+                title = "System Activity & Audit Logs",
+                subtitle = "Immutable Security & Compliance Trail",
+                onBackClick = onBack
+            )
         },
         containerColor = SelforaBackground
     ) { padding ->

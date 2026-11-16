@@ -117,13 +117,47 @@ fun AppTopBar(
 
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 if (showLanguageToggle) {
                     LanguageTogglePill(isCompact = true)
                 }
                 actions?.invoke(this)
             }
+        }
+    }
+}
+
+/**
+ * Standard 36dp Circular Action Button for AppTopBar.
+ * Aligns perfectly with LanguageTogglePill and Back buttons.
+ */
+@Composable
+fun TopBarActionButton(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    onClick: () -> Unit,
+    contentDescription: String? = null,
+    tint: Color = SelforaPrimary,
+    backgroundColor: Color = Color(0xFFF8FAFC),
+    borderColor: Color = Color(0xFFE2E8F0),
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        shape = CircleShape,
+        color = backgroundColor,
+        border = BorderStroke(1.dp, borderColor),
+        modifier = modifier
+            .size(36.dp)
+            .clip(CircleShape)
+            .clickable(onClick = onClick)
+    ) {
+        Box(contentAlignment = Alignment.Center) {
+            Icon(
+                imageVector = icon,
+                contentDescription = contentDescription,
+                tint = tint,
+                modifier = Modifier.size(18.dp)
+            )
         }
     }
 }

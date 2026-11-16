@@ -24,8 +24,10 @@ import com.simats.selfora.data.local.SessionManager
 import com.simats.selfora.data.model.HomeProgramResponse
 import com.simats.selfora.data.model.LinkedChildInfo
 import com.simats.selfora.ui.components.avatar.ChildAvatarImage
+import com.simats.selfora.ui.components.dialogs.PracticeSessionIntroDialog
 import com.simats.selfora.ui.components.glass.*
 import com.simats.selfora.ui.theme.*
+import com.simats.selfora.utils.LanguageManager
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -45,6 +47,13 @@ fun CaregiverDashboardScreen(
 
     var homePrograms by remember { mutableStateOf<List<HomeProgramResponse>>(emptyList()) }
     var isLoading by remember { mutableStateOf(false) }
+
+    val currentLanguage by LanguageManager.currentLanguage.collectAsState()
+    val isTamil = currentLanguage == "ta"
+
+    var showPracticeIntro by remember { mutableStateOf(false) }
+    var pendingPracticeProgId by remember { mutableStateOf<Long?>(null) }
+    var pendingActivityId by remember { mutableStateOf<String?>(null) }
 
     val scope = rememberCoroutineScope()
 
@@ -260,7 +269,11 @@ fun CaregiverDashboardScreen(
                                 GlassButton(
                                     text = "Start Practice Session",
                                     icon = Icons.Default.PlayArrow,
-                                    onClick = { onStartPractice(primaryProg.id, "boy_tshirt_activity") },
+                                    onClick = {
+                                        pendingPracticeProgId = primaryProg.id
+                                        pendingActivityId = "boy_tshirt_activity"
+                                        showPracticeIntro = true
+                                    },
                                     gradient = listOf(SelforaPrimary, Color(0xFF6D28D9)),
                                     modifier = Modifier
                                         .fillMaxWidth()
@@ -286,19 +299,43 @@ fun CaregiverDashboardScreen(
                             emoji = "👕",
                             title = "Wearing T-Shirt",
                             frequency = "2 times a day",
-                            onClick = { onStartPractice(2L, "boy_tshirt_activity") }
+                            onClick = {
+                                pendingPracticeProgId = 2L
+                                pendingActivityId = "boy_tshirt_activity"
+                                showPracticeIntro = true
+                            }
                         )
 
                         OtherActivityItem(
                             emoji = "🥣",
                             title = "Eating with Spoon",
                             frequency = "During meals",
-                            onClick = { onStartPractice(3L, "eating_spoon_activity") }
+                            onClick = {
+                                pendingPracticeProgId = 3L
+                                pendingActivityId = "eating_spoon_activity"
+                                showPracticeIntro = true
+                            }
                         )
                     }
                 }
             }
         }
+    }
+
+    if (showPracticeIntro && pendingPracticeProgId != null) {
+        PracticeSessionIntroDialog(
+            activityTitle = "ADL Practice Session",
+            isTamil = isTamil,
+            onStartPractice = {
+                val progId = pendingPracticeProgId!!
+                val actId = pendingActivityId ?: "boy_tshirt_activity"
+                showPracticeIntro = false
+                onStartPractice(progId, actId)
+            },
+            onDismiss = {
+                showPracticeIntro = false
+            }
+        )
     }
 }
 

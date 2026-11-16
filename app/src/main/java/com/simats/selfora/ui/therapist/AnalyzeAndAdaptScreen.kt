@@ -21,6 +21,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.simats.selfora.data.api.ApiClient
@@ -59,7 +61,6 @@ fun AnalyzeAndAdaptScreen(
     val adlCategories = listOf(
         "Dressing" to 1L,
         "Eating" to 13L,
-        "Grooming" to 5L,
         "Shoes & Socks" to 9L
     )
 
@@ -96,6 +97,7 @@ fun AnalyzeAndAdaptScreen(
             GlassTopBar(
                 title = "Clinical Analyze & Adapt",
                 subtitle = "Child: $childName (#$childId)",
+                onBackClick = onBack,
                 accentColor = SelforaPrimary
             )
         },
@@ -115,11 +117,12 @@ fun AnalyzeAndAdaptScreen(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Column {
+                    Column(modifier = Modifier.weight(1f).padding(end = 10.dp)) {
                         Text("ANALYZE & ADAPT DASHBOARD", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = SelforaPrimary, letterSpacing = 1.sp)
                         Spacer(modifier = Modifier.height(2.dp))
-                        Text(childName, fontSize = 18.sp, fontWeight = FontWeight.Bold, color = SelforaTextPrimary)
-                        Text("Child ID: #$childId • Selected ADL: $selectedCategory", fontSize = 12.sp, color = SelforaTextSecondary)
+                        Text(childName, fontSize = 18.sp, fontWeight = FontWeight.Bold, color = SelforaTextPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text("Child ID: #$childId • Selected ADL: $selectedCategory", fontSize = 12.sp, color = SelforaTextSecondary, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     }
 
                     Surface(
@@ -163,7 +166,6 @@ fun AnalyzeAndAdaptScreen(
                         val iconStr = when (catName) {
                             "Dressing" -> "👕"
                             "Eating" -> "🥄"
-                            "Grooming" -> "🧼"
                             else -> "👟"
                         }
                         Box(
@@ -234,52 +236,87 @@ fun AnalyzeAndAdaptScreen(
 
                 // 2. OVERALL PERFORMANCE CARD
                 GlassCard(modifier = Modifier.fillMaxWidth()) {
-                    Text("OVERALL PERFORMANCE SUMMARY ($selectedCategory)", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = SelforaPrimary)
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Text("OVERALL PERFORMANCE SUMMARY ($selectedCategory)", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = SelforaPrimary, letterSpacing = 0.5.sp)
+                    Spacer(modifier = Modifier.height(14.dp))
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                Column {
-                                    Text("Current Independence", fontSize = 11.sp, color = SelforaTextSecondary)
-                                    Text("${data.currentIndependencePercentage.toInt()}%", fontSize = 22.sp, fontWeight = FontWeight.ExtraBold, color = SelforaPrimary)
-                                }
-                                Column {
-                                    Text("Previous Session", fontSize = 11.sp, color = SelforaTextSecondary)
-                                    Text("${data.previousIndependencePercentage.toInt()}%", fontSize = 22.sp, fontWeight = FontWeight.Bold, color = SelforaTextSecondary)
-                                }
-                                Column {
-                                    Text("Recorded", fontSize = 11.sp, color = SelforaTextSecondary)
-                                    Text("${data.totalRecordedSessions} sessions", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = SelforaTextPrimary)
+                        // 3 Stat Mini-Boxes evenly spaced
+                        Row(
+                            modifier = Modifier.weight(1f),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Surface(
+                                modifier = Modifier.weight(1f),
+                                shape = RoundedCornerShape(12.dp),
+                                color = SelforaPrimary.copy(alpha = 0.08f),
+                                border = androidx.compose.foundation.BorderStroke(1.dp, SelforaPrimary.copy(alpha = 0.2f))
+                            ) {
+                                Column(
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 8.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally
+                                ) {
+                                    Text("Current", fontSize = 10.sp, fontWeight = FontWeight.Medium, color = SelforaTextSecondary)
+                                    Spacer(modifier = Modifier.height(2.dp))
+                                    Text("${data.currentIndependencePercentage.toInt()}%", fontSize = 18.sp, fontWeight = FontWeight.ExtraBold, color = SelforaPrimary)
                                 }
                             }
 
-                            Spacer(modifier = Modifier.height(10.dp))
+                            Surface(
+                                modifier = Modifier.weight(1f),
+                                shape = RoundedCornerShape(12.dp),
+                                color = SelforaSurface,
+                                border = androidx.compose.foundation.BorderStroke(1.dp, SelforaBorder)
+                            ) {
+                                Column(
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 8.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally
+                                ) {
+                                    Text("Previous", fontSize = 10.sp, fontWeight = FontWeight.Medium, color = SelforaTextSecondary)
+                                    Spacer(modifier = Modifier.height(2.dp))
+                                    Text("${data.previousIndependencePercentage.toInt()}%", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = SelforaTextSecondary)
+                                }
+                            }
 
-                            // Current vs Previous Comparison Progress Bar
-                            SelforaLinearProgress(
-                                progress = (data.currentIndependencePercentage / 100.0).toFloat(),
-                                color = SelforaPrimary,
-                                height = 7.dp,
-                                modifier = Modifier.fillMaxWidth()
-                            )
+                            Surface(
+                                modifier = Modifier.weight(1f),
+                                shape = RoundedCornerShape(12.dp),
+                                color = SelforaSurface,
+                                border = androidx.compose.foundation.BorderStroke(1.dp, SelforaBorder)
+                            ) {
+                                Column(
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 8.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally
+                                ) {
+                                    Text("Sessions", fontSize = 10.sp, fontWeight = FontWeight.Medium, color = SelforaTextSecondary)
+                                    Spacer(modifier = Modifier.height(2.dp))
+                                    Text("${data.totalRecordedSessions}", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = SelforaTextPrimary)
+                                }
+                            }
                         }
 
-                        Spacer(modifier = Modifier.width(14.dp))
+                        Spacer(modifier = Modifier.width(12.dp))
 
                         CircularProgressRing(
                             progress = (data.currentIndependencePercentage / 100.0).toFloat(),
-                            size = 64.dp,
+                            size = 60.dp,
                             strokeWidth = 6.dp,
                             ringColor = SelforaPrimary,
                             centerText = "${data.currentIndependencePercentage.toInt()}%",
                             subText = "Overall"
                         )
                     }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    SelforaLinearProgress(
+                        progress = (data.currentIndependencePercentage / 100.0).toFloat(),
+                        color = SelforaPrimary,
+                        height = 7.dp,
+                        modifier = Modifier.fillMaxWidth()
+                    )
 
                     Spacer(modifier = Modifier.height(10.dp))
                     Text("Latest Evaluation: ${data.latestAssessmentDate} • Previous: ${data.previousAssessmentDate}", fontSize = 10.sp, color = SelforaTextMuted)
@@ -296,13 +333,11 @@ fun AnalyzeAndAdaptScreen(
                         val iconEmoji = when (card.categoryName) {
                             "Dressing" -> "👕"
                             "Eating" -> "🥄"
-                            "Grooming" -> "🧼"
                             else -> "👟"
                         }
                         val categoryColor = when (card.categoryName) {
                             "Dressing" -> Color(0xFF2563EB)
                             "Eating" -> Color(0xFF7C3AED)
-                            "Grooming" -> Color(0xFF10B981)
                             else -> Color(0xFFF59E0B)
                         }
 
@@ -344,47 +379,160 @@ fun AnalyzeAndAdaptScreen(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // 4. DIFFICULT STEPS & INDEPENDENT STEPS
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    // Difficult Steps
-                    GlassCard(modifier = Modifier.weight(1f)) {
+                // 4. DIFFICULT STEPS (Full-width, clearly aligned)
+                GlassCard(modifier = Modifier.fillMaxWidth()) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.Warning, contentDescription = null, tint = SelforaOrangeWarning, modifier = Modifier.size(16.dp))
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text("DIFFICULT STEPS", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = SelforaOrangeWarning)
+                            Icon(Icons.Default.Warning, contentDescription = null, tint = SelforaOrangeWarning, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("IDENTIFIED DIFFICULT STEPS", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = SelforaOrangeWarning)
                         }
-                        Spacer(modifier = Modifier.height(10.dp))
+                        if (data.difficultSteps.isNotEmpty()) {
+                            Surface(
+                                shape = RoundedCornerShape(8.dp),
+                                color = SelforaOrangeWarning.copy(alpha = 0.15f)
+                            ) {
+                                Text(
+                                    "${data.difficultSteps.size} steps",
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = SelforaOrangeWarning,
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                )
+                            }
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text("Steps where assistance is consistently required", fontSize = 11.sp, color = SelforaTextSecondary)
+                    Spacer(modifier = Modifier.height(12.dp))
 
-                        if (data.difficultSteps.isEmpty()) {
-                            Text("No difficult steps identified for this activity.", fontSize = 11.sp, color = SelforaTextSecondary)
-                        } else {
+                    if (data.difficultSteps.isEmpty()) {
+                        Text("No difficult steps identified for this activity.", fontSize = 12.sp, color = SelforaTextSecondary)
+                    } else {
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             data.difficultSteps.forEach { d ->
-                                Column(modifier = Modifier.padding(bottom = 8.dp)) {
-                                    Text("Step ${d.stepNumber}: ${d.stepTitle}", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = SelforaTextPrimary)
-                                    Text("Level: ${d.mainAssistanceLevel}", fontSize = 10.sp, color = SelforaOrangeWarning)
-                                    Text(d.reasonDescription, fontSize = 10.sp, color = SelforaTextSecondary)
+                                Surface(
+                                    shape = RoundedCornerShape(12.dp),
+                                    color = SelforaSurface.copy(alpha = 0.6f),
+                                    border = androidx.compose.foundation.BorderStroke(1.dp, SelforaBorder),
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Column(modifier = Modifier.padding(10.dp)) {
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Text(
+                                                "Step ${d.stepNumber}: ${d.stepTitle}",
+                                                fontSize = 13.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = SelforaTextPrimary,
+                                                modifier = Modifier.weight(1f).padding(end = 6.dp)
+                                            )
+                                            Surface(
+                                                shape = RoundedCornerShape(6.dp),
+                                                color = SelforaOrangeWarning.copy(alpha = 0.15f)
+                                            ) {
+                                                Text(
+                                                    d.mainAssistanceLevel,
+                                                    fontSize = 10.sp,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = SelforaOrangeWarning,
+                                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                                )
+                                            }
+                                        }
+                                        if (d.reasonDescription.isNotBlank()) {
+                                            Spacer(modifier = Modifier.height(4.dp))
+                                            Text(d.reasonDescription, fontSize = 11.sp, color = SelforaTextSecondary)
+                                        }
+                                    }
                                 }
                             }
                         }
                     }
+                }
 
-                    // Independent Steps
-                    GlassCard(modifier = Modifier.weight(1f)) {
+                Spacer(modifier = Modifier.height(14.dp))
+
+                // 5. INDEPENDENT STEPS (Full-width, clearly aligned)
+                GlassCard(modifier = Modifier.fillMaxWidth()) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.CheckCircle, contentDescription = null, tint = SelforaSuccess, modifier = Modifier.size(16.dp))
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text("INDEPENDENT STEPS", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = SelforaSuccess)
+                            Icon(Icons.Default.CheckCircle, contentDescription = null, tint = SelforaSuccess, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("CONSISTENTLY INDEPENDENT STEPS", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = SelforaSuccess)
                         }
-                        Spacer(modifier = Modifier.height(10.dp))
+                        if (data.independentSteps.isNotEmpty()) {
+                            Surface(
+                                shape = RoundedCornerShape(8.dp),
+                                color = SelforaSuccess.copy(alpha = 0.15f)
+                            ) {
+                                Text(
+                                    "${data.independentSteps.size} steps",
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = SelforaSuccess,
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                )
+                            }
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text("Steps mastered independently across multiple sessions", fontSize = 11.sp, color = SelforaTextSecondary)
+                    Spacer(modifier = Modifier.height(12.dp))
 
-                        if (data.independentSteps.isEmpty()) {
-                            Text("No consistently independent steps yet.", fontSize = 11.sp, color = SelforaTextSecondary)
-                        } else {
+                    if (data.independentSteps.isEmpty()) {
+                        Text("No consistently independent steps yet.", fontSize = 12.sp, color = SelforaTextSecondary)
+                    } else {
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             data.independentSteps.forEach { ind ->
-                                Column(modifier = Modifier.padding(bottom = 8.dp)) {
-                                    Text("Step ${ind.stepNumber}: ${ind.stepTitle}", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = SelforaTextPrimary)
-                                    Text("Independent in ${ind.consecutiveIndependentSessions} sessions", fontSize = 10.sp, color = SelforaSuccess)
-                                    Text(ind.generalizationReadiness, fontSize = 10.sp, color = SelforaTextSecondary)
+                                Surface(
+                                    shape = RoundedCornerShape(12.dp),
+                                    color = SelforaSurface.copy(alpha = 0.6f),
+                                    border = androidx.compose.foundation.BorderStroke(1.dp, SelforaBorder),
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Column(modifier = Modifier.padding(10.dp)) {
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Text(
+                                                "Step ${ind.stepNumber}: ${ind.stepTitle}",
+                                                fontSize = 13.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = SelforaTextPrimary,
+                                                modifier = Modifier.weight(1f).padding(end = 6.dp)
+                                            )
+                                            Surface(
+                                                shape = RoundedCornerShape(6.dp),
+                                                color = SelforaSuccess.copy(alpha = 0.15f)
+                                            ) {
+                                                Text(
+                                                    "${ind.consecutiveIndependentSessions} Sessions",
+                                                    fontSize = 10.sp,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = SelforaSuccess,
+                                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                                )
+                                            }
+                                        }
+                                        if (ind.generalizationReadiness.isNotBlank()) {
+                                            Spacer(modifier = Modifier.height(4.dp))
+                                            Text(ind.generalizationReadiness, fontSize = 11.sp, color = SelforaTextSecondary)
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -393,32 +541,76 @@ fun AnalyzeAndAdaptScreen(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // 5. SESSION COMPARISON CARD
+                // 6. SESSION COMPARISON CARD
                 data.sessionComparison?.let { comp ->
                     GlassCard(modifier = Modifier.fillMaxWidth()) {
                         Text("SESSION-TO-SESSION COMPARISON", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = SelforaPrimary)
+                        Spacer(modifier = Modifier.height(2.dp))
                         Text("Comparing ${comp.currentSessionDate} (Latest) vs ${comp.previousSessionDate} (Previous)", fontSize = 11.sp, color = SelforaTextSecondary)
                         Spacer(modifier = Modifier.height(12.dp))
 
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                            Column {
-                                Text("Latest Session", fontSize = 11.sp, color = SelforaTextSecondary)
-                                Text("${comp.currentIndependencePercentage}%", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = SelforaPrimary)
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Surface(
+                                modifier = Modifier.weight(1f),
+                                shape = RoundedCornerShape(12.dp),
+                                color = SelforaPrimary.copy(alpha = 0.08f),
+                                border = androidx.compose.foundation.BorderStroke(1.dp, SelforaPrimary.copy(alpha = 0.2f))
+                            ) {
+                                Column(
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 8.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally
+                                ) {
+                                    Text("Latest", fontSize = 10.sp, color = SelforaTextSecondary)
+                                    Spacer(modifier = Modifier.height(2.dp))
+                                    Text("${comp.currentIndependencePercentage}%", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = SelforaPrimary)
+                                }
                             }
-                            Column {
-                                Text("Previous Session", fontSize = 11.sp, color = SelforaTextSecondary)
-                                Text("${comp.previousIndependencePercentage}%", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = SelforaTextSecondary)
+
+                            Surface(
+                                modifier = Modifier.weight(1f),
+                                shape = RoundedCornerShape(12.dp),
+                                color = SelforaSurface,
+                                border = androidx.compose.foundation.BorderStroke(1.dp, SelforaBorder)
+                            ) {
+                                Column(
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 8.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally
+                                ) {
+                                    Text("Previous", fontSize = 10.sp, color = SelforaTextSecondary)
+                                    Spacer(modifier = Modifier.height(2.dp))
+                                    Text("${comp.previousIndependencePercentage}%", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = SelforaTextSecondary)
+                                }
                             }
-                            Column {
-                                Text("Net Change", fontSize = 11.sp, color = SelforaTextSecondary)
-                                val diff = comp.currentIndependencePercentage - comp.previousIndependencePercentage
-                                Text(if (diff >= 0) "+${Math.round(diff * 10.0) / 10.0}%" else "${Math.round(diff * 10.0) / 10.0}%", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = if (diff >= 0) SelforaSuccess else SelforaError)
+
+                            val diff = comp.currentIndependencePercentage - comp.previousIndependencePercentage
+                            val diffColor = if (diff >= 0) SelforaSuccess else SelforaError
+                            Surface(
+                                modifier = Modifier.weight(1f),
+                                shape = RoundedCornerShape(12.dp),
+                                color = diffColor.copy(alpha = 0.08f),
+                                border = androidx.compose.foundation.BorderStroke(1.dp, diffColor.copy(alpha = 0.2f))
+                            ) {
+                                Column(
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 8.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally
+                                ) {
+                                    Text("Net Change", fontSize = 10.sp, color = SelforaTextSecondary)
+                                    Spacer(modifier = Modifier.height(2.dp))
+                                    Text(
+                                        if (diff >= 0) "+${Math.round(diff * 10.0) / 10.0}%" else "${Math.round(diff * 10.0) / 10.0}%",
+                                        fontSize = 16.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = diffColor
+                                    )
+                                }
                             }
                         }
 
-                        Spacer(modifier = Modifier.height(10.dp))
+                        Spacer(modifier = Modifier.height(12.dp))
 
-                        // Visual Comparison Indicator
                         SelforaLinearProgress(
                             progress = (comp.currentIndependencePercentage / 100.0).toFloat(),
                             color = SelforaPrimary,
@@ -523,7 +715,10 @@ fun AnalyzeAndAdaptScreen(
 
                     Spacer(modifier = Modifier.height(14.dp))
 
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
                         GlassButton(
                             text = "Accept Suggestion",
                             onClick = {
@@ -541,9 +736,12 @@ fun AnalyzeAndAdaptScreen(
                         )
                     }
 
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(10.dp))
 
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
                         GlassOutlinedButton(
                             text = "Reject",
                             onClick = {
@@ -555,11 +753,12 @@ fun AnalyzeAndAdaptScreen(
                             modifier = Modifier.weight(1f)
                         )
 
-                        GlassOutlinedButton(
+                        GlassButton(
                             text = "Prompt Fading Hub →",
                             onClick = { onNavigateToPromptFading(childId) },
                             icon = Icons.Default.TrendingDown,
-                            modifier = Modifier.weight(1.2f)
+                            gradient = listOf(SelforaPrimary, Color(0xFF6D28D9)),
+                            modifier = Modifier.weight(1f)
                         )
                     }
 

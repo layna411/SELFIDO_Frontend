@@ -21,9 +21,11 @@ import androidx.compose.ui.unit.sp
 import com.simats.selfora.data.api.ApiClient
 import com.simats.selfora.data.model.HomeProgramResponse
 import com.simats.selfora.data.repository.PracticeSessionStore
+import com.simats.selfora.ui.components.dialogs.PracticeSessionIntroDialog
 import com.simats.selfora.ui.components.progress.SelforaLinearProgress
 import com.simats.selfora.ui.therapist.SelfidoCatalogue
 import com.simats.selfora.ui.theme.*
+import com.simats.selfora.utils.LanguageManager
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -36,6 +38,14 @@ fun HomeProgrammeScreen(
     var isLoading by remember { mutableStateOf(true) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     val practiceRecords by PracticeSessionStore.records.collectAsState()
+
+    val currentLanguage by LanguageManager.currentLanguage.collectAsState()
+    val isTamil = currentLanguage == "ta"
+
+    var showPracticeIntro by remember { mutableStateOf(false) }
+    var pendingPracticeProgId by remember { mutableStateOf<Long?>(null) }
+    var pendingActivityId by remember { mutableStateOf<String?>(null) }
+
     val scope = rememberCoroutineScope()
 
     fun loadPrograms() {
@@ -202,13 +212,31 @@ fun HomeProgrammeScreen(
                                     9L -> "shoes_socks_activity"
                                     else -> "boy_tshirt_activity"
                                 }
-                                onStartPractice(program.id, actCode)
+                                pendingPracticeProgId = program.id
+                                pendingActivityId = actCode
+                                showPracticeIntro = true
                             }
                         )
                     }
                 }
             }
         }
+    }
+
+    if (showPracticeIntro && pendingPracticeProgId != null) {
+        PracticeSessionIntroDialog(
+            activityTitle = "Home Practice Session",
+            isTamil = isTamil,
+            onStartPractice = {
+                val progId = pendingPracticeProgId!!
+                val actId = pendingActivityId ?: "boy_tshirt_activity"
+                showPracticeIntro = false
+                onStartPractice(progId, actId)
+            },
+            onDismiss = {
+                showPracticeIntro = false
+            }
+        )
     }
 }
 

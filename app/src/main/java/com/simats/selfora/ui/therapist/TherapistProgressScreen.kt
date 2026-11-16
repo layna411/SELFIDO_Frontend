@@ -671,20 +671,20 @@ fun TherapistProgressScreen(
                         val dynamicShoesCount = remember(currentChild.id, childSessions) {
                             childSessions.count { it.activityTitle.contains("Shoe", ignoreCase = true) || it.activityTitle.contains("Sock", ignoreCase = true) }.coerceAtLeast((currentChild.shoesPercentage / 6).coerceAtLeast(2))
                         }
-                        val dynamicGroomingCount = remember(currentChild.id) {
+                        val dynamicMasteryCount = remember(currentChild.id) {
                             ((dynamicDressingCount + dynamicEatingCount) / 2).coerceAtLeast(3)
                         }
 
                         val dressingDelta = "+${((currentChild.dressingPercentage * 0.16).toInt()).coerceAtLeast(4)}%"
                         val eatingDelta = "+${((currentChild.eatingPercentage * 0.14).toInt()).coerceAtLeast(3)}%"
                         val shoesDelta = "+${((currentChild.shoesPercentage * 0.18).toInt()).coerceAtLeast(5)}%"
-                        val groomingDelta = "+${(((currentChild.overallProgressPercentage) * 0.12).toInt()).coerceAtLeast(3)}%"
+                        val masteryDelta = "+${(((currentChild.overallProgressPercentage) * 0.12).toInt()).coerceAtLeast(3)}%"
 
                         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                             ADLProgressCard("Dressing", currentChild.dressingPercentage, sessionCount = dynamicDressingCount, trendDelta = dressingDelta)
                             ADLProgressCard("Eating", currentChild.eatingPercentage, sessionCount = dynamicEatingCount, trendDelta = eatingDelta)
                             ADLProgressCard("Shoes & Footwear", currentChild.shoesPercentage, sessionCount = dynamicShoesCount, trendDelta = shoesDelta)
-                            ADLProgressCard("Overall ADL Mastery", currentChild.overallProgressPercentage, sessionCount = dynamicGroomingCount, trendDelta = groomingDelta)
+                            ADLProgressCard("Overall ADL Mastery", currentChild.overallProgressPercentage, sessionCount = dynamicMasteryCount, trendDelta = masteryDelta)
                         }
 
                         Spacer(modifier = Modifier.height(14.dp))

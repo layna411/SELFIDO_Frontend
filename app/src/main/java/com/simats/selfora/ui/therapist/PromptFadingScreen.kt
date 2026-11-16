@@ -18,6 +18,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.simats.selfora.data.api.ApiClient
@@ -37,7 +39,37 @@ fun PromptFadingScreen(
     var fadingHistory by remember { mutableStateOf<List<PromptFadingHistoryItemResponse>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
 
+    data class AdlStepItem(
+        val id: Long,
+        val activityId: Long,
+        val activityName: String,
+        val stepNumber: Int,
+        val title: String,
+        val shortTitle: String
+    )
+
+    val supportedSteps = remember {
+        listOf(
+            AdlStepItem(1L, 1L, "Dressing", 1, "Stand or sit in front of the T-shirt", "Positioning"),
+            AdlStepItem(4L, 1L, "Dressing", 4, "Grasp shirt hem with both hands", "Grasp Hem"),
+            AdlStepItem(7L, 1L, "Dressing", 7, "Put head through neck opening", "Head Through"),
+            AdlStepItem(11L, 1L, "Dressing", 11, "Push right arm through sleeve", "Right Arm"),
+            AdlStepItem(14L, 1L, "Dressing", 14, "Push left arm through sleeve", "Left Arm"),
+            AdlStepItem(18L, 1L, "Dressing", 18, "Pull shirt hem down to waist", "Pull to Waist"),
+            AdlStepItem(131L, 13L, "Eating", 1, "Look at the spoon and bowl", "Focus on Spoon"),
+            AdlStepItem(133L, 13L, "Eating", 3, "Hold spoon handle with preferred hand", "Hold Handle"),
+            AdlStepItem(136L, 13L, "Eating", 6, "Scoop food into spoon bowl", "Scoop Food"),
+            AdlStepItem(138L, 13L, "Eating", 8, "Bring spoon to mouth and eat", "Spoon to Mouth"),
+            AdlStepItem(91L, 9L, "Shoes & Socks", 1, "Look at shoes and socks", "Focus on Shoes"),
+            AdlStepItem(92L, 9L, "Shoes & Socks", 2, "Grasp sock collar with both hands", "Grasp Sock"),
+            AdlStepItem(95L, 9L, "Shoes & Socks", 5, "Pull sock over toes and heel", "Pull Sock"),
+            AdlStepItem(98L, 9L, "Shoes & Socks", 8, "Insert foot into shoe", "Insert Foot")
+        )
+    }
+
     // Fading Plan Form State
+    var selectedActivityId by remember { mutableStateOf(1L) }
+    var selectedStepId by remember { mutableStateOf(7L) }
     var selectedStepNumber by remember { mutableStateOf(7) }
     var selectedStepTitle by remember { mutableStateOf("Put head through neck opening") }
     var currentLevelId by remember { mutableStateOf(3) } // Verbal Prompt
@@ -92,7 +124,8 @@ fun PromptFadingScreen(
         topBar = {
             GlassTopBar(
                 title = "Prompt Fading Management",
-                subtitle = "Clinical Hierarchy & Auditable History",
+                subtitle = "Child ID: #$childId • Clinical Fading Hub",
+                onBackClick = onBack,
                 accentColor = SelforaPrimary
             )
         },
@@ -109,23 +142,68 @@ fun PromptFadingScreen(
             // 1. ASSISTANCE HIERARCHY LEGEND CARD
             GlassCard(modifier = Modifier.fillMaxWidth()) {
                 Text("CLINICAL ASSISTANCE HIERARCHY", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = SelforaPrimary, letterSpacing = 1.sp)
+                Spacer(modifier = Modifier.height(2.dp))
                 Text("Structured fading progression (Level 6 -> Level 0). 'Unable' is tracked separately.", fontSize = 11.sp, color = SelforaTextSecondary)
-                Spacer(modifier = Modifier.height(10.dp))
+                Spacer(modifier = Modifier.height(12.dp))
 
-                promptHierarchy.forEach { (lvl, pair) ->
-                    val (label, color) = pair
-                    Row(modifier = Modifier.padding(vertical = 3.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Surface(shape = CircleShape, color = color, modifier = Modifier.size(10.dp)) {}
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(label, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = SelforaTextPrimary)
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    promptHierarchy.chunked(2).forEach { rowItems ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            rowItems.forEach { (_, pair) ->
+                                val (label, color) = pair
+                                Surface(
+                                    modifier = Modifier.weight(1f),
+                                    shape = RoundedCornerShape(8.dp),
+                                    color = color.copy(alpha = 0.08f),
+                                    border = androidx.compose.foundation.BorderStroke(1.dp, color.copy(alpha = 0.25f))
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Surface(shape = CircleShape, color = color, modifier = Modifier.size(8.dp)) {}
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                        Text(
+                                            text = label,
+                                            fontSize = 11.sp,
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = SelforaTextPrimary,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+                                    }
+                                }
+                            }
+                            if (rowItems.size == 1) {
+                                Spacer(modifier = Modifier.weight(1f))
+                            }
+                        }
                     }
-                }
 
-                Spacer(modifier = Modifier.height(6.dp))
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Surface(shape = CircleShape, color = PromptLevelUnable, modifier = Modifier.size(10.dp)) {}
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Unable / Refused (Separate Outcome – NOT a prompt level)", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = PromptLevelUnable)
+                    // Unable / Refused Special Outcome
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(8.dp),
+                        color = PromptLevelUnable.copy(alpha = 0.08f),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, PromptLevelUnable.copy(alpha = 0.25f))
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Surface(shape = CircleShape, color = PromptLevelUnable, modifier = Modifier.size(8.dp)) {}
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = "Unable / Refused (Separate Outcome – NOT a prompt level)",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = PromptLevelUnable
+                            )
+                        }
+                    }
                 }
             }
 
@@ -137,54 +215,61 @@ fun PromptFadingScreen(
                 Text("Therapist-controlled decision engine to fade or restore assistance levels", fontSize = 11.sp, color = SelforaTextSecondary)
                 Spacer(modifier = Modifier.height(14.dp))
 
-                // Target Task Step Selection
-                Text("Selected Target Task Step:", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = SelforaTextPrimary)
-                Surface(
-                    shape = RoundedCornerShape(12.dp),
-                    color = SelforaSurface,
-                    border = androidx.compose.foundation.BorderStroke(1.dp, SelforaBorder),
-                    modifier = Modifier.fillMaxWidth().padding(top = 4.dp, bottom = 12.dp)
-                ) {
-                    Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Surface(shape = CircleShape, color = SelforaPrimary.copy(alpha = 0.15f), modifier = Modifier.size(28.dp)) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Text("$selectedStepNumber", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = SelforaPrimary)
-                            }
-                        }
-                        Spacer(modifier = Modifier.width(10.dp))
-                        Text("Step $selectedStepNumber: $selectedStepTitle", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = SelforaTextPrimary)
-                    }
-                }
-
-                // Current vs Proposed Level Flow
+                // ADL Category Selection (Excluding Grooming)
+                Text("Select ADL Activity:", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = SelforaTextSecondary)
+                Spacer(modifier = Modifier.height(6.dp))
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceEvenly
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text("Current Prompt", fontSize = 10.sp, color = SelforaTextSecondary)
-                        Surface(shape = RoundedCornerShape(10.dp), color = SelforaOrangeWarning.copy(alpha = 0.15f)) {
-                            Text(promptHierarchy.find { it.first == currentLevelId }?.second?.first ?: "Level $currentLevelId", modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp), fontWeight = FontWeight.Bold, fontSize = 11.sp, color = SelforaOrangeWarning)
-                        }
-                    }
-
-                    Surface(shape = CircleShape, color = SelforaBluePrimary.copy(alpha = 0.12f)) {
-                        Text("TO", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = SelforaBluePrimary, modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp))
-                    }
-
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text("Proposed Target", fontSize = 10.sp, color = SelforaTextSecondary)
-                        Surface(shape = RoundedCornerShape(10.dp), color = SelforaGreenSuccess.copy(alpha = 0.15f)) {
-                            Text(promptHierarchy.find { it.first == targetLevelId }?.second?.first ?: "Level $targetLevelId", modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp), fontWeight = FontWeight.Bold, fontSize = 11.sp, color = SelforaGreenSuccess)
+                    listOf("👕 Dressing" to 1L, "🥄 Eating" to 13L, "👟 Shoes & Socks" to 9L).forEach { (label, aId) ->
+                        val isSelected = selectedActivityId == aId
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(14.dp))
+                                .background(if (isSelected) SelforaPrimary else Color.White)
+                                .border(1.dp, if (isSelected) SelforaPrimary else SelforaBorder, RoundedCornerShape(14.dp))
+                                .clickable {
+                                    selectedActivityId = aId
+                                    val firstStep = supportedSteps.firstOrNull { it.activityId == aId }
+                                    if (firstStep != null) {
+                                        selectedStepId = firstStep.id
+                                        selectedStepNumber = firstStep.stepNumber
+                                        selectedStepTitle = firstStep.title
+                                    }
+                                }
+                                .padding(horizontal = 14.dp, vertical = 7.dp)
+                        ) {
+                            Text(
+                                text = label,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = if (isSelected) Color.White else SelforaTextPrimary
+                            )
                         }
                     }
                 }
 
-                Spacer(modifier = Modifier.height(14.dp))
+                Spacer(modifier = Modifier.height(12.dp))
 
-                // Select Target Prompt Chip Selector
-                Text("Select Proposed Target Prompt Level:", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                // Step Quick Picker
+                Text("Select Target Task Step:", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = SelforaTextSecondary)
+                Spacer(modifier = Modifier.height(6.dp))
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    supportedSteps.filter { it.activityId == selectedActivityId }.forEach { s ->
+                        val isSelected = selectedStepId == s.id
+                        Box(
+                            modifier = Modifier
+
+               // Select Target Prompt Chip Selector
+                Text("Select Proposed Target Prompt Level:", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = SelforaTextSecondary)
                 Spacer(modifier = Modifier.height(6.dp))
 
                 Row(
@@ -194,11 +279,22 @@ fun PromptFadingScreen(
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     listOf(0 to "Indep (L0)", 1 to "Visual (L1)", 2 to "Gesture (L2)", 3 to "Verbal (L3)", 5 to "Partial (L5)").forEach { (lvl, lbl) ->
-                        FilterChip(
-                            selected = targetLevelId == lvl,
-                            onClick = { targetLevelId = lvl },
-                            label = { Text(lbl, fontSize = 11.sp) }
-                        )
+                        val isSelected = targetLevelId == lvl
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(if (isSelected) SelforaPrimary else Color.White)
+                                .border(1.dp, if (isSelected) SelforaPrimary else SelforaBorder, RoundedCornerShape(12.dp))
+                                .clickable { targetLevelId = lvl }
+                                .padding(horizontal = 10.dp, vertical = 6.dp)
+                        ) {
+                            Text(
+                                text = lbl,
+                                fontSize = 11.sp,
+                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                color = if (isSelected) Color.White else SelforaTextPrimary
+                            )
+                        }
                     }
                 }
 
@@ -223,7 +319,10 @@ fun PromptFadingScreen(
 
                 Spacer(modifier = Modifier.height(14.dp))
 
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
                     GlassButton(
                         text = "Approve Fading Plan",
                         onClick = {
@@ -232,8 +331,8 @@ fun PromptFadingScreen(
                                 try {
                                     val req = CreatePromptFadingPlanRequest(
                                         childId = childId,
-                                        activityId = 1L,
-                                        stepId = 7L,
+                                        activityId = selectedActivityId,
+                                        stepId = selectedStepId,
                                         currentPromptLevelId = currentLevelId,
                                         targetPromptLevelId = targetLevelId,
                                         clinicalReason = clinicalReasonText,
@@ -296,7 +395,13 @@ fun PromptFadingScreen(
                                     horizontalArrangement = Arrangement.SpaceBetween,
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Text("Step ${p.stepNumber}: ${p.stepTitle}", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = SelforaTextPrimary)
+                                    Text(
+                                        "Step ${p.stepNumber}: ${p.stepTitle}",
+                                        fontSize = 13.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = SelforaTextPrimary,
+                                        modifier = Modifier.weight(1f).padding(end = 6.dp)
+                                    )
                                     Surface(shape = RoundedCornerShape(6.dp), color = SelforaPrimary.copy(alpha = 0.15f)) {
                                         Text(p.status, fontSize = 10.sp, fontWeight = FontWeight.Bold, color = SelforaPrimary, modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp))
                                     }
@@ -352,7 +457,13 @@ fun PromptFadingScreen(
                                     horizontalArrangement = Arrangement.SpaceBetween,
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Text("Step ${h.stepNumber}: ${h.stepTitle}", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = SelforaTextPrimary)
+                                    Text(
+                                        "Step ${h.stepNumber}: ${h.stepTitle}",
+                                        fontSize = 13.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = SelforaTextPrimary,
+                                        modifier = Modifier.weight(1f).padding(end = 6.dp)
+                                    )
                                     Text(h.changeDate, fontSize = 10.sp, color = SelforaTextMuted)
                                 }
                                 Spacer(modifier = Modifier.height(4.dp))

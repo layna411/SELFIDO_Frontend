@@ -30,6 +30,7 @@ import com.simats.selfora.data.model.ResetPasswordResultResponse
 import com.simats.selfora.ui.components.avatar.ChildAvatarImage
 import com.simats.selfora.ui.components.glass.*
 import com.simats.selfora.ui.components.progress.SelforaAdlCategoryGrid
+import com.simats.selfora.ui.components.progress.SelforaAdlMetricRow
 import com.simats.selfora.ui.components.progress.SelforaLinearProgress
 import com.simats.selfora.ui.theme.*
 import kotlinx.coroutines.launch
@@ -443,22 +444,70 @@ fun ChildProfileScreen(
 
                     Spacer(modifier = Modifier.height(14.dp))
 
-                    // ADL Performance Summary Card (All 4 Clinical Categories)
+                    // ADL Performance Summary Card (Supported Clinical Categories: Dressing, Eating, Shoes & Socks)
                     GlassCard(modifier = Modifier.fillMaxWidth()) {
                         Text("ADL PERFORMANCE METRICS", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = SelforaPrimary)
                         Spacer(modifier = Modifier.height(12.dp))
 
                         val dressingCard = dashboardData?.activityCards?.find { it.categoryName.contains("Dressing", ignoreCase = true) }
                         val eatingCard = dashboardData?.activityCards?.find { it.categoryName.contains("Eating", ignoreCase = true) }
-                        val groomingCard = dashboardData?.activityCards?.find { it.categoryName.contains("Grooming", ignoreCase = true) }
                         val shoesCard = dashboardData?.activityCards?.find { it.categoryName.contains("Shoes", ignoreCase = true) }
 
-                        SelforaAdlCategoryGrid(
-                            dressingPct = dressingCard?.currentIndependencePct?.toInt() ?: 0,
-                            eatingPct = eatingCard?.currentIndependencePct?.toInt() ?: 0,
-                            groomingPct = groomingCard?.currentIndependencePct?.toInt() ?: 0,
-                            shoesPct = shoesCard?.currentIndependencePct?.toInt() ?: 0
-                        )
+                        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                            ) {
+                                SelforaAdlMetricRow(
+                                    category = "Dressing",
+                                    percentage = dressingCard?.currentIndependencePct?.toInt() ?: 0,
+                                    modifier = Modifier.weight(1f)
+                                )
+                                SelforaAdlMetricRow(
+                                    category = "Eating",
+                                    percentage = eatingCard?.currentIndependencePct?.toInt() ?: 0,
+                                    modifier = Modifier.weight(1f)
+                                )
+                            }
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                            ) {
+                                SelforaAdlMetricRow(
+                                    category = "Shoes & Socks",
+                                    percentage = shoesCard?.currentIndependencePct?.toInt() ?: 0,
+                                    modifier = Modifier.weight(1f)
+                                )
+                                Spacer(modifier = Modifier.weight(1f))
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    // Clinical Tools Quick Access (Analyze & Adapt and Prompt Fading)
+                    GlassCard(modifier = Modifier.fillMaxWidth()) {
+                        Text("CLINICAL TOOLS & ADAPTATION", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = SelforaPrimary)
+                        Text("Direct access to deterministic rule-based analysis and prompt fading hierarchy", fontSize = 11.sp, color = SelforaTextSecondary)
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            GlassButton(
+                                text = "Analyze & Adapt",
+                                onClick = { onNavigateToAnalyzeAndAdapt(childId) },
+                                icon = Icons.Default.Analytics,
+                                modifier = Modifier.weight(1f)
+                            )
+                            GlassButton(
+                                text = "Prompt Fading Hub",
+                                onClick = { onNavigateToPromptFading(childId) },
+                                icon = Icons.Default.TrendingDown,
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
                     }
 
                     Spacer(modifier = Modifier.height(14.dp))

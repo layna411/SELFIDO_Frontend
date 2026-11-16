@@ -1,4 +1,4 @@
-﻿package com.simats.selfora.ui.caregiver
+package com.simats.selfora.ui.caregiver
 
 
 
@@ -35,6 +35,7 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 
 import androidx.compose.runtime.*
+import com.simats.selfora.ui.components.dialogs.StepCompletionAchievementDialog
 
 import androidx.compose.ui.Alignment
 
@@ -137,6 +138,7 @@ fun HomePracticeScreen(
     var isSubmitting by remember { mutableStateOf(false) }
 
     var submissionError by remember { mutableStateOf<String?>(null) }
+    var showStepAchievement by remember { mutableStateOf(false) }
 
 
 
@@ -1027,20 +1029,7 @@ fun HomePracticeScreen(
 
 
 
-                                    if (currentStepIndex < steps.size - 1) {
-
-                                        currentStepIndex++
-
-                                        stage = CaregiverPracticeStage.STEP_VIEW
-
-                                    } else {
-
-                                        // Final Step: Submit session
-
-                                        submitPracticeSession()
-
-                                    }
-
+                                    showStepAchievement = true
                                 },
 
                                 modifier = Modifier.fillMaxWidth().height(52.dp)
@@ -1189,6 +1178,28 @@ fun HomePracticeScreen(
 
         }
 
+    }
+
+    if (showStepAchievement) {
+        val isFinal = currentStepIndex >= steps.size - 1
+        StepCompletionAchievementDialog(
+            stepNumber = currentStepIndex + 1,
+            totalSteps = steps.size,
+            stepTitle = steps.getOrNull(currentStepIndex)?.let {
+                if (isTamil && !it.titleTa.isNullOrBlank()) it.titleTa!! else it.title
+            } ?: "Step ${currentStepIndex + 1}",
+            isFinalStep = isFinal,
+            isTamil = isTamil,
+            onContinue = {
+                showStepAchievement = false
+                if (currentStepIndex < steps.size - 1) {
+                    currentStepIndex++
+                    stage = CaregiverPracticeStage.STEP_VIEW
+                } else {
+                    submitPracticeSession()
+                }
+            }
+        )
     }
 
 }

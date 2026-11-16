@@ -32,6 +32,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.simats.selfora.ui.theme.*
 import com.simats.selfora.ui.components.glass.GlassTextField
+import com.simats.selfora.ui.components.design.AppTopBar
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -54,36 +55,11 @@ fun AdminSettingsScreen(
 
     Scaffold(
         topBar = {
-            Surface(
-                modifier = Modifier.fillMaxWidth(),
-                color = Color.White,
-                shadowElevation = 2.dp,
-                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0))
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .statusBarsPadding()
-                        .padding(horizontal = 16.dp, vertical = 10.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    IconButton(
-                        onClick = onBack,
-                        modifier = Modifier
-                            .size(38.dp)
-                            .clip(CircleShape)
-                            .background(Color(0xFFF8FAFC))
-                            .border(1.dp, Color(0xFFE2E8F0), CircleShape)
-                    ) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = SelforaPrimary, modifier = Modifier.size(19.dp))
-                    }
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Column {
-                        Text("Settings & Security", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = SelforaTextPrimary)
-                        Text("Super Administrator Configuration", fontSize = 11.5.sp, color = SelforaTextSecondary)
-                    }
-                }
-            }
+            AppTopBar(
+                title = "Settings & Security",
+                subtitle = "Super Administrator Configuration",
+                onBackClick = onBack
+            )
         },
         containerColor = SelforaBackground
     ) { padding ->
