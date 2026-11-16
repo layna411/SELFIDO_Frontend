@@ -1,6 +1,7 @@
 package com.simats.selfora.ui.auth
 
 import com.simats.selfora.ui.components.LanguageTogglePill
+import com.simats.selfora.ui.components.SelforaLogoBanner
 import androidx.compose.ui.res.stringResource
 import android.widget.Toast
 import androidx.compose.animation.*
@@ -123,32 +124,11 @@ fun TherapistLoginScreen(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // SELFIDO Logo Header
-            Row(
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "SELFIDO",
-                    fontSize = 28.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = blueAccent,
-                    letterSpacing = 1.sp
-                )
-                Spacer(modifier = Modifier.width(4.dp))
-                Box(
-                    modifier = Modifier
-                        .size(8.dp)
-                        .background(Color(0xFF7C3AED), CircleShape)
-                        .offset(y = (-6).dp)
-                )
-            }
-
-            Text(
-                text = "Building Daily Living Skills for a Brighter Tomorrow",
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Medium,
-                color = textSecondary,
-                textAlign = TextAlign.Center
+            // SELFORA Brand Header
+            SelforaLogoBanner(
+                iconSize = 44.dp,
+                showTagline = true,
+                taglineText = "Therapist Clinical Portal"
             )
 
             Spacer(modifier = Modifier.height(16.dp))

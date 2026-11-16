@@ -1,6 +1,8 @@
 package com.simats.selfora.ui.auth
 
 import com.simats.selfora.ui.components.LanguageTogglePill
+import com.simats.selfora.ui.components.SelforaLogoBanner
+import com.simats.selfora.ui.components.SelforaLogoBadge
 import androidx.compose.ui.res.stringResource
 import androidx.compose.animation.*
 import androidx.compose.animation.core.tween
@@ -157,33 +159,11 @@ fun LoginScreen(
             Spacer(modifier = Modifier.height(6.dp))
 
             // Brand Header & Logo
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(if (isEditing) 36.dp else 44.dp)
-                        .clip(CircleShape)
-                        .background(primaryBlue.copy(alpha = 0.12f)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.MedicalServices,
-                        contentDescription = "SELFIDO Logo",
-                        tint = primaryBlue,
-                        modifier = Modifier.size(if (isEditing) 20.dp else 26.dp)
-                    )
-                }
-                Spacer(modifier = Modifier.width(10.dp))
-                Text(
-                    text = "SELFIDO",
-                    fontSize = if (isEditing) 22.sp else 28.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = primaryBlue,
-                    letterSpacing = 1.5.sp
-                )
-            }
+            SelforaLogoBanner(
+                iconSize = if (isEditing) 36.dp else 46.dp,
+                showTagline = false,
+                isCompact = isEditing
+            )
 
             Spacer(modifier = Modifier.height(4.dp))
 

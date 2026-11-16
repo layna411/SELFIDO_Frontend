@@ -4,27 +4,92 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <path android:pathData="M31,63.928c0,0 6.4,-11 12.1,-13.1c7.2,-2.6 26,-1.4 26,-1.4l38.1,38.1L107,108.928l-32,-1L31,63.928z">
-        <aapt:attr name="android:fillColor">
-            <gradient
-                android:endX="85.84757"
-                android:endY="92.4963"
-                android:startX="42.9492"
-                android:startY="49.59793"
-                android:type="linear">
-                <item
-                    android:color="#44000000"
-                    android:offset="0.0" />
-                <item
-                    android:color="#00000000"
-                    android:offset="1.0" />
-            </gradient>
-        </aapt:attr>
-    </path>
-    <path
-        android:fillColor="#FFFFFF"
-        android:fillType="nonZero"
-        android:pathData="M65.3,45.828l3.8,-6.6c0.2,-0.4 0.1,-0.9 -0.3,-1.1c-0.4,-0.2 -0.9,-0.1 -1.1,0.3l-3.9,6.7c-6.3,-2.8 -13.4,-2.8 -19.7,0l-3.9,-6.7c-0.2,-0.4 -0.7,-0.5 -1.1,-0.3C38.8,38.328 38.7,38.828 38.9,39.228l3.8,6.6C36.2,49.428 31.7,56.028 31,63.928h46C76.3,56.028 71.8,49.428 65.3,45.828zM43.4,57.328c-0.8,0 -1.5,-0.5 -1.8,-1.2c-0.3,-0.7 -0.1,-1.5 0.4,-2.1c0.5,-0.5 1.4,-0.7 2.1,-0.4c0.7,0.3 1.2,1 1.2,1.8C45.3,56.528 44.5,57.328 43.4,57.328L43.4,57.328zM64.6,57.328c-0.8,0 -1.5,-0.5 -1.8,-1.2s-0.1,-1.5 0.4,-2.1c0.5,-0.5 1.4,-0.7 2.1,-0.4c0.7,0.3 1.2,1 1.2,1.8C66.5,56.528 65.6,57.328 64.6,57.328L64.6,57.328z"
-        android:strokeWidth="1"
-        android:strokeColor="#00000000" />
+
+    <!-- Group scaled and centered in the 72dp safe area (scale: 0.62, translated to center 54, 54) -->
+    <group
+        android:pivotX="60"
+        android:pivotY="60"
+        android:scaleX="0.60"
+        android:scaleY="0.60"
+        android:translateX="-6"
+        android:translateY="-6">
+
+        <!-- Upper Ribbon of 'S' (Royal Blue to Sky Cyan Gradient) -->
+        <path
+            android:pathData="M 76,28 C 66,20 48,20 38,28 C 28,36 28,50 40,56 C 48,60 58,62 68,66 C 70,67 72,68 73,70 C 76,66 75,60 70,57 C 62,53 50,51 44,47 C 38,43 38,36 44,32 C 50,28 62,28 68,33 C 71,35 74,38 77,41 C 79,38 80,34 76,28 Z">
+            <aapt:attr name="android:fillColor">
+                <gradient
+                    android:startX="26"
+                    android:startY="20"
+                    android:endX="82"
+                    android:endY="66"
+                    android:type="linear">
+                    <item android:color="#60A5FA" android:offset="0.0" />
+                    <item android:color="#FFFFFF" android:offset="1.0" />
+                </gradient>
+            </aapt:attr>
+        </path>
+
+        <!-- Lower Ribbon of 'S' (Indigo to Violet Gradient) -->
+        <path
+            android:pathData="M 44,92 C 54,100 72,100 82,92 C 92,84 92,70 80,64 C 72,60 62,58 52,54 C 50,53 48,52 47,50 C 44,54 45,60 50,63 C 58,67 70,69 76,73 C 82,77 82,84 76,88 C 70,92 58,92 52,87 C 49,85 46,82 43,79 C 41,82 40,86 44,92 Z">
+            <aapt:attr name="android:fillColor">
+                <gradient
+                    android:startX="42"
+                    android:startY="54"
+                    android:endX="94"
+                    android:endY="100"
+                    android:type="linear">
+                    <item android:color="#DDD6FE" android:offset="0.0" />
+                    <item android:color="#A78BFA" android:offset="1.0" />
+                </gradient>
+            </aapt:attr>
+        </path>
+
+        <!-- Center Heart -->
+        <path
+            android:pathData="M 60,65 C 57.5,62.5 53,58 53,54.5 C 53,51.5 55.5,49 58.5,49 C 60,49 61,49.8 61.5,50.8 C 62,49.8 63,49 64.5,49 C 67.5,49 70,51.5 70,54.5 C 70,58 65.5,62.5 63,65 L 61.5,66.5 Z">
+            <aapt:attr name="android:fillColor">
+                <gradient
+                    android:startX="53"
+                    android:startY="49"
+                    android:endX="70"
+                    android:endY="66.5"
+                    android:type="linear">
+                    <item android:color="#FDA4AF" android:offset="0.0" />
+                    <item android:color="#F43F5E" android:offset="1.0" />
+                </gradient>
+            </aapt:attr>
+        </path>
+
+        <!-- Golden Star of Independence at Apex -->
+        <path
+            android:pathData="M 92,15 L 95.1,22.2 L 103,22.8 L 97,28.2 L 98.8,36 L 92,31.8 L 85.2,36 L 87,28.2 L 81,22.8 L 88.9,22.2 Z">
+            <aapt:attr name="android:fillColor">
+                <gradient
+                    android:startX="81"
+                    android:startY="15"
+                    android:endX="103"
+                    android:endY="36"
+                    android:type="linear">
+                    <item android:color="#FEF08A" android:offset="0.0" />
+                    <item android:color="#F59E0B" android:offset="0.6" />
+                    <item android:color="#D97706" android:offset="1.0" />
+                </gradient>
+            </aapt:attr>
+        </path>
+
+        <!-- Star Sparkles -->
+        <path
+            android:fillColor="#FDE047"
+            android:pathData="M 92,8 C 92.5,10.5 93.5,11.5 96,12 C 93.5,12.5 92.5,13.5 92,16 C 91.5,13.5 90.5,12.5 88,12 C 90.5,11.5 91.5,10.5 92,8 Z" />
+
+        <path
+            android:fillColor="#FDE047"
+            android:pathData="M 107,24 C 107.5,25.5 108.5,26.5 110,27 C 108.5,27.5 107.5,28.5 107,30 C 106.5,28.5 105.5,27.5 104,27 C 105.5,26.5 106.5,25.5 107,24 Z" />
+
+        <path
+            android:fillColor="#FBBF24"
+            android:pathData="M 24,78 C 24.5,80.5 25.5,81.5 28,82 C 25.5,82.5 24.5,83.5 24,86 C 23.5,83.5 22.5,82.5 20,82 C 22.5,81.5 23.5,80.5 24,78 Z" />
+    </group>
 </vector>

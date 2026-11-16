@@ -30,6 +30,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import com.simats.selfora.ui.components.LanguageTogglePill
+import com.simats.selfora.ui.components.SelforaLogoBadge
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -116,19 +117,18 @@ fun SelfidoWelcomeScreen(
                 Row(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
+                    SelforaLogoBadge(
+                        size = 36.dp,
+                        animated = true,
+                        showAura = false
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
                     Text(
                         text = "SELFIDO",
-                        fontSize = 28.sp,
+                        fontSize = 26.sp,
                         fontWeight = FontWeight.ExtraBold,
                         color = Color(0xFF1D4ED8),
                         letterSpacing = 1.sp
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Box(
-                        modifier = Modifier
-                            .size(10.dp)
-                            .background(Color(0xFF7C3AED), CircleShape)
-                            .offset(y = (-8).dp)
                     )
                 }
 

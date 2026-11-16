@@ -41,7 +41,7 @@
     <string name="admin_transfer_caseload">Transfer clinical caseload responsibility</string>
     <string name="admin_welcome_admin">Welcome back, Administrator</string>
     <string name="all">ALL</string>
-    <string name="app_name">SELFORA</string>
+    <string name="app_name">SELFIDO</string>
     <string name="app_tagline">Adaptive Pediatric ADL Practice Platform</string>
     <string name="auth_admin_login_subtitle">Enter your secure admin credentials to access system management.</string>
     <string name="auth_admin_login_title">System Administration Login</string>

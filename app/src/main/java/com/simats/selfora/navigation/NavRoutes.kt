@@ -1,6 +1,7 @@
 package com.simats.selfora.navigation
 
 sealed class NavRoutes(val route: String) {
+    object Splash : NavRoutes("splash")
     object Welcome : NavRoutes("welcome")
     object TherapistLogin : NavRoutes("therapist_login")
     object CaregiverLogin : NavRoutes("caregiver_login")

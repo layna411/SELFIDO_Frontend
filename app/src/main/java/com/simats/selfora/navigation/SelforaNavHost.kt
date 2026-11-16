@@ -24,6 +24,7 @@ import com.simats.selfora.ui.caregiver.*
 import com.simats.selfora.ui.child.*
 import com.simats.selfora.ui.components.glass.*
 import com.simats.selfora.ui.screens.dressing.AdlDressingTrainingScreen
+import com.simats.selfora.ui.splash.SplashScreen
 import com.simats.selfora.ui.theme.SelforaBackground
 import com.simats.selfora.ui.therapist.*
 
@@ -100,13 +101,38 @@ fun SelforaNavHost(
     ) {
         NavHost(
             navController = navController,
-            startDestination = initialDestination,
+            startDestination = NavRoutes.Splash.route,
             modifier = Modifier.fillMaxSize(),
             enterTransition = { slideInHorizontally(initialOffsetX = { fullWidth -> fullWidth / 4 }, animationSpec = tween(300, easing = androidx.compose.animation.core.FastOutSlowInEasing)) + fadeIn(animationSpec = tween(300)) },
             exitTransition = { slideOutHorizontally(targetOffsetX = { fullWidth -> -fullWidth / 4 }, animationSpec = tween(260, easing = androidx.compose.animation.core.FastOutSlowInEasing)) + fadeOut(animationSpec = tween(220)) },
             popEnterTransition = { slideInHorizontally(initialOffsetX = { fullWidth -> -fullWidth / 4 }, animationSpec = tween(300, easing = androidx.compose.animation.core.FastOutSlowInEasing)) + fadeIn(animationSpec = tween(300)) },
             popExitTransition = { slideOutHorizontally(targetOffsetX = { fullWidth -> fullWidth / 4 }, animationSpec = tween(260, easing = androidx.compose.animation.core.FastOutSlowInEasing)) + fadeOut(animationSpec = tween(220)) }
         ) {
+            // Animated Splash Screen
+            composable(NavRoutes.Splash.route) {
+                SplashScreen(
+                    onSplashComplete = {
+                        val destination = if (SessionManager.isLoggedIn()) {
+                            if (SessionManager.mustChangePassword()) {
+                                NavRoutes.ChangePassword.route
+                            } else {
+                                when (SessionManager.getUserRole()) {
+                                    "ROLE_SUPER_ADMIN" -> NavRoutes.SuperAdminDashboard.route
+                                    "ROLE_CAREGIVER" -> NavRoutes.CaregiverDashboard.route
+                                    "ROLE_CHILD" -> NavRoutes.ChildHome.route
+                                    else -> NavRoutes.TherapistDashboard.route
+                                }
+                            }
+                        } else {
+                            NavRoutes.Login.route
+                        }
+                        navController.navigate(destination) {
+                            popUpTo(NavRoutes.Splash.route) { inclusive = true }
+                        }
+                    }
+                )
+            }
+
             // Auth
             val handleLoginSuccess: (String, Long) -> Unit = { role, _ ->
                 if (SessionManager.mustChangePassword()) {

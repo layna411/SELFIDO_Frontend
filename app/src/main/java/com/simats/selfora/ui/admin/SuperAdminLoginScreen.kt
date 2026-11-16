@@ -3,6 +3,7 @@ package com.simats.selfora.ui.admin
 import com.simats.selfora.R
 
 import com.simats.selfora.ui.components.LanguageTogglePill
+import com.simats.selfora.ui.components.SelforaLogoBadge
 import androidx.compose.ui.res.stringResource
 import android.widget.Toast
 import androidx.compose.animation.*
@@ -108,23 +109,13 @@ fun SuperAdminLoginScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Admin Shield Badge Header
-            Surface(
-                shape = CircleShape,
-                color = adminAccent.copy(alpha = 0.12f),
-                modifier = Modifier
-                    .size(76.dp)
-                    .shadow(1.dp, CircleShape),
-                border = androidx.compose.foundation.BorderStroke(1.dp, adminAccent.copy(alpha = 0.25f))
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(
-                        imageVector = Icons.Default.AdminPanelSettings,
-                        contentDescription = null,
-                        tint = adminAccent,
-                        modifier = Modifier.size(40.dp)
-                    )
-                }
+            // Admin Shield Badge Header with Brand Logo
+            Box(contentAlignment = Alignment.Center) {
+                SelforaLogoBadge(
+                    size = 76.dp,
+                    animated = true,
+                    showAura = true
+                )
             }
 
             Spacer(modifier = Modifier.height(16.dp))
