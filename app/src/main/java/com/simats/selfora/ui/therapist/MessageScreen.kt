@@ -346,11 +346,7 @@ fun MessageScreen(
                 // View 1: Caregiver Contacts Directory Header (SELFORA Theme)
                 GlassTopBar(
                     title = if (isTamil) "மருத்துவ உரையாடல்கள்" else "Clinical Messages",
-                    subtitle = if (wsConnected) {
-                        if (isTamil) "நேரடி WebSocket இணைப்பு • பெற்றோர்கள்" else "Live WebSocket Connected • Caregiver Chats"
-                    } else {
-                        if (isTamil) "பெற்றோர்கள் & குடும்பத்தினருடன் தொடர்பு" else "Caregiver Consultation Directory"
-                    },
+                    subtitle = if (isTamil) "பெற்றோர்கள் & குடும்பத்தினருடன் உரையாடல்" else "Caregiver Conversations & Consultations",
                     accentColor = SelforaPrimary,
                     showLanguageToggle = true,
                     actions = {
@@ -437,19 +433,6 @@ fun MessageScreen(
                                 )
                             }
                         }
-
-                        GlassIconButton(
-                            icon = Icons.Default.Call,
-                            onClick = {
-                                val intent = Intent(Intent.ACTION_DIAL).apply {
-                                    data = Uri.parse("tel:+919876543210")
-                                }
-                                context.startActivity(intent)
-                            },
-                            tint = SelforaPrimary,
-                            size = 36.dp,
-                            iconSize = 18.dp
-                        )
 
                         Spacer(modifier = Modifier.width(6.dp))
 
@@ -731,17 +714,26 @@ fun MessageScreen(
                                 Spacer(modifier = Modifier.width(6.dp))
                                 Text(
                                     text = "Patient: ${cg.childName} • Active ADL Care",
-                                    fontSize = 11.sp,
+                                    fontSize = 11.5.sp,
                                     fontWeight = FontWeight.SemiBold,
                                     color = SelforaTextPrimary
                                 )
                             }
-                            Text(
-                                text = if (wsConnected) "● Live WebSocket" else "Connecting...",
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = if (wsConnected) SelforaSuccess else SelforaWarning
-                            )
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(6.dp)
+                                        .clip(CircleShape)
+                                        .background(if (wsConnected) SelforaSuccess else SelforaWarning)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = if (wsConnected) "Active" else "Connecting...",
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color = if (wsConnected) SelforaSuccess else SelforaWarning
+                                )
+                            }
                         }
                     }
 
@@ -798,7 +790,9 @@ fun MessageScreen(
                                     val isMe = msg.senderId == currentUserId
 
                                     Box(
-                                        modifier = Modifier.fillMaxWidth(),
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(vertical = 2.dp),
                                         contentAlignment = if (isMe) Alignment.CenterEnd else Alignment.CenterStart
                                     ) {
                                         Surface(
@@ -814,7 +808,9 @@ fun MessageScreen(
                                                 if (isMe) SelforaPrimary else SelforaBorder
                                             ),
                                             shadowElevation = 1.dp,
-                                            modifier = Modifier.widthIn(min = 84.dp, max = 305.dp)
+                                            modifier = Modifier
+                                                .fillMaxWidth(0.82f)
+                                                .wrapContentWidth(if (isMe) Alignment.End else Alignment.Start)
                                         ) {
                                             Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 9.dp)) {
                                                 if (!isMe) {

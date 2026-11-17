@@ -311,7 +311,7 @@ fun AdaptationScreen(
                         value = analysisText,
                         onValueChange = { analysisText = it },
                         label = "",
-                        placeholder = "Record clinical analysis for ${s.childName}...",
+                        placeholder = "Enter clinical analysis & observations",
                         singleLine = false,
                         modifier = Modifier.fillMaxWidth()
                     )
@@ -337,7 +337,7 @@ fun AdaptationScreen(
                         value = adaptPlanText,
                         onValueChange = { adaptPlanText = it },
                         label = "",
-                        placeholder = "Describe prompt fading strategy for targeted steps...",
+                        placeholder = "Enter adaptation & prompt fading plan",
                         singleLine = false,
                         modifier = Modifier.fillMaxWidth()
                     )

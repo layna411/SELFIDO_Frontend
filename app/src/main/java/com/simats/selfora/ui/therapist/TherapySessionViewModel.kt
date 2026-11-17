@@ -122,7 +122,7 @@ class TherapySessionViewModel : ViewModel() {
                             instructionTa = st.instructionTextTa ?: st.childInstructionTa,
                             childInstruction = st.childInstruction,
                             childInstructionTa = st.childInstructionTa,
-                            media = st.media,
+                            media = st.media ?: emptyList(),
                             selectedLevel = promptLevel,
                             outcome = existing.outcome,
                             notes = existing.therapistNote ?: "",
@@ -139,7 +139,7 @@ class TherapySessionViewModel : ViewModel() {
                             instructionTa = st.instructionTextTa ?: st.childInstructionTa,
                             childInstruction = st.childInstruction,
                             childInstructionTa = st.childInstructionTa,
-                            media = st.media,
+                            media = st.media ?: emptyList(),
                             selectedLevel = null,
                             outcome = "PENDING",
                             notes = "",
@@ -180,7 +180,7 @@ class TherapySessionViewModel : ViewModel() {
                         instructionTa = st.instructionTextTa ?: st.childInstructionTa,
                         childInstruction = st.childInstruction,
                         childInstructionTa = st.childInstructionTa,
-                        media = st.media,
+                        media = st.media ?: emptyList(),
                         selectedLevel = null,
                         outcome = "PENDING"
                     )

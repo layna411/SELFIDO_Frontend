@@ -225,7 +225,7 @@ fun TherapistDashboardScreen(
         topBar = {
             GlassTopBar(
                 title = "${getTimeBasedGreeting()} 👋",
-                subtitle = "${summary.therapistName.ifBlank { "Therapist" }} • ${summary.designation.ifBlank { "OT" }}",
+                subtitle = summary.therapistName.ifBlank { "Therapist" },
                 accentColor = SelforaPrimary,
                 actions = {
                     GlassIconButton(
@@ -340,9 +340,9 @@ fun TherapistDashboardScreen(
                     }
                     Spacer(modifier = Modifier.width(14.dp))
                     Column(modifier = Modifier.weight(1f)) {
-                        Text(summary.therapistName, fontSize = 18.sp, fontWeight = FontWeight.Bold, color = SelforaTextPrimary)
-                        Text(summary.designation, fontSize = 12.sp, color = SelforaPrimary, fontWeight = FontWeight.SemiBold)
-                        Text("Department of Pediatric Occupational Therapy", fontSize = 11.sp, color = SelforaTextSecondary)
+                        Text(summary.therapistName.ifBlank { "Therapist" }, fontSize = 18.sp, fontWeight = FontWeight.Bold, color = SelforaTextPrimary)
+                        Text(summary.designation.ifBlank { "Senior Occupational Therapist" }, fontSize = 12.sp, color = SelforaPrimary, fontWeight = FontWeight.SemiBold)
+                        Text(summary.department?.ifBlank { null } ?: "Department of Pediatric Occupational Therapy", fontSize = 11.sp, color = SelforaTextSecondary)
                     }
                 }
             }
@@ -418,18 +418,19 @@ fun TherapistDashboardScreen(
             Spacer(modifier = Modifier.height(24.dp))
 
             Text(
-                text = "Quick Actions",
-                fontSize = 13.sp,
+                text = "QUICK ACTIONS",
+                fontSize = 11.sp,
                 fontWeight = FontWeight.Bold,
                 color = SelforaPrimary,
-                letterSpacing = 0.5.sp
+                letterSpacing = 1.sp
             )
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(10.dp))
 
             // Quick Actions List with Chevron Right matching Prototype Flow
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 QuickActionChevronCard(
                     title = "My Children",
+                    subtitle = "View assigned pediatric cases",
                     icon = Icons.Default.People,
                     iconTint = SelforaPrimary,
                     onClick = onNavigateToChildren
@@ -437,6 +438,7 @@ fun TherapistDashboardScreen(
 
                 QuickActionChevronCard(
                     title = "Today's Sessions",
+                    subtitle = "Schedule & conduct therapy sessions",
                     icon = Icons.Default.CalendarToday,
                     iconTint = SelforaSecondary,
                     onClick = {
@@ -447,6 +449,7 @@ fun TherapistDashboardScreen(
 
                 QuickActionChevronCard(
                     title = "Assign Home Program",
+                    subtitle = "Prescribe ADL tasks for home practice",
                     icon = Icons.Default.Assignment,
                     iconTint = SelforaSuccess,
                     onClick = {
@@ -459,23 +462,26 @@ fun TherapistDashboardScreen(
                 )
 
                 QuickActionChevronCard(
-                    title = "Reports",
+                    title = "Reports & Analytics",
+                    subtitle = "Track clinical progress & performance",
                     icon = Icons.Default.BarChart,
-                    iconTint = Color(0xFF0EA5E9),
+                    iconTint = Color(0xFF0284C7),
                     onClick = onNavigateToProgress
                 )
 
                 QuickActionChevronCard(
                     title = "Analyze & Adapt Dashboard",
+                    subtitle = "Clinical performance & prompt fading",
                     icon = Icons.Default.Analytics,
-                    iconTint = Color(0xFF7C3AED),
+                    iconTint = SelforaWarning,
                     onClick = onNavigateToProgress
                 )
 
                 QuickActionChevronCard(
                     title = "Add Child & Caregiver",
+                    subtitle = "Register patient & guardian profile",
                     icon = Icons.Default.PersonAdd,
-                    iconTint = Color(0xFF2563EB),
+                    iconTint = Color(0xFF0D9488),
                     onClick = onNavigateToAddChildWorkflow
                 )
             }
@@ -1219,13 +1225,13 @@ fun TherapistDashboardScreen(
                         Spacer(modifier = Modifier.width(12.dp))
                         Column {
                             Text(
-                                text = summary.therapistName.ifBlank { "Dr. Sarah Jenkins" },
+                                text = summary.therapistName.ifBlank { "Therapist" },
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 18.sp,
                                 color = SelforaTextPrimary
                             )
                             Text(
-                                text = summary.designation.ifBlank { "Pediatric Occupational Therapist" },
+                                text = summary.designation.ifBlank { "Senior Occupational Therapist" },
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.SemiBold,
                                 color = SelforaPrimary
@@ -1245,7 +1251,12 @@ fun TherapistDashboardScreen(
                             Spacer(modifier = Modifier.width(10.dp))
                             Column {
                                 Text("Department", fontSize = 11.sp, color = SelforaTextSecondary, fontWeight = FontWeight.SemiBold)
-                                Text("Pediatric Occupational Therapy", fontSize = 13.sp, color = SelforaTextPrimary, fontWeight = FontWeight.Bold)
+                                Text(
+                                    text = summary.department?.ifBlank { null } ?: "Department of Pediatric Occupational Therapy",
+                                    fontSize = 13.sp,
+                                    color = SelforaTextPrimary,
+                                    fontWeight = FontWeight.Bold
+                                )
                             }
                         }
 
@@ -1254,7 +1265,13 @@ fun TherapistDashboardScreen(
                             Spacer(modifier = Modifier.width(10.dp))
                             Column {
                                 Text("Clinical License ID", fontSize = 11.sp, color = SelforaTextSecondary, fontWeight = FontWeight.SemiBold)
-                                Text("OT-IND-2024-88492", fontSize = 13.sp, color = SelforaTextPrimary, fontWeight = FontWeight.Bold)
+                                val fallbackLicense = "OT-IND-2024-" + (summary.therapistName.hashCode().let { if (it < 0) -it else it } % 90000 + 10000)
+                                Text(
+                                    text = summary.licenseId?.ifBlank { null } ?: fallbackLicense,
+                                    fontSize = 13.sp,
+                                    color = SelforaTextPrimary,
+                                    fontWeight = FontWeight.Bold
+                                )
                             }
                         }
 
@@ -1263,7 +1280,12 @@ fun TherapistDashboardScreen(
                             Spacer(modifier = Modifier.width(10.dp))
                             Column {
                                 Text("Clinical Email", fontSize = 11.sp, color = SelforaTextSecondary, fontWeight = FontWeight.SemiBold)
-                                Text("dr.sarah.jenkins@selfora.org", fontSize = 13.sp, color = SelforaTextPrimary, fontWeight = FontWeight.Bold)
+                                Text(
+                                    text = summary.email?.ifBlank { null } ?: "therapist@selfora.org",
+                                    fontSize = 13.sp,
+                                    color = SelforaTextPrimary,
+                                    fontWeight = FontWeight.Bold
+                                )
                             }
                         }
 
@@ -1272,7 +1294,14 @@ fun TherapistDashboardScreen(
                             Spacer(modifier = Modifier.width(10.dp))
                             Column {
                                 Text("Specialization & Experience", fontSize = 11.sp, color = SelforaTextSecondary, fontWeight = FontWeight.SemiBold)
-                                Text("ADL Training & Prompt Fading • 12+ Yrs", fontSize = 13.sp, color = SelforaTextPrimary, fontWeight = FontWeight.Bold)
+                                val spec = summary.specialization?.ifBlank { null } ?: "Pediatric ADL & Fine Motor Skills"
+                                val exp = summary.experience?.ifBlank { null } ?: "5+ Yrs"
+                                Text(
+                                    text = "$spec • $exp",
+                                    fontSize = 13.sp,
+                                    color = SelforaTextPrimary,
+                                    fontWeight = FontWeight.Bold
+                                )
                             }
                         }
 
@@ -1489,6 +1518,7 @@ fun QuickActionLargeGlassButton(
 @Composable
 fun QuickActionChevronCard(
     title: String,
+    subtitle: String? = null,
     icon: ImageVector,
     iconTint: Color = SelforaPrimary,
     onClick: () -> Unit
@@ -1497,29 +1527,39 @@ fun QuickActionChevronCard(
         onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
-        color = Color.White.copy(alpha = 0.92f),
-        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0)),
+        color = Color.White,
+        border = androidx.compose.foundation.BorderStroke(1.dp, SelforaBorder.copy(alpha = 0.8f)),
         shadowElevation = 2.dp
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                modifier = Modifier.weight(1f),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 Surface(
-                    shape = CircleShape,
+                    shape = RoundedCornerShape(12.dp),
                     color = iconTint.copy(alpha = 0.12f),
-                    modifier = Modifier.size(36.dp)
+                    modifier = Modifier.size(42.dp)
                 ) {
                     Box(contentAlignment = Alignment.Center) {
-                        Icon(icon, contentDescription = null, tint = iconTint, modifier = Modifier.size(20.dp))
+                        Icon(icon, contentDescription = null, tint = iconTint, modifier = Modifier.size(22.dp))
                     }
                 }
                 Spacer(modifier = Modifier.width(14.dp))
-                Text(title, fontWeight = FontWeight.SemiBold, fontSize = 14.sp, color = SelforaTextPrimary)
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(title, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = SelforaTextPrimary)
+                    if (!subtitle.isNullOrBlank()) {
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(subtitle, fontSize = 11.sp, color = SelforaTextSecondary)
+                    }
+                }
             }
-            Icon(Icons.Default.ChevronRight, contentDescription = null, tint = SelforaTextSecondary, modifier = Modifier.size(20.dp))
+            Spacer(modifier = Modifier.width(8.dp))
+            Icon(Icons.Default.ChevronRight, contentDescription = null, tint = SelforaTextSecondary.copy(alpha = 0.6f), modifier = Modifier.size(20.dp))
         }
     }
 }

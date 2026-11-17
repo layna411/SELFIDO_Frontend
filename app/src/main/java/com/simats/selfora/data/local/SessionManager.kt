@@ -126,18 +126,19 @@ object SessionManager {
     }
 
     fun getActiveChildId(): Long {
-        if (!::prefs.isInitialized) return 1L
-        return prefs.getLong(KEY_ACTIVE_CHILD_ID, 1L)
+        if (!::prefs.isInitialized) return 0L
+        return prefs.getLong(KEY_ACTIVE_CHILD_ID, 0L)
     }
 
     fun getActiveChildName(): String {
-        if (!::prefs.isInitialized) return "Aarav Sharma"
-        return prefs.getString(KEY_ACTIVE_CHILD_NAME, "Aarav Sharma") ?: "Aarav Sharma"
+        if (!::prefs.isInitialized) return ""
+        return prefs.getString(KEY_ACTIVE_CHILD_NAME, "") ?: ""
     }
 
     fun getActiveChildGender(): String {
         if (!::prefs.isInitialized) return "BOY"
-        return prefs.getString(KEY_ACTIVE_CHILD_GENDER, "BOY") ?: "BOY"
+        val g = prefs.getString(KEY_ACTIVE_CHILD_GENDER, "BOY") ?: "BOY"
+        return if (g.uppercase().startsWith("G") || g.uppercase().startsWith("F")) "GIRL" else "BOY"
     }
 
     fun enterChildMode(adultRole: String, childId: Long, childName: String, gender: String = "BOY") {

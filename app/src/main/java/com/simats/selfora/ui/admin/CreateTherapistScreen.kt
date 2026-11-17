@@ -41,6 +41,8 @@ fun CreateTherapistScreen(
     var username by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("password123") }
     var designation by remember { mutableStateOf("Senior Occupational Therapist") }
+    var department by remember { mutableStateOf("Department of Pediatric Occupational Therapy") }
+    var licenseId by remember { mutableStateOf("") }
     var specialization by remember { mutableStateOf("Pediatric ADL & Fine Motor Skills") }
     var qualification by remember { mutableStateOf("MOT (Pediatrics)") }
     var experience by remember { mutableStateOf("5 Years") }
@@ -99,7 +101,7 @@ fun CreateTherapistScreen(
                         value = fullName,
                         onValueChange = { fullName = it },
                         label = "Full Name *",
-                        placeholder = "Dr. Sarah Jenkins",
+                        placeholder = "Enter full name",
                         leadingIcon = Icons.Default.Person,
                         modifier = Modifier.fillMaxWidth()
                     )
@@ -110,7 +112,7 @@ fun CreateTherapistScreen(
                         value = email,
                         onValueChange = { email = it },
                         label = "Email Address *",
-                        placeholder = "sarah.jenkins@selfora.org",
+                        placeholder = "Enter email address",
                         leadingIcon = Icons.Default.Email,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email, imeAction = ImeAction.Next),
                         modifier = Modifier.fillMaxWidth()
@@ -122,7 +124,7 @@ fun CreateTherapistScreen(
                         value = phone,
                         onValueChange = { phone = it },
                         label = "Phone Number *",
-                        placeholder = "+91 9876543210",
+                        placeholder = "Enter phone number",
                         leadingIcon = Icons.Default.Phone,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone, imeAction = ImeAction.Next),
                         modifier = Modifier.fillMaxWidth()
@@ -134,7 +136,7 @@ fun CreateTherapistScreen(
                         value = username,
                         onValueChange = { username = it },
                         label = "Username *",
-                        placeholder = "therapist_sarah",
+                        placeholder = "Enter username",
                         leadingIcon = Icons.Default.AccountBox,
                         modifier = Modifier.fillMaxWidth()
                     )
@@ -145,7 +147,7 @@ fun CreateTherapistScreen(
                         value = password,
                         onValueChange = { password = it },
                         label = "Initial Password *",
-                        placeholder = "Default password123",
+                        placeholder = "Enter password",
                         leadingIcon = Icons.Default.Lock,
                         modifier = Modifier.fillMaxWidth()
                     )
@@ -156,8 +158,30 @@ fun CreateTherapistScreen(
                         value = designation,
                         onValueChange = { designation = it },
                         label = "Designation",
-                        placeholder = "Senior Occupational Therapist",
+                        placeholder = "Enter designation",
                         leadingIcon = Icons.Default.Badge,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    GlassTextField(
+                        value = department,
+                        onValueChange = { department = it },
+                        label = "Department",
+                        placeholder = "Enter department",
+                        leadingIcon = Icons.Default.LocalHospital,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    GlassTextField(
+                        value = licenseId,
+                        onValueChange = { licenseId = it },
+                        label = "Clinical License ID (Optional)",
+                        placeholder = "Enter license ID",
+                        leadingIcon = Icons.Default.VerifiedUser,
                         modifier = Modifier.fillMaxWidth()
                     )
 
@@ -167,7 +191,7 @@ fun CreateTherapistScreen(
                         value = specialization,
                         onValueChange = { specialization = it },
                         label = "Clinical Specialization",
-                        placeholder = "Pediatric ADL & Fine Motor Skills",
+                        placeholder = "Enter specialization",
                         leadingIcon = Icons.Default.Psychology,
                         modifier = Modifier.fillMaxWidth()
                     )
@@ -178,8 +202,19 @@ fun CreateTherapistScreen(
                         value = qualification,
                         onValueChange = { qualification = it },
                         label = "Qualifications",
-                        placeholder = "BOT, MOT (Pediatrics)",
+                        placeholder = "Enter qualifications",
                         leadingIcon = Icons.Default.School,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    GlassTextField(
+                        value = experience,
+                        onValueChange = { experience = it },
+                        label = "Clinical Experience",
+                        placeholder = "Enter experience (e.g. 5 Years)",
+                        leadingIcon = Icons.Default.WorkHistory,
                         modifier = Modifier.fillMaxWidth()
                     )
 
@@ -209,6 +244,8 @@ fun CreateTherapistScreen(
                                             username = username.trim(),
                                             password = password,
                                             designation = designation.trim(),
+                                            department = department.trim().ifBlank { null },
+                                            licenseId = licenseId.trim().ifBlank { null },
                                             specialization = specialization.trim(),
                                             qualification = qualification.trim(),
                                             experience = experience.trim()

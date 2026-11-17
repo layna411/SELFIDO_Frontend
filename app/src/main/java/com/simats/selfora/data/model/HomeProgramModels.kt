@@ -26,6 +26,7 @@ data class HomeProgramResponse(
     val id: Long,
     val childId: Long,
     val childName: String,
+    val childGender: String? = null,
     val therapistId: Long,
     val therapistName: String,
     val activityId: Long,

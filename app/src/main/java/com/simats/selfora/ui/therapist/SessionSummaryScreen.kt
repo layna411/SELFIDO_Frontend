@@ -25,7 +25,7 @@ import com.simats.selfora.data.model.SessionResponse
 import com.simats.selfora.ui.components.glass.*
 import com.simats.selfora.ui.theme.*
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun SessionSummaryScreen(
     sessionId: Long,
@@ -357,34 +357,40 @@ fun SessionSummaryScreen(
                         Spacer(modifier = Modifier.height(12.dp))
 
                         val promptCounts = records.groupBy { it.promptLevelCode }.mapValues { it.value.size }
-                        Row(
+                        FlowRow(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                            verticalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
                             promptCounts.forEach { (code, count) ->
                                 val clinicalLevel = ClinicalPromptLevel.fromCode(code)
                                 val badgeColor = clinicalLevel?.composeColor ?: SelforaPrimary
                                 Surface(
-                                    shape = RoundedCornerShape(8.dp),
+                                    shape = RoundedCornerShape(10.dp),
                                     color = badgeColor.copy(alpha = 0.12f),
-                                    border = androidx.compose.foundation.BorderStroke(1.dp, badgeColor.copy(alpha = 0.3f))
+                                    border = androidx.compose.foundation.BorderStroke(1.dp, badgeColor.copy(alpha = 0.35f)),
+                                    modifier = Modifier.width(IntrinsicSize.Max)
                                 ) {
                                     Row(
-                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp),
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
                                         Text(
                                             text = code,
-                                            fontSize = 11.sp,
+                                            fontSize = 12.sp,
                                             fontWeight = FontWeight.Bold,
-                                            color = badgeColor
+                                            color = badgeColor,
+                                            maxLines = 1,
+                                            softWrap = false
                                         )
-                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Spacer(modifier = Modifier.width(6.dp))
                                         Text(
                                             text = "×$count",
-                                            fontSize = 11.sp,
+                                            fontSize = 12.sp,
                                             fontWeight = FontWeight.ExtraBold,
-                                            color = SelforaTextPrimary
+                                            color = SelforaTextPrimary,
+                                            maxLines = 1,
+                                            softWrap = false
                                         )
                                     }
                                 }
@@ -580,7 +586,10 @@ fun SessionMetricRow(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.weight(1f, fill = false)
+        ) {
             Surface(
                 shape = CircleShape,
                 color = iconColor.copy(alpha = 0.15f),
@@ -593,7 +602,14 @@ fun SessionMetricRow(
             Spacer(modifier = Modifier.width(12.dp))
             Text(label, fontSize = 13.5.sp, color = SelforaTextSecondary, fontWeight = FontWeight.Medium)
         }
-        Text(value, fontSize = 13.5.sp, fontWeight = FontWeight.Bold, color = SelforaTextPrimary)
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(
+            text = value,
+            fontSize = 13.5.sp,
+            fontWeight = FontWeight.Bold,
+            color = SelforaTextPrimary,
+            textAlign = androidx.compose.ui.text.style.TextAlign.End
+        )
     }
 }
 

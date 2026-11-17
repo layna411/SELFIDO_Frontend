@@ -14,13 +14,13 @@ data class TaskStepResponse(
     val stepNumber: Int,
     val title: String,
     val titleTa: String? = null,
-    val instructionText: String,
+    val instructionText: String = "",
     val instructionTextTa: String? = null,
-    val childInstruction: String,
+    val childInstruction: String = "",
     val childInstructionTa: String? = null,
-    val audioPromptUrl: String?,
+    val audioPromptUrl: String? = null,
     val audioPromptUrlTa: String? = null,
-    val media: List<MediaResponse> = emptyList()
+    val media: List<MediaResponse>? = emptyList()
 )
 
 data class ActivityResponse(

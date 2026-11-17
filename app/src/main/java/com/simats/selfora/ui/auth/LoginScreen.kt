@@ -294,10 +294,10 @@ fun LoginScreen(
                             username = it
                             if (errorMessage != null) errorMessage = null
                         },
+                        placeholder = { Text("Enter user ID or email", color = Color(0xFF94A3B8), fontSize = 14.sp) },
                         modifier = Modifier
                             .fillMaxWidth()
                             .onFocusChanged { isUsernameFocused = it.isFocused },
-                        placeholder = { Text("Enter your username or email", fontSize = 13.sp, color = Color(0xFF94A3B8)) },
                         leadingIcon = {
                             Icon(
                                 imageVector = Icons.Default.Person,
@@ -335,10 +335,10 @@ fun LoginScreen(
                             password = it
                             if (errorMessage != null) errorMessage = null
                         },
+                        placeholder = { Text("Enter password", color = Color(0xFF94A3B8), fontSize = 14.sp) },
                         modifier = Modifier
                             .fillMaxWidth()
                             .onFocusChanged { isPasswordFocused = it.isFocused },
-                        placeholder = { Text("Enter your password", fontSize = 13.sp, color = Color(0xFF94A3B8)) },
                         leadingIcon = {
                             Icon(
                                 imageVector = Icons.Default.Lock,

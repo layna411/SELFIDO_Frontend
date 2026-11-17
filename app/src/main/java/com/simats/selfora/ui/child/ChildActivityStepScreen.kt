@@ -477,7 +477,7 @@ fun ChildActivityStepScreen(
                     isTamil = isTamil,
                     stepTitleTa = step.titleTa,
                     childInstructionTa = step.childInstructionTa,
-                    mediaUrl = step.media.firstOrNull()?.mediaUrl,
+                    mediaUrl = step.media?.firstOrNull()?.mediaUrl,
                     onSpeakInstruction = { ttsManager.speak(displayInstruction) },
                     onSpeakCustomInstruction = { text, isTa ->
                         ttsManager.speakInLanguage(text, if (isTa) "ta" else "en")

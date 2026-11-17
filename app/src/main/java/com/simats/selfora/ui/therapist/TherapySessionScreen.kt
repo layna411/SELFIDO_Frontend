@@ -1,4 +1,4 @@
-﻿package com.simats.selfora.ui.therapist
+package com.simats.selfora.ui.therapist
 
 
 
@@ -1359,7 +1359,7 @@ fun TherapySessionScreen(
                                 isTamil = isTamil,
                                 stepTitleTa = currentStepObj.titleTa ?: currentRecord?.titleTa,
                                 childInstructionTa = currentStepObj.childInstructionTa ?: currentStepObj.instructionTextTa ?: currentRecord?.instructionTa,
-                                mediaUrl = currentStepObj.media.firstOrNull()?.mediaUrl,
+                                mediaUrl = currentStepObj.media?.firstOrNull()?.mediaUrl,
                                 onSpeakInstruction = {
                                     val text = if (isTamil && !currentStepObj.childInstructionTa.isNullOrBlank()) currentStepObj.childInstructionTa!! else (currentStepObj.childInstruction ?: currentStepObj.instructionText ?: "Perform the activity step.")
                                     ttsManager.speak(text)
@@ -2184,23 +2184,11 @@ fun TherapySessionScreen(
 
 
                                 value = currentRecord?.notes ?: "",
-
-
                                 onValueChange = { viewModel.updateTherapistNotes(currentStepIndex, it) },
-
-
                                 label = "Therapist Clinical Notes (Optional)",
-
-
-                                placeholder = "Observations, cuing strategies, resistance...",
-
-
+                                placeholder = "Enter clinical notes",
                                 singleLine = false,
-
-
                                 leadingIcon = Icons.Default.EditNote
-
-
                             )
 
 

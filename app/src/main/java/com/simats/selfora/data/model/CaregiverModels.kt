@@ -5,7 +5,7 @@ data class LinkedChildInfo(
     val name: String,
     val gender: String, // "BOY" or "GIRL"
     val age: Int = 6,
-    val therapistName: String = "Dr. Sarah Jenkins",
+    val therapistName: String = "Occupational Therapist",
     val profilePicUrl: String? = null
 )
 

@@ -176,7 +176,7 @@ fun SuperAdminLoginScreen(
                             errorMessage = null
                         },
                         label = stringResource(R.string.auth_email_or_username),
-                        placeholder = "admin@selfora.org",
+                        placeholder = "Enter email or username",
                         leadingIcon = Icons.Default.Email,
                         keyboardOptions = KeyboardOptions(
                             keyboardType = KeyboardType.Email,
@@ -195,7 +195,7 @@ fun SuperAdminLoginScreen(
                             errorMessage = null
                         },
                         label = stringResource(R.string.auth_password),
-                        placeholder = stringResource(R.string.auth_password),
+                        placeholder = "Enter password",
                         leadingIcon = Icons.Default.Lock,
                         visualTransformation = if (isPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                         trailingIcon = {

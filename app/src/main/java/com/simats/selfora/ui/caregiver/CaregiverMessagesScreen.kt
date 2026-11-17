@@ -45,6 +45,7 @@ import com.simats.selfora.ui.components.glass.*
 import com.simats.selfora.ui.theme.*
 import com.simats.selfora.utils.LanguageManager
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -88,62 +89,90 @@ fun CaregiverMessagesScreen(
     val wsConnected by ChatWebSocketClient.isConnected.collectAsState()
     val listState = rememberLazyListState()
 
+    suspend fun loadMessagesForChild(targetChildId: Long) {
+        if (targetChildId <= 0L) {
+            isLoading = false
+            return
+        }
+        isLoading = true
+        try {
+            withTimeoutOrNull(6000L) {
+                // 1. Resolve assigned Therapist ID & Full Name from backend
+                try {
+                    val partnerRes = ApiClient.apiService.getChatPartner(targetChildId)
+                    if (partnerRes.isSuccessful && partnerRes.body() != null) {
+                        val partner = partnerRes.body()!!
+                        therapistId = partner.partnerId
+                        therapistName = partner.partnerName
+                        if (partner.childName.isNotBlank()) activeChildName = partner.childName
+                        val parts = partner.partnerName.trim().split(" ").filter { it.isNotBlank() }
+                        therapistInitials = when {
+                            parts.size >= 2 -> "${parts[0].take(1)}${parts[1].take(1)}".uppercase()
+                            parts.size == 1 -> parts[0].take(2).uppercase()
+                            else -> "OT"
+                        }
+                    }
+                } catch (_: Exception) {}
+
+                // 2. Mark existing messages as read via WebSocket & REST
+                ChatWebSocketClient.markRead(targetChildId)
+                try { ApiClient.apiService.markConversationAsRead(targetChildId) } catch (_: Exception) {}
+
+                // 3. Load REAL messages from Database (no static fake messages)
+                try {
+                    val res = ApiClient.apiService.getConversation(targetChildId)
+                    if (res.isSuccessful && res.body() != null) {
+                        messages = res.body()!!.sortedWith(compareBy({ it.sentAt }, { it.id }))
+                    }
+                } catch (_: Exception) {}
+            }
+        } catch (e: Exception) {
+            // Keep existing messages on network error
+        } finally {
+            isLoading = false
+        }
+    }
+
+    LaunchedEffect(messages.size) {
+        if (messages.isNotEmpty()) {
+            try {
+                listState.animateScrollToItem(messages.size - 1)
+            } catch (_: Exception) {}
+        }
+    }
+
     // Ensure WebSocket connects and resolve active child + assigned Therapist + real DB history
     LaunchedEffect(Unit) {
-        ChatWebSocketClient.ensureConnected()
         isLoading = true
+        try {
+            ChatWebSocketClient.ensureConnected()
 
-        // 1. Resolve active child if not cached in SessionManager
-        if (activeChildId <= 0L) {
+            var targetId = SessionManager.getActiveChildId()
+            // Always check caregiver dashboard summary to get verified active child
             try {
                 val dashRes = ApiClient.apiService.getCaregiverDashboardSummary()
                 if (dashRes.isSuccessful && dashRes.body() != null) {
-                    val firstChild = dashRes.body()!!.linkedChildren.firstOrNull()
-                    if (firstChild != null) {
-                        activeChildId = firstChild.childId
-                        activeChildName = firstChild.name
-                        therapistName = firstChild.therapistName.ifBlank { "Occupational Therapist" }
-                        SessionManager.saveActiveChildContext(firstChild.childId, firstChild.name, firstChild.gender)
+                    val linked = dashRes.body()!!.linkedChildren
+                    if (linked.isNotEmpty()) {
+                        val matched = linked.find { it.childId == targetId } ?: linked.first()
+                        targetId = matched.childId
+                        activeChildId = matched.childId
+                        activeChildName = matched.name
+                        if (matched.therapistName.isNotBlank()) {
+                            therapistName = matched.therapistName
+                        }
+                        SessionManager.saveActiveChildContext(matched.childId, matched.name, matched.gender)
                     }
                 }
             } catch (_: Exception) {}
-        }
 
-        val cId = if (activeChildId > 0L) activeChildId else 1L
-        activeChildId = cId
-
-        // 2. Resolve assigned Therapist ID & Full Name from backend
-        try {
-            val partnerRes = ApiClient.apiService.getChatPartner(cId)
-            if (partnerRes.isSuccessful && partnerRes.body() != null) {
-                val partner = partnerRes.body()!!
-                therapistId = partner.partnerId
-                therapistName = partner.partnerName
-                if (partner.childName.isNotBlank()) activeChildName = partner.childName
-                val parts = partner.partnerName.trim().split(" ").filter { it.isNotBlank() }
-                therapistInitials = when {
-                    parts.size >= 2 -> "${parts[0].take(1)}${parts[1].take(1)}".uppercase()
-                    parts.size == 1 -> parts[0].take(2).uppercase()
-                    else -> "OT"
-                }
+            if (targetId > 0L) {
+                loadMessagesForChild(targetId)
+            } else {
+                isLoading = false
             }
-        } catch (_: Exception) {}
-
-        // 3. Mark existing messages as read via WebSocket & REST
-        ChatWebSocketClient.markRead(cId)
-        try { ApiClient.apiService.markConversationAsRead(cId) } catch (_: Exception) {}
-
-        // 4. Load REAL messages from Database (no static fake messages)
-        try {
-            val res = ApiClient.apiService.getConversation(cId)
-            if (res.isSuccessful && res.body() != null) {
-                messages = res.body()!!.sortedWith(compareBy({ it.sentAt }, { it.id }))
-                if (messages.isNotEmpty()) {
-                    listState.scrollToItem(messages.size - 1)
-                }
-            }
-        } catch (e: Exception) {
-            Toast.makeText(context, "Unable to load messages: ${e.localizedMessage}", Toast.LENGTH_SHORT).show()
+        } catch (_: Exception) {
+            isLoading = false
         } finally {
             isLoading = false
         }
@@ -326,12 +355,8 @@ fun CaregiverMessagesScreen(
                             )
                             Spacer(modifier = Modifier.width(5.dp))
                             Text(
-                                text = if (wsConnected) {
-                                    if (isTamil) "நேரடி இணைப்பு • சிகிச்சையாளர்" else "Live WebSocket • Occupational Therapist"
-                                } else {
-                                    if (isTamil) "மருத்துவ சிகிச்சையாளர்" else "Occupational Therapist"
-                                },
-                                fontSize = 11.sp,
+                                text = if (isTamil) "சிகிச்சையாளர்" else "Occupational Therapist",
+                                fontSize = 11.5.sp,
                                 color = SelforaTextSecondary,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
@@ -340,12 +365,11 @@ fun CaregiverMessagesScreen(
                     }
 
                     GlassIconButton(
-                        icon = Icons.Default.Call,
+                        icon = Icons.Default.Refresh,
                         onClick = {
-                            val intent = Intent(Intent.ACTION_DIAL).apply {
-                                data = Uri.parse("tel:+919876543210")
+                            coroutineScope.launch {
+                                loadMessagesForChild(activeChildId)
                             }
-                            context.startActivity(intent)
                         },
                         tint = SelforaPrimary,
                         size = 36.dp,
@@ -470,17 +494,26 @@ fun CaregiverMessagesScreen(
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Text(
-                        text = if (activeChildName.isNotBlank()) "Child: $activeChildName • ADL Routine" else "Active ADL Care Thread",
-                        fontSize = 11.sp,
+                        text = if (activeChildName.isNotBlank()) "Child: $activeChildName • ADL Care" else "Active Care Thread",
+                        fontSize = 11.5.sp,
                         fontWeight = FontWeight.SemiBold,
                         color = SelforaTextPrimary
                     )
-                    Text(
-                        text = if (wsConnected) "● Live WebSocket" else "Connecting...",
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = if (wsConnected) SelforaSuccess else SelforaWarning
-                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(
+                            modifier = Modifier
+                                .size(6.dp)
+                                .clip(CircleShape)
+                                .background(if (wsConnected) SelforaSuccess else SelforaWarning)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = if (wsConnected) "Active" else "Connecting...",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = if (wsConnected) SelforaSuccess else SelforaWarning
+                        )
+                    }
                 }
             }
 
@@ -506,18 +539,64 @@ fun CaregiverMessagesScreen(
                             }
                         }
                         Spacer(modifier = Modifier.height(12.dp))
-                        Text(
-                            text = if (isTamil) "இன்னும் செய்திகள் இல்லை" else "No messages yet",
-                            fontSize = 15.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = SelforaTextPrimary
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = if (isTamil) "சிகிச்சையாளரிடம் உங்கள் கேள்விகளை இங்கே கேட்கலாம்." else "Send a message to $therapistName about home practice updates.",
-                            fontSize = 12.5.sp,
-                            color = SelforaTextSecondary
-                        )
+                        if (activeChildId <= 0L) {
+                            Text(
+                                text = if (isTamil) "இணைக்கப்பட்ட குழந்தை கிடைக்கவில்லை" else "No Linked Child Found",
+                                fontSize = 15.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = SelforaTextPrimary
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = if (isTamil) "சிகிச்சையாளர் உங்கள் குழந்தையின் சுயவிவரத்தை இணைத்த பிறகு உரையாடல் தொடங்கும்." else "Your therapist will link your child profile to start messaging.",
+                                fontSize = 12.5.sp,
+                                color = SelforaTextSecondary,
+                                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                            )
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Button(
+                                onClick = {
+                                    coroutineScope.launch {
+                                        isLoading = true
+                                        try {
+                                            val dashRes = ApiClient.apiService.getCaregiverDashboardSummary()
+                                            if (dashRes.isSuccessful && dashRes.body() != null) {
+                                                val linked = dashRes.body()!!.linkedChildren
+                                                if (linked.isNotEmpty()) {
+                                                    val firstChild = linked.first()
+                                                    activeChildId = firstChild.childId
+                                                    activeChildName = firstChild.name
+                                                    therapistName = firstChild.therapistName.ifBlank { "Occupational Therapist" }
+                                                    SessionManager.saveActiveChildContext(firstChild.childId, firstChild.name, firstChild.gender)
+                                                    loadMessagesForChild(firstChild.childId)
+                                                }
+                                            }
+                                        } catch (_: Exception) {}
+                                        finally { isLoading = false }
+                                    }
+                                },
+                                shape = RoundedCornerShape(12.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = SelforaPrimary)
+                            ) {
+                                Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(16.dp))
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("Check Link", fontSize = 12.sp)
+                            }
+                        } else {
+                            Text(
+                                text = if (isTamil) "இன்னும் செய்திகள் இல்லை" else "No messages yet",
+                                fontSize = 15.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = SelforaTextPrimary
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = if (isTamil) "சிகிச்சையாளரிடம் உங்கள் கேள்விகளை இங்கே கேட்கலாம்." else "Send a message to $therapistName about home practice updates.",
+                                fontSize = 12.5.sp,
+                                color = SelforaTextSecondary,
+                                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                            )
+                        }
                     }
                 }
             } else {
@@ -535,7 +614,9 @@ fun CaregiverMessagesScreen(
                         val isMe = msg.senderId == currentUserId
 
                         Box(
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 2.dp),
                             contentAlignment = if (isMe) Alignment.CenterEnd else Alignment.CenterStart
                         ) {
                             Surface(
@@ -551,7 +632,9 @@ fun CaregiverMessagesScreen(
                                     if (isMe) SelforaPrimary else SelforaBorder
                                 ),
                                 shadowElevation = 1.dp,
-                                modifier = Modifier.widthIn(min = 84.dp, max = 305.dp)
+                                modifier = Modifier
+                                    .fillMaxWidth(0.82f)
+                                    .wrapContentWidth(if (isMe) Alignment.End else Alignment.Start)
                             ) {
                                 Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 9.dp)) {
                                     if (!isMe) {

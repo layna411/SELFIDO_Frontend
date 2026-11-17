@@ -58,7 +58,7 @@ fun CaregiverProfileScreen(
 
     // Dynamic Caregiver & Active Child Data
     var caregiverName by remember {
-        mutableStateOf(SessionManager.getUsername().ifBlank { "Meena (Caregiver)" })
+        mutableStateOf(SessionManager.getUsername().ifBlank { "Caregiver" })
     }
     var activeChildId by remember {
         mutableStateOf(SessionManager.getActiveChildId())
@@ -69,25 +69,20 @@ fun CaregiverProfileScreen(
 
     var childrenList by remember {
         mutableStateOf(
-            listOf(
-                LinkedChildProfile(
-                    id = activeChildId,
-                    name = activeChildName,
-                    details = "Age 6 • Sensory & ADL Dressing Plan",
-                    gender = SessionManager.getActiveChildGender()
-                ),
-                LinkedChildProfile(
-                    id = if (activeChildId == 1L) 2L else 1L,
-                    name = if (activeChildId == 1L) "Rohan Sharma" else "Aarav Sharma",
-                    details = "Age 7 • Fine Motor & Routine Self-Care",
-                    gender = "BOY"
+            if (activeChildId > 0L && activeChildName.isNotBlank()) {
+                listOf(
+                    LinkedChildProfile(
+                        id = activeChildId,
+                        name = activeChildName,
+                        details = "Active Case • Pediatric ADL Routine",
+                        gender = SessionManager.getActiveChildGender()
+                    )
                 )
-            )
+            } else emptyList()
         )
     }
 
     // Dialog Visibility States
-    var showAddChildDialog by remember { mutableStateOf(false) }
     var showAccountSettingsDialog by remember { mutableStateOf(false) }
     var showNotificationSettingsDialog by remember { mutableStateOf(false) }
     var showHelpDialog by remember { mutableStateOf(false) }
@@ -334,31 +329,18 @@ fun CaregiverProfileScreen(
                             }
                         }
 
-                        Spacer(modifier = Modifier.height(4.dp))
-
-                        // + Add Another Child Button
-                        Surface(
-                            shape = RoundedCornerShape(12.dp),
-                            color = Color.White,
-                            border = BorderStroke(1.dp, SelforaPrimary.copy(alpha = 0.35f)),
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable { showAddChildDialog = true }
-                        ) {
-                            Row(
+                        if (childrenList.isEmpty()) {
+                            Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(vertical = 11.dp),
-                                horizontalArrangement = Arrangement.Center,
-                                verticalAlignment = Alignment.CenterVertically
+                                    .padding(vertical = 12.dp),
+                                contentAlignment = Alignment.Center
                             ) {
-                                Icon(Icons.Default.Add, contentDescription = null, tint = SelforaPrimary, modifier = Modifier.size(18.dp))
-                                Spacer(modifier = Modifier.width(6.dp))
                                 Text(
-                                    text = if (isTamil) "+ புதிய குழந்தையைச் சேர்க்க" else "+ Add Another Child Profile",
-                                    fontSize = 13.5.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = SelforaPrimary
+                                    text = if (isTamil) "இணைக்கப்பட்ட குழந்தைகள் இல்லை. உங்கள் சிகிச்சையாளரைத் தொடர்பு கொள்ளவும்." else "No linked children found. Please contact your clinician to register your child.",
+                                    fontSize = 12.sp,
+                                    color = SelforaTextSecondary,
+                                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
                                 )
                             }
                         }
@@ -420,114 +402,7 @@ fun CaregiverProfileScreen(
         }
     }
 
-    // 1. ADD CHILD DIALOG
-    if (showAddChildDialog) {
-        var newFirstName by remember { mutableStateOf("") }
-        var newLastName by remember { mutableStateOf("") }
-        var newGender by remember { mutableStateOf("BOY") }
-        var newAge by remember { mutableStateOf("6") }
-
-        AlertDialog(
-            onDismissRequest = { showAddChildDialog = false },
-            title = {
-                Text(
-                    text = if (isTamil) "புதிய குழந்தையைச் சேர்க்க" else "Add New Child Profile",
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 17.sp,
-                    color = SelforaTextPrimary
-                )
-            },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    OutlinedTextField(
-                        value = newFirstName,
-                        onValueChange = { newFirstName = it },
-                        label = { Text(if (isTamil) "முதல் பெயர்" else "First Name") },
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp)
-                    )
-                    OutlinedTextField(
-                        value = newLastName,
-                        onValueChange = { newLastName = it },
-                        label = { Text(if (isTamil) "கடைசி பெயர்" else "Last Name") },
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp)
-                    )
-                    OutlinedTextField(
-                        value = newAge,
-                        onValueChange = { newAge = it },
-                        label = { Text(if (isTamil) "வயது (ஆண்டுகள்)" else "Age (Years)") },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp)
-                    )
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Button(
-                            onClick = { newGender = "BOY" },
-                            modifier = Modifier.weight(1f),
-                            shape = RoundedCornerShape(10.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = if (newGender == "BOY") SelforaPrimary else Color(0xFFF1F5F9),
-                                contentColor = if (newGender == "BOY") Color.White else SelforaTextPrimary
-                            )
-                        ) {
-                            Text(if (isTamil) "ஆண் குழந்தை" else "Boy")
-                        }
-                        Button(
-                            onClick = { newGender = "GIRL" },
-                            modifier = Modifier.weight(1f),
-                            shape = RoundedCornerShape(10.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = if (newGender == "GIRL") SelforaSecondary else Color(0xFFF1F5F9),
-                                contentColor = if (newGender == "GIRL") Color.White else SelforaTextPrimary
-                            )
-                        ) {
-                            Text(if (isTamil) "பெண் குழந்தை" else "Girl")
-                        }
-                    }
-                }
-            },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        if (newFirstName.isNotBlank()) {
-                            val newId = (childrenList.size + 10).toLong()
-                            val fullChildName = "${newFirstName.trim()} ${newLastName.trim()}".trim()
-                            val newChild = LinkedChildProfile(
-                                id = newId,
-                                name = fullChildName,
-                                details = "Age $newAge • $newGender • ADL Dressing Plan",
-                                gender = newGender
-                            )
-                            childrenList = childrenList + newChild
-                            activeChildId = newId
-                            activeChildName = fullChildName
-                            SessionManager.saveActiveChildContext(newId, fullChildName, newGender)
-                            showAddChildDialog = false
-                            Toast.makeText(
-                                context,
-                                if (isTamil) "குழந்தை வெற்றிகரமாக சேர்க்கப்பட்டது!" else "Child profile linked successfully!",
-                                Toast.LENGTH_SHORT
-                            ).show()
-                        }
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = SelforaPrimary)
-                ) {
-                    Text(if (isTamil) "சேமி" else "Save")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showAddChildDialog = false }) {
-                    Text(if (isTamil) "ரத்து" else "Cancel")
-                }
-            }
-        )
-    }
-
-    // 2. ACCOUNT SETTINGS DIALOG
+    // 1. ACCOUNT SETTINGS DIALOG
     if (showAccountSettingsDialog) {
         var editName by remember { mutableStateOf(caregiverName) }
         var editPhone by remember { mutableStateOf("+91 98401 23456") }

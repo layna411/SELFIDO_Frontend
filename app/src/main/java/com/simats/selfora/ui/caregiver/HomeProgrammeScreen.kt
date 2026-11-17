@@ -249,8 +249,9 @@ fun HomeProgrammeCard(
     val recordForThisAct = practiceRecords.firstOrNull { it.activityId == program.activityId }
 
     val actDef = SelfidoCatalogue.getActivityById(program.activityId)
-    val iconEmoji = actDef?.icon ?: "🎯"
-    val totalSteps = actDef?.totalSteps ?: 15
+    val isGirl = (program.childGender ?: com.simats.selfora.data.local.SessionManager.getActiveChildGender()).uppercase().let { it.startsWith("G") || it.startsWith("F") }
+    val iconEmoji = actDef?.icon ?: if (isGirl) "👗" else "👕"
+    val totalSteps = if (program.targetSteps.isNotEmpty()) program.targetSteps.size else (actDef?.totalSteps ?: 15)
     val completedCount = recordForThisAct?.independentCount ?: if (program.activityId == 1L) 7 else 0
     val isPracticedToday = PracticeSessionStore.isActivityPracticedToday(program.activityId)
 

@@ -84,7 +84,7 @@ fun AdultExitDialog(
                         }
                     },
                     label = stringResource(R.string.enter_pin),
-                    placeholder = "1234",
+                    placeholder = "Enter 4-digit PIN",
                     singleLine = true,
                     visualTransformation = PasswordVisualTransformation(),
                     keyboardOptions = KeyboardOptions(

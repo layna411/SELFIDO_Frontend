@@ -714,7 +714,7 @@ fun HomeProgramCreateScreen(
                         value = caregiverInstructions,
                         onValueChange = { caregiverInstructions = it },
                         label = "Caregiver Step-by-Step Guidance",
-                        placeholder = "Specific instructions for the parent...",
+                        placeholder = "Enter instructions for caregiver",
                         singleLine = false,
                         leadingIcon = Icons.Default.EditNote
                     )
@@ -727,7 +727,7 @@ fun HomeProgramCreateScreen(
                         value = thingsToAvoid,
                         onValueChange = { thingsToAvoid = it },
                         label = "Common Pitfalls to Avoid",
-                        placeholder = "What the parent should NOT do...",
+                        placeholder = "Enter things to avoid",
                         singleLine = false,
                         leadingIcon = Icons.Default.Block
                     )
@@ -740,7 +740,7 @@ fun HomeProgramCreateScreen(
                         value = safetyConsiderations,
                         onValueChange = { safetyConsiderations = it },
                         label = "Safety Considerations",
-                        placeholder = "Safety notes for home environment...",
+                        placeholder = "Enter safety considerations",
                         singleLine = false,
                         leadingIcon = Icons.Default.Security
                     )
@@ -788,7 +788,7 @@ fun HomeProgramCreateScreen(
                                     targetPromptLevelId = targetPromptLevelId,
                                     goalStatement = goalStmt,
                                     caregiverInstructions = caregiverInstructions,
-                                    stepSpecificInstructions = "Follow visual cues and celebrate independent attempts.",
+                                    stepSpecificInstructions = if (selectedStepIds.isNotEmpty()) "FOCUS_STEPS:${selectedStepIds.joinToString(",")}" else "Follow visual cues and celebrate independent attempts.",
                                     safetyConsiderations = safetyConsiderations,
                                     thingsToAvoid = thingsToAvoid,
                                     encouragementSuggestions = "Enthusiastically praise effort with high-fives and words of encouragement!",

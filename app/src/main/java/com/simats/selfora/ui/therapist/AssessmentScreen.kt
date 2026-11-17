@@ -1,4 +1,4 @@
-﻿package com.simats.selfora.ui.therapist
+package com.simats.selfora.ui.therapist
 
 
 
@@ -606,7 +606,7 @@ fun AssessmentScreen(
                             instruction = it.instructionText ?: it.childInstruction ?: "",
                             titleTa = it.titleTa,
                             instructionTa = it.instructionTextTa ?: it.childInstructionTa,
-                            mediaUrl = it.media.firstOrNull()?.mediaUrl
+                            mediaUrl = it.media?.firstOrNull()?.mediaUrl
                         )
 
 
@@ -2502,9 +2502,7 @@ fun AssessmentScreen(
 
                                     label = { Text("Therapist Observation Notes (Optional)", fontSize = 12.sp) },
 
-
-                                    placeholder = { Text("Record specific clinical observations for this step...", fontSize = 12.sp) },
-
+                                    placeholder = { Text("Enter observation notes", fontSize = 12.sp) },
 
                                     singleLine = false,
 
@@ -2967,9 +2965,7 @@ fun AssessmentScreen(
 
                         label = { Text("Reason") },
 
-
-                        placeholder = { Text("e.g. Physical constraint, sensory aversion...") },
-
+                        placeholder = { Text("Enter reason") },
 
                         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
 
@@ -3404,7 +3400,7 @@ fun getSampleAssessmentSteps(actId: Long = 1L): List<StepAssessmentState> {
                             instruction = it.instructionText ?: it.childInstruction ?: "",
                             titleTa = it.titleTa,
                             instructionTa = it.instructionTextTa ?: it.childInstructionTa,
-                            mediaUrl = it.media.firstOrNull()?.mediaUrl
+                            mediaUrl = it.media?.firstOrNull()?.mediaUrl
                         )
 
 

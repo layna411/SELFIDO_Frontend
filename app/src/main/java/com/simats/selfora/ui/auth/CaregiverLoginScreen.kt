@@ -190,7 +190,7 @@ fun CaregiverLoginScreen(
                             errorMessage = null
                         },
                         label = stringResource(R.string.admin_email_address),
-                        placeholder = "caregiver@selfido.com",
+                        placeholder = "Enter email address",
                         leadingIcon = Icons.Default.Email,
                         keyboardOptions = KeyboardOptions(
                             keyboardType = KeyboardType.Email,
@@ -209,7 +209,7 @@ fun CaregiverLoginScreen(
                             errorMessage = null
                         },
                         label = stringResource(R.string.auth_password),
-                        placeholder = stringResource(R.string.auth_password),
+                        placeholder = "Enter password",
                         leadingIcon = Icons.Default.Lock,
                         visualTransformation = if (isPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                         trailingIcon = {

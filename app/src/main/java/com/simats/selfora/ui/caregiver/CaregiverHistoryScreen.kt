@@ -18,6 +18,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.simats.selfora.data.api.ApiClient
+import com.simats.selfora.data.local.SessionManager
 import com.simats.selfora.data.model.CaregiverPracticeSessionResponse
 import com.simats.selfora.ui.components.glass.*
 import com.simats.selfora.ui.theme.*
@@ -26,7 +27,7 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CaregiverHistoryScreen(
-    childId: Long = 1L,
+    childId: Long = 0L,
     onBack: () -> Unit = {}
 ) {
     var historyList by remember { mutableStateOf<List<CaregiverPracticeSessionResponse>>(emptyList()) }
@@ -39,7 +40,21 @@ fun CaregiverHistoryScreen(
         errorMessage = null
         scope.launch {
             try {
-                val res = ApiClient.apiService.getPracticeHistory(childId)
+                var targetId = if (childId > 0L) childId else SessionManager.getActiveChildId()
+                if (targetId <= 0L) {
+                    try {
+                        val dashRes = ApiClient.apiService.getCaregiverDashboardSummary()
+                        if (dashRes.isSuccessful && dashRes.body() != null) {
+                            val firstChild = dashRes.body()!!.linkedChildren.firstOrNull()
+                            if (firstChild != null) {
+                                targetId = firstChild.childId
+                                SessionManager.saveActiveChildContext(firstChild.childId, firstChild.name, firstChild.gender)
+                            }
+                        }
+                    } catch (_: Exception) {}
+                }
+
+                val res = ApiClient.apiService.getPracticeHistory(if (targetId > 0L) targetId else 1L)
                 if (res.isSuccessful && res.body() != null) {
                     historyList = res.body()!!
                 } else {
@@ -203,7 +218,7 @@ fun CaregiverHistoryRecordCard(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Column(modifier = Modifier.padding(10.dp)) {
-                        Text("Therapist Feedback (${session.reviewingTherapistName ?: "Dr. Sarah Jenkins"}):", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = SelforaPrimary)
+                        Text("Therapist Feedback (${session.reviewingTherapistName ?: "Clinical Therapist"}):", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = SelforaPrimary)
                         Spacer(modifier = Modifier.height(2.dp))
                         Text("\"${session.therapistFeedback}\"", fontSize = 12.sp, color = SelforaTextPrimary)
                     }

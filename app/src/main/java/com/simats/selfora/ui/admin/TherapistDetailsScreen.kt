@@ -18,6 +18,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.simats.selfora.ui.theme.*
@@ -189,6 +190,8 @@ fun TherapistDetailsScreen(
                         DetailRow("Email", t.email)
                         DetailRow("Phone", t.phone)
                         DetailRow("Designation", t.designation.ifBlank { "Senior Occupational Therapist" })
+                        DetailRow("Department", t.department?.ifBlank { null } ?: "Department of Pediatric Occupational Therapy")
+                        DetailRow("Clinical License ID", t.licenseId?.ifBlank { null } ?: ("OT-IND-2024-" + (10000 + t.id)))
                         DetailRow("Specialization", t.specialization.ifBlank { "Pediatric ADL & Fine Motor Skills" })
                         DetailRow("Qualifications", t.qualification.ifBlank { "BOT, MOT (Pediatrics)" })
                         DetailRow("Clinical Experience", t.experience.ifBlank { "5 Years" })
@@ -207,6 +210,8 @@ fun TherapistDetailsScreen(
         var editEmail by remember { mutableStateOf(therapist!!.email) }
         var editPhone by remember { mutableStateOf(therapist!!.phone) }
         var editDesignation by remember { mutableStateOf(therapist!!.designation) }
+        var editDepartment by remember { mutableStateOf(therapist!!.department ?: "Department of Pediatric Occupational Therapy") }
+        var editLicenseId by remember { mutableStateOf(therapist!!.licenseId ?: "") }
         var editSpecialization by remember { mutableStateOf(therapist!!.specialization) }
         var editQualification by remember { mutableStateOf(therapist!!.qualification) }
         var editExperience by remember { mutableStateOf(therapist!!.experience) }
@@ -215,21 +220,127 @@ fun TherapistDetailsScreen(
         AlertDialog(
             modifier = Modifier.imePadding(),
             onDismissRequest = { if (!isSaving) showEditDialog = false },
-            title = { Text("Edit Therapist Profile", fontWeight = FontWeight.Bold) },
+            containerColor = Color.White,
+            shape = RoundedCornerShape(24.dp),
+            title = {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(40.dp)
+                            .clip(CircleShape)
+                            .background(blueAccent.copy(alpha = 0.12f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            Icons.Default.Edit,
+                            contentDescription = null,
+                            tint = blueAccent,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column {
+                        Text(
+                            text = "Edit Therapist Profile",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 18.sp,
+                            color = textPrimary
+                        )
+                        Text(
+                            text = "Update credentials & clinical information",
+                            fontSize = 12.sp,
+                            color = textSecondary
+                        )
+                    }
+                }
+            },
             text = {
                 Column(
                     modifier = Modifier
-                        .imePadding()
+                        .fillMaxWidth()
+                        .heightIn(max = 420.dp)
                         .verticalScroll(rememberScrollState()),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    GlassTextField(value = editName, onValueChange = { editName = it }, label = "Full Name")
-                    GlassTextField(value = editEmail, onValueChange = { editEmail = it }, label = "Email")
-                    GlassTextField(value = editPhone, onValueChange = { editPhone = it }, label = "Phone")
-                    GlassTextField(value = editDesignation, onValueChange = { editDesignation = it }, label = "Designation")
-                    GlassTextField(value = editSpecialization, onValueChange = { editSpecialization = it }, label = "Specialization")
-                    GlassTextField(value = editQualification, onValueChange = { editQualification = it }, label = "Qualification")
-                    GlassTextField(value = editExperience, onValueChange = { editExperience = it }, label = "Experience")
+                    HorizontalDivider(color = SelforaBorder)
+
+                    GlassTextField(
+                        value = editName,
+                        onValueChange = { editName = it },
+                        label = "Full Name *",
+                        placeholder = "Enter full name",
+                        leadingIcon = Icons.Default.Person,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    GlassTextField(
+                        value = editEmail,
+                        onValueChange = { editEmail = it },
+                        label = "Email Address *",
+                        placeholder = "Enter email address",
+                        leadingIcon = Icons.Default.Email,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    GlassTextField(
+                        value = editPhone,
+                        onValueChange = { editPhone = it },
+                        label = "Phone Number",
+                        placeholder = "Enter phone number",
+                        leadingIcon = Icons.Default.Phone,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    GlassTextField(
+                        value = editDesignation,
+                        onValueChange = { editDesignation = it },
+                        label = "Designation",
+                        placeholder = "Enter designation",
+                        leadingIcon = Icons.Default.Badge,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    GlassTextField(
+                        value = editDepartment,
+                        onValueChange = { editDepartment = it },
+                        label = "Department",
+                        placeholder = "Enter department",
+                        leadingIcon = Icons.Default.LocalHospital,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    GlassTextField(
+                        value = editLicenseId,
+                        onValueChange = { editLicenseId = it },
+                        label = "Clinical License ID",
+                        placeholder = "Enter license ID",
+                        leadingIcon = Icons.Default.VerifiedUser,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    GlassTextField(
+                        value = editSpecialization,
+                        onValueChange = { editSpecialization = it },
+                        label = "Specialization",
+                        placeholder = "Enter specialization",
+                        leadingIcon = Icons.Default.Psychology,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    GlassTextField(
+                        value = editQualification,
+                        onValueChange = { editQualification = it },
+                        label = "Qualification",
+                        placeholder = "Enter qualification",
+                        leadingIcon = Icons.Default.School,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    GlassTextField(
+                        value = editExperience,
+                        onValueChange = { editExperience = it },
+                        label = "Clinical Experience",
+                        placeholder = "Enter experience (e.g. 5 Years)",
+                        leadingIcon = Icons.Default.WorkHistory,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    HorizontalDivider(color = SelforaBorder)
                 }
             },
             confirmButton = {
@@ -250,6 +361,8 @@ fun TherapistDetailsScreen(
                                         email = editEmail.trim(),
                                         phone = editPhone.trim(),
                                         designation = editDesignation.trim(),
+                                        department = editDepartment.trim().ifBlank { null },
+                                        licenseId = editLicenseId.trim().ifBlank { null },
                                         specialization = editSpecialization.trim(),
                                         qualification = editQualification.trim(),
                                         experience = editExperience.trim()
@@ -269,14 +382,26 @@ fun TherapistDetailsScreen(
                             }
                         }
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = blueAccent)
+                    colors = ButtonDefaults.buttonColors(containerColor = blueAccent),
+                    shape = RoundedCornerShape(12.dp)
                 ) {
-                    Text("Save Changes")
+                    if (isSaving) {
+                        CircularProgressIndicator(color = Color.White, modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Saving...", fontWeight = FontWeight.Bold)
+                    } else {
+                        Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("Save Changes", fontWeight = FontWeight.Bold)
+                    }
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showEditDialog = false }) {
-                    Text("Cancel")
+                TextButton(
+                    onClick = { if (!isSaving) showEditDialog = false },
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text("Cancel", color = textSecondary, fontWeight = FontWeight.SemiBold)
                 }
             }
         )
@@ -290,16 +415,49 @@ fun TherapistDetailsScreen(
         AlertDialog(
             modifier = Modifier.imePadding(),
             onDismissRequest = { if (!isResetting) showResetPasswordDialog = false },
-            title = { Text("Reset Therapist Password", fontWeight = FontWeight.Bold) },
+            containerColor = Color.White,
+            shape = RoundedCornerShape(24.dp),
+            title = {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(40.dp)
+                            .clip(CircleShape)
+                            .background(blueAccent.copy(alpha = 0.12f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            Icons.Default.LockReset,
+                            contentDescription = null,
+                            tint = blueAccent,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column {
+                        Text("Reset Password", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = textPrimary)
+                        Text("Assign new temporary credentials", fontSize = 12.sp, color = textSecondary)
+                    }
+                }
+            },
             text = {
-                Column(modifier = Modifier.imePadding()) {
-                    Text("Provision a new temporary password for '${therapist!!.fullName}'. The user will be required to change password upon next login.")
-                    Spacer(modifier = Modifier.height(12.dp))
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    Text(
+                        text = "Provision a new temporary password for '${therapist!!.fullName}'. The clinician will be required to change password upon next login.",
+                        fontSize = 13.sp,
+                        color = textSecondary
+                    )
+                    Spacer(modifier = Modifier.height(14.dp))
                     GlassTextField(
                         value = newPassText,
                         onValueChange = { newPassText = it },
-                        label = "New Password",
-                        placeholder = "password123"
+                        label = "New Temporary Password",
+                        placeholder = "Enter new temporary password",
+                        leadingIcon = Icons.Default.Lock,
+                        modifier = Modifier.fillMaxWidth()
                     )
                 }
             },
@@ -325,14 +483,26 @@ fun TherapistDetailsScreen(
                             }
                         }
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = blueAccent)
+                    colors = ButtonDefaults.buttonColors(containerColor = blueAccent),
+                    shape = RoundedCornerShape(12.dp)
                 ) {
-                    Text("Confirm Reset")
+                    if (isResetting) {
+                        CircularProgressIndicator(color = Color.White, modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Resetting...", fontWeight = FontWeight.Bold)
+                    } else {
+                        Icon(Icons.Default.Key, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("Confirm Reset", fontWeight = FontWeight.Bold)
+                    }
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showResetPasswordDialog = false }) {
-                    Text("Cancel")
+                TextButton(
+                    onClick = { if (!isResetting) showResetPasswordDialog = false },
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text("Cancel", color = textSecondary, fontWeight = FontWeight.SemiBold)
                 }
             }
         )
@@ -344,12 +514,26 @@ private fun DetailRow(label: String, value: String) {
     Column(modifier = Modifier.padding(vertical = 6.dp)) {
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(label, fontSize = 12.sp, color = Color(0xFF64748B))
-            Text(value, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF0F172A))
+            Text(
+                text = label,
+                fontSize = 12.sp,
+                color = SelforaTextSecondary,
+                fontWeight = FontWeight.Medium,
+                modifier = Modifier.weight(0.38f)
+            )
+            Text(
+                text = value,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = SelforaTextPrimary,
+                textAlign = TextAlign.End,
+                modifier = Modifier.weight(0.62f)
+            )
         }
         Spacer(modifier = Modifier.height(6.dp))
-        HorizontalDivider(color = Color(0xFFF1F5F9))
+        HorizontalDivider(color = SelforaBorder.copy(alpha = 0.6f))
     }
 }

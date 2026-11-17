@@ -23,7 +23,8 @@ data class CredentialsSuccessResponse(
     val relationship: String,
     val caregiverEmail: String,
     val temporaryPassword: String,
-    val mustChangePassword: Boolean = true
+    val mustChangePassword: Boolean = true,
+    val gender: String? = null
 )
 
 data class ScheduledSessionItem(
@@ -57,7 +58,14 @@ data class TherapistDashboardSummaryResponse(
     val completedSessionsCount: Int = 0,
     val pendingReviewsCount: Int = 0,
     val todaySchedule: List<ScheduledSessionItem> = emptyList(),
-    val pendingReviews: List<PendingReviewItem> = emptyList()
+    val pendingReviews: List<PendingReviewItem> = emptyList(),
+    val email: String? = null,
+    val phone: String? = null,
+    val department: String? = null,
+    val licenseId: String? = null,
+    val specialization: String? = null,
+    val experience: String? = null,
+    val qualification: String? = null
 )
 
 data class ChildSummaryItem(

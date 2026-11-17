@@ -575,7 +575,9 @@ fun GlassTextField(
             OutlinedTextField(
                 value = value,
                 onValueChange = onValueChange,
-                placeholder = { Text(placeholder, color = SelforaTextSecondary.copy(alpha = 0.70f), fontSize = 14.sp) },
+                placeholder = if (placeholder.isNotEmpty()) {
+                    { Text(placeholder, color = SelforaTextSecondary.copy(alpha = 0.70f), fontSize = 14.sp) }
+                } else null,
                 leadingIcon = leadingIcon?.let {
                     { Icon(it, contentDescription = null, tint = if (isFocused) accentColor else SelforaTextSecondary) }
                 },

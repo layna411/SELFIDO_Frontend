@@ -131,6 +131,23 @@ fun HomePracticeScreen(
 
     var program by remember { mutableStateOf<HomeProgramResponse?>(null) }
 
+    val resolvedGender = remember(program) {
+        val progGender = program?.childGender
+        val isGirlProgram = (program?.title ?: "").contains("Girl", ignoreCase = true) ||
+                (program?.activityTitle ?: "").contains("Frock", ignoreCase = true) ||
+                (program?.activityTitle ?: "").contains("Skirt", ignoreCase = true) ||
+                (program?.activityId ?: 0L) in 17L..32L
+
+        if (isGirlProgram) {
+            "GIRL"
+        } else if (!progGender.isNullOrBlank()) {
+            if (progGender.uppercase().startsWith("G") || progGender.uppercase().startsWith("F")) "GIRL" else "BOY"
+        } else {
+            val sessionGender = com.simats.selfora.data.local.SessionManager.getActiveChildGender()
+            if (sessionGender.uppercase().startsWith("G") || sessionGender.uppercase().startsWith("F")) "GIRL" else "BOY"
+        }
+    }
+
     var steps by remember { mutableStateOf<List<TaskStepResponse>>(emptyList()) }
 
     var currentStepIndex by remember { mutableStateOf(0) }
@@ -192,74 +209,62 @@ fun HomePracticeScreen(
     // Load Program & Task Steps from backend
 
     LaunchedEffect(programId) {
-
         isLoading = true
-
         submissionError = null
-
         try {
-
             val progRes = ApiClient.apiService.getHomeProgramById(programId)
-
-            if (progRes.isSuccessful && progRes.body() != null) {
-
-                program = progRes.body()!!
-
-                val actId = program!!.activityId
-
-                val stepRes = ApiClient.apiService.getTaskSteps(actId)
-
-                if (stepRes.isSuccessful && !stepRes.body().isNullOrEmpty()) {
-
-                    steps = stepRes.body()!!
-
-                } else {
-
-                    steps = SelfidoCatalogue.getStepsForActivity(actId)
-
-                }
-
+            val loadedProg = if (progRes.isSuccessful && progRes.body() != null) {
+                progRes.body()
             } else {
-
-                // Fallback to active program or catalogue
-
                 val todayRes = ApiClient.apiService.getTodayHomePrograms()
-
-                val found = todayRes.body()?.firstOrNull { it.id == programId }
-
-                if (found != null) {
-
-                    program = found
-
-                    val actId = found.activityId
-
-                    val stepRes = ApiClient.apiService.getTaskSteps(actId)
-
-                    steps = if (stepRes.isSuccessful && !stepRes.body().isNullOrEmpty()) stepRes.body()!! else SelfidoCatalogue.getStepsForActivity(actId)
-
-                } else {
-
-                    steps = SelfidoCatalogue.getStepsForActivity(1L)
-
-                }
-
+                todayRes.body()?.firstOrNull { it.id == programId }
             }
 
+            if (loadedProg != null) {
+                program = loadedProg
+                val actId = loadedProg.activityId
+
+                val focusStepIds = loadedProg.stepSpecificInstructions
+                    ?.takeIf { it.startsWith("FOCUS_STEPS:") }
+                    ?.removePrefix("FOCUS_STEPS:")
+                    ?.split(",")
+                    ?.mapNotNull { it.trim().toLongOrNull() }
+                    ?.toSet()
+
+                if (!loadedProg.targetSteps.isNullOrEmpty()) {
+                    steps = loadedProg.targetSteps
+                } else {
+                    val stepRes = ApiClient.apiService.getTaskSteps(actId)
+                    val allSteps = if (stepRes.isSuccessful && !stepRes.body().isNullOrEmpty()) {
+                        stepRes.body()!!
+                    } else {
+                        SelfidoCatalogue.getStepsForActivity(actId)
+                    }
+
+                    steps = if (!focusStepIds.isNullOrEmpty()) {
+                        val filtered = allSteps.filter { s ->
+                            focusStepIds.contains(s.id) ||
+                            focusStepIds.contains(s.stepNumber.toLong()) ||
+                            focusStepIds.contains(s.id % 1000)
+                        }
+                        if (filtered.isNotEmpty()) filtered else allSteps
+                    } else {
+                        allSteps
+                    }
+                }
+            } else {
+                val effectiveGender = com.simats.selfora.data.local.SessionManager.getActiveChildGender()
+                val isGirl = effectiveGender.uppercase().startsWith("G") || effectiveGender.uppercase().startsWith("F")
+                val actId = if (isGirl) 17L else 1L
+                steps = SelfidoCatalogue.getStepsForActivity(actId)
+            }
         } catch (e: Exception) {
-
-            val actId = program?.activityId ?: 1L
-
+            val actId = program?.activityId ?: if (resolvedGender == "GIRL") 17L else 1L
             steps = SelfidoCatalogue.getStepsForActivity(actId)
-
         } finally {
-
             isLoading = false
-
         }
-
     }
-
-
 
     val activityTitle = program?.title ?: "Home Practice Session"
 
@@ -549,7 +554,10 @@ fun HomePracticeScreen(
 
                                     ) {
 
-                                        Text("👕", fontSize = 56.sp)
+                                        val actDef = SelfidoCatalogue.getActivityById(program?.activityId ?: 1L)
+                                        val isGirlMode = resolvedGender == "GIRL"
+                                        val actEmoji = actDef?.icon ?: if (isGirlMode) "👗" else "👕"
+                                        Text(actEmoji, fontSize = 56.sp)
 
                                         Spacer(modifier = Modifier.height(10.dp))
 
@@ -638,17 +646,11 @@ fun HomePracticeScreen(
 
 
                             GlassButton(
-
                                 text = "Start Guided Practice →",
-
                                 onClick = { stage = CaregiverPracticeStage.CAREGIVER_GUIDANCE },
-
                                 modifier = Modifier.fillMaxWidth().height(52.dp)
-
                             )
-
                         }
-
                     }
 
 
@@ -742,137 +744,89 @@ fun HomePracticeScreen(
 
 
                             GlassButton(
-
                                 text = "Begin Step 1 →",
-
                                 onClick = {
-
                                     currentStepIndex = 0
-
                                     stage = CaregiverPracticeStage.STEP_VIEW
-
                                 },
-
                                 modifier = Modifier.fillMaxWidth().height(52.dp)
-
                             )
-
                         }
-
                     }
 
 
 
                     // STAGE 3: STEP VIEW (Visual Guidance + TTS)
-
                     CaregiverPracticeStage.STEP_VIEW -> {
-
-                        val currentStep = steps[currentStepIndex]
-
-                        Column(
-
-                            modifier = Modifier
-
-                                .fillMaxSize()
-
-                                .verticalScroll(rememberScrollState())
-
-                                .padding(16.dp),
-
-                            verticalArrangement = Arrangement.SpaceBetween
-
-                        ) {
-
-                            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-
-                                                                VisualStepGuidanceCard(
-                                    stepNumber = currentStep.stepNumber,
-                                    totalSteps = steps.size,
-                                    stepTitle = currentStep.title,
-                                    childInstruction = currentStep.instructionText ?: currentStep.childInstruction ?: currentStep.title,
-                                    gender = "BOY",
-                                    activityTitle = program?.activityTitle ?: "",
-                                    isTamil = isTamil,
-                                    stepTitleTa = currentStep.titleTa,
-                                    childInstructionTa = currentStep.childInstructionTa ?: currentStep.instructionTextTa,
-                                    mediaUrl = currentStep.media.firstOrNull()?.mediaUrl,
-                                    onSpeakInstruction = {
-                                        val text = if (isTamil && !currentStep.instructionTextTa.isNullOrBlank()) currentStep.instructionTextTa!! else (currentStep.instructionText ?: currentStep.childInstruction ?: currentStep.title)
-                                        ttsManager.speak(text)
-                                    },
-                                    onSpeakCustomInstruction = { text, isTa ->
-                                        ttsManager.speakInLanguage(text, if (isTa) "ta" else "en")
-                                    }
-                                )
-
-
-
-                                ActivityStepProgress(
-
-                                    currentStep = currentStepIndex + 1,
-
-                                    totalSteps = steps.size,
-
-                                    accentColor = SelforaPrimary
-
-                                )
-
+                        val currentStep = steps.getOrNull(currentStepIndex)
+                        if (currentStep == null) {
+                            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                CircularProgressIndicator(color = SelforaPrimary)
                             }
-
-
-
-                            Spacer(modifier = Modifier.height(24.dp))
-
-
-
-                            Row(
-
-                                modifier = Modifier.fillMaxWidth(),
-
-                                horizontalArrangement = Arrangement.spacedBy(10.dp)
-
+                        } else {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .verticalScroll(rememberScrollState())
+                                    .padding(16.dp),
+                                verticalArrangement = Arrangement.SpaceBetween
                             ) {
+                                Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                                    VisualStepGuidanceCard(
+                                        stepNumber = currentStep.stepNumber,
+                                        totalSteps = steps.size,
+                                        stepTitle = currentStep.title,
+                                        childInstruction = currentStep.instructionText ?: currentStep.childInstruction ?: currentStep.title,
+                                        gender = resolvedGender,
+                                        activityTitle = program?.activityTitle ?: (if (resolvedGender == "GIRL") "Girl Dressing" else "Boy Dressing"),
+                                        isTamil = isTamil,
+                                        stepTitleTa = currentStep.titleTa,
+                                        childInstructionTa = currentStep.childInstructionTa ?: currentStep.instructionTextTa,
+                                        mediaUrl = currentStep.media?.firstOrNull()?.mediaUrl,
+                                        onSpeakInstruction = {
+                                            val text = if (isTamil && !currentStep.instructionTextTa.isNullOrBlank()) currentStep.instructionTextTa!! else (currentStep.instructionText ?: currentStep.childInstruction ?: currentStep.title)
+                                            ttsManager.speak(text)
+                                        },
+                                        onSpeakCustomInstruction = { text, isTa ->
+                                            ttsManager.speakInLanguage(text, if (isTa) "ta" else "en")
+                                        }
+                                    )
 
-                                GlassOutlinedButton(
+                                    ActivityStepProgress(
+                                        currentStep = currentStepIndex + 1,
+                                        totalSteps = steps.size,
+                                        accentColor = SelforaPrimary
+                                    )
+                                }
 
-                                    text = "Back",
+                                Spacer(modifier = Modifier.height(24.dp))
 
-                                    onClick = {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                ) {
+                                    GlassOutlinedButton(
+                                        text = "Back",
+                                        onClick = {
+                                            if (currentStepIndex > 0) currentStepIndex--
+                                            else stage = CaregiverPracticeStage.CAREGIVER_GUIDANCE
+                                        },
+                                        modifier = Modifier.weight(1f)
+                                    )
 
-                                        if (currentStepIndex > 0) currentStepIndex--
-
-                                        else stage = CaregiverPracticeStage.CAREGIVER_GUIDANCE
-
-                                    },
-
-                                    modifier = Modifier.weight(1f)
-
-                                )
-
-                                GlassButton(
-
-                                    text = "Record Outcome →",
-
-                                    onClick = {
-
-                                        val existing = stepResultsMap[currentStep.id]
-
-                                        selectedOutcome = existing?.outcome ?: "INDEPENDENT"
-
-                                        stepNoteText = existing?.observation ?: ""
-
-                                        stage = CaregiverPracticeStage.RECORD_PERFORMANCE
-
-                                    },
-
-                                    modifier = Modifier.weight(1.5f)
-
-                                )
-
+                                    GlassButton(
+                                        text = "Record Outcome →",
+                                        onClick = {
+                                            val existing = stepResultsMap[currentStep.id]
+                                            selectedOutcome = existing?.outcome ?: "INDEPENDENT"
+                                            stepNoteText = existing?.observation ?: ""
+                                            stage = CaregiverPracticeStage.RECORD_PERFORMANCE
+                                        },
+                                        modifier = Modifier.weight(1.5f)
+                                    )
+                                }
                             }
-
                         }
-
                     }
 
 
@@ -880,24 +834,20 @@ fun HomePracticeScreen(
                     // STAGE 4: RECORD PERFORMANCE (5 Caregiver Outcomes)
 
                     CaregiverPracticeStage.RECORD_PERFORMANCE -> {
-
-                        val currentStep = steps[currentStepIndex]
-
-                        Column(
-
-                            modifier = Modifier
-
-                                .fillMaxSize()
-
-                                .imePadding()
-
-                                .verticalScroll(rememberScrollState())
-
-                                .padding(16.dp),
-
-                            verticalArrangement = Arrangement.spacedBy(14.dp)
-
-                        ) {
+                        val currentStep = steps.getOrNull(currentStepIndex)
+                        if (currentStep == null) {
+                            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                CircularProgressIndicator(color = SelforaPrimary)
+                            }
+                        } else {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .imePadding()
+                                    .verticalScroll(rememberScrollState())
+                                    .padding(16.dp),
+                                verticalArrangement = Arrangement.spacedBy(14.dp)
+                            ) {
 
                             Column {
 
@@ -993,7 +943,7 @@ fun HomePracticeScreen(
 
                                 label = "Observation Note (Optional)",
 
-                                placeholder = "e.g. Needed encouragement, tried twice...",
+                                placeholder = "Enter observation notes",
 
                                 singleLine = false,
 
@@ -1045,12 +995,10 @@ fun HomePracticeScreen(
                                 },
 
                                 modifier = Modifier.fillMaxWidth().height(52.dp)
-
                             )
-
                         }
-
                     }
+                }
 
 
 
@@ -1171,25 +1119,15 @@ fun HomePracticeScreen(
 
 
                             GlassButton(
-
                                 text = "Return to Dashboard",
-
                                 onClick = onPracticeCompleted,
-
                                 modifier = Modifier.fillMaxWidth().height(52.dp)
-
                             )
-
                         }
-
                     }
-
                 }
-
             }
-
         }
-
     }
 
     if (showStepAchievement) {

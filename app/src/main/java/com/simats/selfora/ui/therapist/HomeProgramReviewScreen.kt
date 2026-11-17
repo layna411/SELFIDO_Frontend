@@ -471,7 +471,7 @@ fun HomeProgramReviewScreen(
                         OutlinedTextField(
                             value = therapistFeedback,
                             onValueChange = { therapistFeedback = it },
-                            placeholder = { Text("e.g. Great progress on step 3. Try to fade verbal prompts tomorrow.") },
+                            placeholder = { Text("Enter feedback note for caregiver") },
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(110.dp),

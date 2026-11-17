@@ -121,7 +121,7 @@ fun ChangePasswordScreen(
                     value = newPassword,
                     onValueChange = { newPassword = it },
                     label = stringResource(R.string.auth_new_password),
-                    placeholder = stringResource(R.string.auth_password_min_length),
+                    placeholder = "Enter new password",
                     leadingIcon = Icons.Default.Lock,
                     visualTransformation = if (showNewPassword) VisualTransformation.None else PasswordVisualTransformation(),
                     keyboardOptions = KeyboardOptions(
@@ -141,7 +141,7 @@ fun ChangePasswordScreen(
                     value = confirmPassword,
                     onValueChange = { confirmPassword = it },
                     label = stringResource(R.string.auth_confirm_password),
-                    placeholder = stringResource(R.string.auth_confirm_password),
+                    placeholder = "Confirm your password",
                     leadingIcon = Icons.Default.Lock,
                     visualTransformation = if (showConfirmPassword) VisualTransformation.None else PasswordVisualTransformation(),
                     keyboardOptions = KeyboardOptions(

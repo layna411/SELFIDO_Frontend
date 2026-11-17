@@ -222,9 +222,21 @@ fun TherapistManagementScreen(
         val actionText = if (statusDialogNewState) "activate" else "deactivate"
         AlertDialog(
             onDismissRequest = { statusDialogTherapist = null },
-            title = { Text("Confirm Account ${if (statusDialogNewState) "Activation" else "Deactivation"}", fontWeight = FontWeight.Bold) },
+            containerColor = Color.White,
+            shape = RoundedCornerShape(24.dp),
+            title = {
+                Text(
+                    text = "Confirm Account ${if (statusDialogNewState) "Activation" else "Deactivation"}",
+                    fontWeight = FontWeight.Bold,
+                    color = textPrimary
+                )
+            },
             text = {
-                Text("Are you sure you want to $actionText the therapist account for '${target.fullName}'? ${if (!statusDialogNewState) "Deactivated therapists will not be able to log in to the system." else ""}")
+                Text(
+                    text = "Are you sure you want to $actionText the therapist account for '${target.fullName}'? ${if (!statusDialogNewState) "Deactivated therapists will not be able to log in to the system." else ""}",
+                    fontSize = 13.sp,
+                    color = textSecondary
+                )
             },
             confirmButton = {
                 Button(
@@ -248,14 +260,18 @@ fun TherapistManagementScreen(
                             }
                         }
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = if (statusDialogNewState) blueAccent else MaterialTheme.colorScheme.error)
+                    colors = ButtonDefaults.buttonColors(containerColor = if (statusDialogNewState) blueAccent else MaterialTheme.colorScheme.error),
+                    shape = RoundedCornerShape(12.dp)
                 ) {
-                    Text(if (statusDialogNewState) "Activate" else "Deactivate")
+                    Text(if (statusDialogNewState) "Activate" else "Deactivate", fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
-                TextButton(onClick = { statusDialogTherapist = null }) {
-                    Text("Cancel")
+                TextButton(
+                    onClick = { statusDialogTherapist = null },
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text("Cancel", color = textSecondary, fontWeight = FontWeight.SemiBold)
                 }
             }
         )

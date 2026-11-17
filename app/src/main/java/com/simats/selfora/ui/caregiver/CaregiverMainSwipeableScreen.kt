@@ -8,6 +8,7 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import com.simats.selfora.data.local.SessionManager
 import com.simats.selfora.ui.theme.SelforaBackground
 import kotlinx.coroutines.launch
 
@@ -53,6 +54,7 @@ fun CaregiverMainSwipeableScreen(
         )
     } else if (activeSubScreen == "history") {
         CaregiverHistoryScreen(
+            childId = SessionManager.getActiveChildId(),
             onBack = { activeSubScreen = null }
         )
     } else {
@@ -96,6 +98,7 @@ fun CaregiverMainSwipeableScreen(
                     )
 
                     CaregiverTab.History -> CaregiverHistoryScreen(
+                        childId = SessionManager.getActiveChildId(),
                         onBack = {
                             coroutineScope.launch { pagerState.animateScrollToPage(0) }
                         }

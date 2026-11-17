@@ -424,7 +424,7 @@ fun AdminChildDetailsScreen(
                         OutlinedTextField(
                             value = reassignmentReason,
                             onValueChange = { reassignmentReason = it },
-                            placeholder = { Text("e.g. Clinical caseload rebalancing or therapist leave") },
+                            placeholder = { Text("Enter reassignment reason") },
                             modifier = Modifier.fillMaxWidth().height(90.dp),
                             shape = RoundedCornerShape(10.dp),
                             colors = OutlinedTextFieldDefaults.colors(

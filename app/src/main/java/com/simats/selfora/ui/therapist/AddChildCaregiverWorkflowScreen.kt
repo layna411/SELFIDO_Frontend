@@ -122,7 +122,7 @@ fun AddChildCaregiverWorkflowScreen(
                                 value = childFirstName,
                                 onValueChange = { childFirstName = it },
                                 label = "Child Name *",
-                                placeholder = "e.g. Arjun",
+                                placeholder = "Enter child name",
                                 leadingIcon = Icons.Default.ChildCare,
                                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next)
                             )
@@ -133,7 +133,7 @@ fun AddChildCaregiverWorkflowScreen(
                                 value = childLastName,
                                 onValueChange = { childLastName = it },
                                 label = "Last Name (Optional)",
-                                placeholder = "e.g. Kumar",
+                                placeholder = "Enter last name",
                                 leadingIcon = Icons.Default.Person,
                                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next)
                             )
@@ -144,7 +144,7 @@ fun AddChildCaregiverWorkflowScreen(
                                 value = dob,
                                 onValueChange = { dob = it },
                                 label = "Date of Birth * (YYYY-MM-DD)",
-                                placeholder = "2018-05-14",
+                                placeholder = "Enter date of birth (YYYY-MM-DD)",
                                 leadingIcon = Icons.Default.Cake,
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Next)
                             )
@@ -164,6 +164,7 @@ fun AddChildCaregiverWorkflowScreen(
                                 value = registrationId,
                                 onValueChange = { registrationId = it },
                                 label = "Child ID / Registration ID",
+                                placeholder = "Enter child ID",
                                 leadingIcon = Icons.Default.Badge,
                                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next)
                             )
@@ -174,7 +175,7 @@ fun AddChildCaregiverWorkflowScreen(
                                 value = diagnosisNotes,
                                 onValueChange = { diagnosisNotes = it },
                                 label = "Relevant Clinical / Diagnosis Notes",
-                                placeholder = "Notes regarding child's motor skills or needs...",
+                                placeholder = "Enter clinical notes",
                                 singleLine = false,
                                 leadingIcon = Icons.Default.Notes,
                                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done)
@@ -207,7 +208,7 @@ fun AddChildCaregiverWorkflowScreen(
                                 value = caregiverName,
                                 onValueChange = { caregiverName = it },
                                 label = "Caregiver Name *",
-                                placeholder = "e.g. Priya Kumar",
+                                placeholder = "Enter caregiver name",
                                 leadingIcon = Icons.Default.Person,
                                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next)
                             )
@@ -289,7 +290,7 @@ fun AddChildCaregiverWorkflowScreen(
                                             relationship = it.ifBlank { "Other" }
                                         },
                                         label = "Specify Relationship *",
-                                        placeholder = "e.g. Grandmother, Aunt, Foster Parent",
+                                        placeholder = "Enter relationship",
                                         leadingIcon = Icons.Default.FamilyRestroom
                                     )
                                 }
@@ -301,7 +302,7 @@ fun AddChildCaregiverWorkflowScreen(
                                 value = phone,
                                 onValueChange = { phone = it },
                                 label = "Phone Number *",
-                                placeholder = "+91 9876543210",
+                                placeholder = "Enter phone number",
                                 leadingIcon = Icons.Default.Phone,
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone, imeAction = ImeAction.Next)
                             )
@@ -312,7 +313,7 @@ fun AddChildCaregiverWorkflowScreen(
                                 value = email,
                                 onValueChange = { email = it },
                                 label = "Caregiver Login Email *",
-                                placeholder = "parent@example.com",
+                                placeholder = "Enter caregiver email",
                                 leadingIcon = Icons.Default.Email,
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email, imeAction = ImeAction.Next)
                             )
@@ -323,7 +324,7 @@ fun AddChildCaregiverWorkflowScreen(
                                 value = address,
                                 onValueChange = { address = it },
                                 label = "Address",
-                                placeholder = "Residential address...",
+                                placeholder = "Enter home address",
                                 leadingIcon = Icons.Default.Home,
                                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done)
                             )

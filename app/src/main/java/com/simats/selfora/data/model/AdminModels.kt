@@ -24,6 +24,8 @@ data class TherapistItem(
     val email: String,
     val phone: String = "+91 9876543210",
     val designation: String = "Senior Occupational Therapist",
+    val department: String? = "Department of Pediatric Occupational Therapy",
+    val licenseId: String? = null,
     val specialization: String = "Pediatric ADL & Fine Motor Skills",
     val qualification: String = "BOT, MOT (Pediatrics)",
     val experience: String = "5 Years",
@@ -39,6 +41,8 @@ data class CreateTherapistRequest(
     val username: String,
     val password: String,
     val designation: String,
+    val department: String? = "Department of Pediatric Occupational Therapy",
+    val licenseId: String? = null,
     val specialization: String,
     val qualification: String,
     val experience: String
@@ -49,6 +53,8 @@ data class UpdateTherapistRequest(
     val email: String,
     val phone: String,
     val designation: String,
+    val department: String? = "Department of Pediatric Occupational Therapy",
+    val licenseId: String? = null,
     val specialization: String,
     val qualification: String,
     val experience: String
