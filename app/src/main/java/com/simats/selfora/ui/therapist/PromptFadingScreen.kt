@@ -267,6 +267,27 @@ fun PromptFadingScreen(
                         val isSelected = selectedStepId == s.id
                         Box(
                             modifier = Modifier
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(if (isSelected) SelforaPrimary else Color.White)
+                                .border(1.dp, if (isSelected) SelforaPrimary else SelforaBorder, RoundedCornerShape(12.dp))
+                                .clickable {
+                                    selectedStepId = s.id
+                                    selectedStepNumber = s.stepNumber
+                                    selectedStepTitle = s.title
+                                }
+                                .padding(horizontal = 10.dp, vertical = 6.dp)
+                        ) {
+                            Text(
+                                text = "Step ${s.stepNumber}: ${s.shortTitle}",
+                                fontSize = 11.sp,
+                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                color = if (isSelected) Color.White else SelforaTextPrimary
+                            )
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
 
                // Select Target Prompt Chip Selector
                 Text("Select Proposed Target Prompt Level:", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = SelforaTextSecondary)

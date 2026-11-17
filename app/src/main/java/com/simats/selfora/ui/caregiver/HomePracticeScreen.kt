@@ -6,8 +6,10 @@ import android.speech.tts.TextToSpeech
 
 import android.widget.Toast
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.*
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 
 import androidx.compose.foundation.border
@@ -139,6 +141,16 @@ fun HomePracticeScreen(
 
     var submissionError by remember { mutableStateOf<String?>(null) }
     var showStepAchievement by remember { mutableStateOf(false) }
+    var showExitConfirmationDialog by remember { mutableStateOf(false) }
+
+    // Intercept hardware/gesture back to prevent accidental app exit during practice
+    BackHandler(enabled = true) {
+        if (stage == CaregiverPracticeStage.TODAY_SUMMARY) {
+            onPracticeCompleted()
+        } else {
+            showExitConfirmationDialog = true
+        }
+    }
 
 
 
@@ -437,7 +449,7 @@ fun HomePracticeScreen(
 
                         when (stage) {
 
-                            CaregiverPracticeStage.ACTIVITY_DETAILS -> onBack()
+                            CaregiverPracticeStage.ACTIVITY_DETAILS -> showExitConfirmationDialog = true
 
                             CaregiverPracticeStage.CAREGIVER_GUIDANCE -> stage = CaregiverPracticeStage.ACTIVITY_DETAILS
 
@@ -445,7 +457,7 @@ fun HomePracticeScreen(
 
                                 if (currentStepIndex > 0) currentStepIndex--
 
-                                else stage = CaregiverPracticeStage.CAREGIVER_GUIDANCE
+                                else showExitConfirmationDialog = true
 
                             }
 
@@ -1199,6 +1211,83 @@ fun HomePracticeScreen(
                     submitPracticeSession()
                 }
             }
+        )
+    }
+
+    if (showExitConfirmationDialog) {
+        AlertDialog(
+            onDismissRequest = { showExitConfirmationDialog = false },
+            icon = {
+                Surface(
+                    shape = CircleShape,
+                    color = SelforaOrangeWarning.copy(alpha = 0.15f),
+                    modifier = Modifier.size(52.dp)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            imageVector = Icons.Default.ExitToApp,
+                            contentDescription = null,
+                            tint = SelforaOrangeWarning,
+                            modifier = Modifier.size(28.dp)
+                        )
+                    }
+                }
+            },
+            title = {
+                Text(
+                    text = if (isTamil) "பயிற்சியிலிருந்து வெளியேறவா?" else "Exit Practice Session?",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 18.sp,
+                    color = SelforaTextPrimary,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            },
+            text = {
+                Text(
+                    text = if (isTamil)
+                        "பயிற்சி அமர்விலிருந்து வெளியேற விரும்புகிறீர்களா? பதிவு செய்யப்படாத படிகள் இடைநிறுத்தப்படும். நீங்கள் எப்போது வேண்டுமானாலும் மீண்டும் தொடங்கலாம்."
+                    else
+                        "Are you sure you want to exit the practice session? Any unrecorded steps will be paused, and you can resume anytime.",
+                    fontSize = 13.sp,
+                    color = SelforaTextSecondary,
+                    textAlign = TextAlign.Center,
+                    lineHeight = 18.sp,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = { showExitConfirmationDialog = false },
+                    colors = ButtonDefaults.buttonColors(containerColor = SelfidoPurple),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text(
+                        text = if (isTamil) "பயிற்சியைத் தொடர்" else "Continue Practice",
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                }
+            },
+            dismissButton = {
+                OutlinedButton(
+                    onClick = {
+                        showExitConfirmationDialog = false
+                        onBack()
+                    },
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = SelforaError),
+                    border = BorderStroke(1.dp, SelforaError.copy(alpha = 0.5f))
+                ) {
+                    Text(
+                        text = if (isTamil) "வெளியேறு" else "Exit Session",
+                        fontWeight = FontWeight.Bold,
+                        color = SelforaError
+                    )
+                }
+            },
+            shape = RoundedCornerShape(24.dp),
+            containerColor = Color.White
         )
     }
 

@@ -435,7 +435,6 @@ fun GlassChildCard(
                 SelforaAdlCategoryGrid(
                     dressingPct = child.dressingPercentage,
                     eatingPct = child.eatingPercentage,
-                    groomingPct = child.groomingPercentage,
                     shoesPct = child.shoesPercentage
                 )
             }

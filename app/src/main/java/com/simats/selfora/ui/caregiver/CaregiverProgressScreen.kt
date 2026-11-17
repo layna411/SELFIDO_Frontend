@@ -139,7 +139,6 @@ fun CaregiverProgressScreen(
                     SelforaAdlCategoryGrid(
                         dressingPct = 60,
                         eatingPct = 70,
-                        groomingPct = 68,
                         shoesPct = 75
                     )
                 }
@@ -156,13 +155,6 @@ fun CaregiverProgressScreen(
                         fontWeight = FontWeight.Bold,
                         color = SelforaTextSecondary,
                         letterSpacing = 0.5.sp
-                    )
-
-                    CaregiverActivityProgressItem(
-                        activityName = "Tooth Brushing",
-                        category = "Grooming",
-                        stepsCompletedText = "(12 / 16 steps)",
-                        percentage = 68
                     )
 
                     CaregiverActivityProgressItem(

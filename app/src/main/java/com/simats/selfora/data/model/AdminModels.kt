@@ -85,7 +85,7 @@ data class AdminChildItem(
 data class AdminChildDetailProfile(
     val summary: AdminChildItem,
     val diagnosisNotes: String = "",
-    val supportedAdlCategories: List<String> = listOf("Dressing", "Eating", "Grooming", "Shoes & Socks"),
+    val supportedAdlCategories: List<String> = listOf("Dressing", "Eating", "Shoes & Socks"),
     val totalSessions: Long = 0L,
     val completedAssessments: Long = 0L,
     val activeHomeProgramTitle: String = "",

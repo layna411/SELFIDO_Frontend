@@ -70,15 +70,15 @@ data class ChildSummaryItem(
     val caregiverRelationship: String,
     val lastSessionDate: String = "No recent session",
     val programmeStatus: String = "ACTIVE",
-    val assignedGoalsCount: Int = 3,
-    val dressingPercentage: Int = 72,
-    val eatingPercentage: Int = 65,
-    val shoesPercentage: Int = 80,
-    val overallProgressPercentage: Int = 75,
+    val assignedGoalsCount: Int = 0,
+    val dressingPercentage: Int = 0,
+    val eatingPercentage: Int = 0,
+    val shoesPercentage: Int = 0,
+    val overallProgressPercentage: Int = 0,
     val hasPendingAssessment: Boolean = false,
     val hasActiveHomeProgram: Boolean = true,
     val isDemoProfile: Boolean = false,
-    val groomingPercentage: Int = 60
+    val groomingPercentage: Int = 0
 )
 
 data class ResetPasswordResultResponse(

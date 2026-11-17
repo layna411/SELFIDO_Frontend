@@ -453,6 +453,18 @@ fun ChildProfileScreen(
                         val eatingCard = dashboardData?.activityCards?.find { it.categoryName.contains("Eating", ignoreCase = true) }
                         val shoesCard = dashboardData?.activityCards?.find { it.categoryName.contains("Shoes", ignoreCase = true) }
 
+                        val dressingScore = dressingCard?.currentIndependencePct?.toInt()
+                            ?: sessionsList.filter { it.activityTitle.contains("T-Shirt", ignoreCase = true) || it.activityTitle.contains("Shirt", ignoreCase = true) || it.activityTitle.contains("Dressing", ignoreCase = true) }
+                                .mapNotNull { it.independencePercentage }.maxOrNull()?.toInt() ?: 0
+
+                        val eatingScore = eatingCard?.currentIndependencePct?.toInt()
+                            ?: sessionsList.filter { it.activityTitle.contains("Eating", ignoreCase = true) || it.activityTitle.contains("Spoon", ignoreCase = true) }
+                                .mapNotNull { it.independencePercentage }.maxOrNull()?.toInt() ?: 0
+
+                        val shoesScore = shoesCard?.currentIndependencePct?.toInt()
+                            ?: sessionsList.filter { it.activityTitle.contains("Shoes", ignoreCase = true) || it.activityTitle.contains("Socks", ignoreCase = true) }
+                                .mapNotNull { it.independencePercentage }.maxOrNull()?.toInt() ?: 0
+
                         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
@@ -460,12 +472,12 @@ fun ChildProfileScreen(
                             ) {
                                 SelforaAdlMetricRow(
                                     category = "Dressing",
-                                    percentage = dressingCard?.currentIndependencePct?.toInt() ?: 0,
+                                    percentage = dressingScore,
                                     modifier = Modifier.weight(1f)
                                 )
                                 SelforaAdlMetricRow(
                                     category = "Eating",
-                                    percentage = eatingCard?.currentIndependencePct?.toInt() ?: 0,
+                                    percentage = eatingScore,
                                     modifier = Modifier.weight(1f)
                                 )
                             }
@@ -475,7 +487,7 @@ fun ChildProfileScreen(
                             ) {
                                 SelforaAdlMetricRow(
                                     category = "Shoes & Socks",
-                                    percentage = shoesCard?.currentIndependencePct?.toInt() ?: 0,
+                                    percentage = shoesScore,
                                     modifier = Modifier.weight(1f)
                                 )
                                 Spacer(modifier = Modifier.weight(1f))
@@ -646,12 +658,24 @@ fun ChildProfileScreen(
                                 }
                                 val targetAssistance = hp.targetPromptLevelName.ifBlank { "Independent" }
                                 val assignedDate = hp.startDate?.take(10) ?: hp.createdAt.take(10).ifBlank { "Recent" }
+                                val dynamicProgress = run {
+                                    val matchingSession = sessionsList.firstOrNull { it.activityId == hp.activityId }
+                                    if (matchingSession?.independencePercentage != null) {
+                                        matchingSession.independencePercentage.toInt()
+                                    } else {
+                                        val card = dashboardData?.activityCards?.find {
+                                            it.categoryName.contains(hp.activityTitle, ignoreCase = true) ||
+                                            hp.activityTitle.contains(it.categoryName, ignoreCase = true)
+                                        }
+                                        card?.currentIndependencePct?.toInt() ?: if (hp.isActive) 0 else 100
+                                    }
+                                }
                                 GlassGoalCategoryCard(
                                     category = hp.activityTitle,
                                     activityName = hp.title ?: hp.activityTitle,
                                     targetSteps = targetStepsStr,
                                     currentAssistance = targetAssistance,
-                                    progressPercentage = if (hp.isActive) 100 else 50,
+                                    progressPercentage = dynamicProgress,
                                     lastUpdated = assignedDate,
                                     accentColor = SelforaPrimary
                                 )

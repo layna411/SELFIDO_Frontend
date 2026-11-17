@@ -311,8 +311,8 @@ fun SelforaAdlMetricRow(
 fun SelforaAdlCategoryGrid(
     dressingPct: Int,
     eatingPct: Int,
-    groomingPct: Int,
     shoesPct: Int,
+    groomingPct: Int? = null,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -340,15 +340,19 @@ fun SelforaAdlCategoryGrid(
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             SelforaAdlMetricRow(
-                category = "Grooming",
-                percentage = groomingPct,
-                modifier = Modifier.weight(1f)
-            )
-            SelforaAdlMetricRow(
                 category = "Shoes & Socks",
                 percentage = shoesPct,
                 modifier = Modifier.weight(1f)
             )
+            if (groomingPct != null) {
+                SelforaAdlMetricRow(
+                    category = "Grooming",
+                    percentage = groomingPct,
+                    modifier = Modifier.weight(1f)
+                )
+            } else {
+                Spacer(modifier = Modifier.weight(1f))
+            }
         }
     }
 }

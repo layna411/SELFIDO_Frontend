@@ -48,11 +48,11 @@ fun AnalyzeAndAdaptScreen(
 
     // Custom Adaptation Form state
     var showCustomDialog by remember { mutableStateOf(false) }
-    var targetStepText by remember { mutableStateOf("Step 4: Sleeve Placement") }
+    var targetStepText by remember { mutableStateOf("Initial Assessment Step") }
     var currentPromptText by remember { mutableStateOf("Verbal Prompt (L3)") }
     var targetPromptText by remember { mutableStateOf("Visual Prompt (L1)") }
-    var clinicalNotesText by remember { mutableStateOf("Child performed step independently. Progressing prompt fading as per clinical evaluation.") }
-    var reviewDateText by remember { mutableStateOf("2026-10-15") }
+    var clinicalNotesText by remember { mutableStateOf("Progressing prompt fading as per clinical evaluation.") }
+    var reviewDateText by remember { mutableStateOf(java.time.LocalDate.now().plusWeeks(2).toString()) }
     var planStatus by remember { mutableStateOf("Approved") }
     var isSavingPlan by remember { mutableStateOf(false) }
     var statusMessage by remember { mutableStateOf<String?>(null) }
@@ -88,6 +88,49 @@ fun AnalyzeAndAdaptScreen(
 
     LaunchedEffect(activityId) {
         loadDashboard(activityId)
+    }
+
+    // Dynamically derive active adaptation goal from backend dashboard data
+    LaunchedEffect(dashboardData, selectedCategory) {
+        val data = dashboardData
+        if (data != null) {
+            val matchingRec = data.recommendations.firstOrNull {
+                it.activityTitle.contains(selectedCategory, ignoreCase = true)
+            } ?: data.recommendations.firstOrNull()
+
+            val diff = data.difficultSteps.firstOrNull()
+            val ind = data.independentSteps.firstOrNull()
+
+            if (matchingRec != null) {
+                targetStepText = matchingRec.stepTitle.ifBlank { "Target Step" }
+                currentPromptText = diff?.mainAssistanceLevel ?: "Verbal Prompt (L3)"
+                targetPromptText = if (diff != null && diff.physicalAssistanceCount > 0) "Model / Video (L4)" else "Visual Prompt (L1)"
+                clinicalNotesText = matchingRec.suggestedTherapistAction
+                reviewDateText = java.time.LocalDate.now().plusWeeks(2).toString()
+                planStatus = "Pending Review"
+            } else if (diff != null) {
+                targetStepText = "Step ${diff.stepNumber}: ${diff.stepTitle}"
+                currentPromptText = diff.mainAssistanceLevel
+                targetPromptText = if (diff.physicalAssistanceCount > 0) "Model / Video (L4)" else "Visual Prompt (L1)"
+                clinicalNotesText = diff.reasonDescription.ifBlank { "Child requires assistance on this step. Target prompt fading to next level." }
+                reviewDateText = java.time.LocalDate.now().plusWeeks(2).toString()
+                planStatus = "Active"
+            } else if (ind != null) {
+                targetStepText = "Step ${ind.stepNumber}: ${ind.stepTitle}"
+                currentPromptText = "Independent (L0)"
+                targetPromptText = "Generalization Across Environments"
+                clinicalNotesText = ind.generalizationReadiness.ifBlank { "Consistent independent mastery observed. Maintain current protocol." }
+                reviewDateText = java.time.LocalDate.now().plusWeeks(2).toString()
+                planStatus = "Approved"
+            } else {
+                targetStepText = "$selectedCategory Routine"
+                currentPromptText = "Independent (L0)"
+                targetPromptText = "Full Independence"
+                clinicalNotesText = "All recorded steps are progressing smoothly. Continue current therapy protocol."
+                reviewDateText = java.time.LocalDate.now().plusWeeks(2).toString()
+                planStatus = "Active"
+            }
+        }
     }
 
     val childName = dashboardData?.childName ?: "Child #$childId"
@@ -690,28 +733,106 @@ fun AnalyzeAndAdaptScreen(
 
                 // 8. THERAPIST-CONTROLLED ADAPTATION PLAN WORKFLOW
                 GlassCard(modifier = Modifier.fillMaxWidth()) {
+                    val statusColor = when (planStatus) {
+                        "Approved", "Active" -> SelforaSuccess
+                        "Rejected" -> SelforaError
+                        else -> SelforaOrangeWarning
+                    }
+
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Column {
+                        Column(modifier = Modifier.weight(1f).padding(end = 8.dp)) {
                             Text("THERAPIST ADAPTATION PLAN WORKFLOW", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = SelforaPrimary)
                             Text("Full therapist control over clinical goals & prompt fading", fontSize = 11.sp, color = SelforaTextSecondary)
                         }
-                        Surface(shape = RoundedCornerShape(10.dp), color = SelforaSuccess.copy(alpha = 0.15f)) {
-                            Text(planStatus, fontSize = 11.sp, fontWeight = FontWeight.Bold, color = SelforaSuccess, modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp))
+                        Surface(shape = RoundedCornerShape(10.dp), color = statusColor.copy(alpha = 0.15f)) {
+                            Text(
+                                planStatus,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = statusColor,
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
+                            )
                         }
                     }
 
                     Spacer(modifier = Modifier.height(14.dp))
 
-                    Text("Active Adaptation Goal for $selectedCategory:", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = SelforaTextPrimary)
-                    Text("Target Step: $targetStepText", fontSize = 12.sp, color = SelforaPrimary, fontWeight = FontWeight.SemiBold)
-                    Text("Current Assistance: $currentPromptText ➔ Target: $targetPromptText", fontSize = 12.sp, color = SelforaTextSecondary)
-                    Text("Review Date: $reviewDateText", fontSize = 11.sp, color = SelforaTextMuted)
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text("Clinical Notes: \"$clinicalNotesText\"", fontSize = 12.sp, color = SelforaTextPrimary, fontWeight = FontWeight.Medium)
+                    // Inset Active Goal Card for clean alignment
+                    Surface(
+                        shape = RoundedCornerShape(14.dp),
+                        color = SelforaSurface.copy(alpha = 0.7f),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, SelforaBorder),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(modifier = Modifier.padding(14.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(Icons.Default.Flag, contentDescription = null, tint = SelforaPrimary, modifier = Modifier.size(16.dp))
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("Active Adaptation Goal ($selectedCategory)", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = SelforaTextPrimary)
+                            }
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Row {
+                                Text("Target Step: ", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = SelforaTextSecondary)
+                                Text(targetStepText, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = SelforaPrimary)
+                            }
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Row {
+                                Text("Assistance: ", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = SelforaTextSecondary)
+                                Text("$currentPromptText ➔ $targetPromptText", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = SelforaSecondary)
+                            }
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Row {
+                                Text("Review Target: ", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = SelforaTextSecondary)
+                                Text(reviewDateText, fontSize = 12.sp, color = SelforaTextMuted)
+                            }
+                            if (clinicalNotesText.isNotBlank()) {
+                                Spacer(modifier = Modifier.height(8.dp))
+                                HorizontalDivider(color = SelforaBorder.copy(alpha = 0.5f))
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text("Clinical Rationale:", fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = SelforaTextSecondary)
+                                Text("\"$clinicalNotesText\"", fontSize = 12.sp, color = SelforaTextPrimary, fontStyle = androidx.compose.ui.text.font.FontStyle.Italic)
+                            }
+                        }
+                    }
+
+                    if (statusMessage != null) {
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Surface(
+                            shape = RoundedCornerShape(10.dp),
+                            color = statusColor.copy(alpha = 0.12f),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    if (planStatus == "Rejected") Icons.Default.Cancel else Icons.Default.CheckCircle,
+                                    contentDescription = null,
+                                    tint = statusColor,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    statusMessage ?: "",
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = statusColor,
+                                    modifier = Modifier.weight(1f)
+                                )
+                                Icon(
+                                    Icons.Default.Close,
+                                    contentDescription = "Dismiss",
+                                    tint = SelforaTextMuted,
+                                    modifier = Modifier.size(16.dp).clickable { statusMessage = null }
+                                )
+                            }
+                        }
+                    }
 
                     Spacer(modifier = Modifier.height(14.dp))
 
@@ -723,16 +844,16 @@ fun AnalyzeAndAdaptScreen(
                             text = "Accept Suggestion",
                             onClick = {
                                 planStatus = "Approved"
-                                statusMessage = "Adaptation plan approved by therapist."
+                                statusMessage = "Adaptation plan approved for $selectedCategory."
                             },
                             icon = Icons.Default.Check,
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier.weight(1f).height(46.dp)
                         )
                         GlassOutlinedButton(
                             text = "Modify Plan",
                             onClick = { showCustomDialog = true },
                             icon = Icons.Default.Edit,
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier.weight(1f).height(46.dp)
                         )
                     }
 
@@ -746,11 +867,11 @@ fun AnalyzeAndAdaptScreen(
                             text = "Reject",
                             onClick = {
                                 planStatus = "Rejected"
-                                statusMessage = "Adaptation plan rejected."
+                                statusMessage = "Adaptation plan rejected for $selectedCategory."
                             },
                             accentColor = SelforaError,
                             icon = Icons.Default.Close,
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier.weight(1f).height(46.dp)
                         )
 
                         GlassButton(
@@ -758,19 +879,26 @@ fun AnalyzeAndAdaptScreen(
                             onClick = { onNavigateToPromptFading(childId) },
                             icon = Icons.Default.TrendingDown,
                             gradient = listOf(SelforaPrimary, Color(0xFF6D28D9)),
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier.weight(1f).height(46.dp)
                         )
                     }
 
-                    Spacer(modifier = Modifier.height(10.dp))
+                    Spacer(modifier = Modifier.height(12.dp))
                     Surface(shape = RoundedCornerShape(10.dp), color = SelforaPurpleAccent.copy(alpha = 0.08f), modifier = Modifier.fillMaxWidth()) {
-                        Text(
-                            "🛡️ CLINICAL SAFEGUARD: The system never automatically changes clinical goals or prompt levels without therapist approval.",
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = SelforaSecondary,
-                            modifier = Modifier.padding(8.dp)
-                        )
+                        Row(
+                            modifier = Modifier.padding(10.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text("🛡️", fontSize = 14.sp)
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                "CLINICAL SAFEGUARD: The system never automatically changes clinical goals or prompt levels without therapist approval.",
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = SelforaSecondary,
+                                lineHeight = 14.sp
+                            )
+                        }
                     }
                 }
             }
@@ -783,6 +911,7 @@ fun AnalyzeAndAdaptScreen(
     if (showCustomDialog) {
         val savePlanAction = {
             planStatus = "Active"
+            statusMessage = "Custom adaptation plan saved for $selectedCategory."
             showCustomDialog = false
         }
 

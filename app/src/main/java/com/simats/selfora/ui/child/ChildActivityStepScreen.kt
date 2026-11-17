@@ -1,7 +1,6 @@
 package com.simats.selfora.ui.child
 
-
-
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
 
 import androidx.compose.foundation.background
@@ -19,25 +18,18 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 
 import androidx.compose.material.icons.filled.ArrowForward
-
+import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.Refresh
-
 import androidx.compose.material.icons.filled.VolumeUp
-
 import androidx.compose.material3.*
-
 import androidx.compose.runtime.*
 import com.simats.selfora.ui.components.dialogs.StepCompletionAchievementDialog
-
 import androidx.compose.ui.Alignment
-
 import androidx.compose.ui.Modifier
-
 import androidx.compose.ui.graphics.Color
-
 import androidx.compose.ui.platform.LocalContext
-
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 
 import androidx.compose.ui.unit.dp
 
@@ -110,6 +102,11 @@ fun ChildActivityStepScreen(
     var showStepAchievement by remember { mutableStateOf(false) }
     var completedStepIndexForAchievement by remember { mutableStateOf(0) }
     var isFinalStepForAchievement by remember { mutableStateOf(false) }
+    var showExitConfirmationDialog by remember { mutableStateOf(false) }
+
+    BackHandler(enabled = true) {
+        showExitConfirmationDialog = true
+    }
 
     val scope = rememberCoroutineScope()
 
@@ -321,7 +318,7 @@ fun ChildActivityStepScreen(
 
                 ) {
 
-                    IconButton(onClick = onBack) {
+                    IconButton(onClick = { showExitConfirmationDialog = true }) {
 
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = SelforaBlueDark)
 
@@ -731,6 +728,83 @@ fun ChildActivityStepScreen(
                     currentStepIndex++
                 }
             }
+        )
+    }
+
+    if (showExitConfirmationDialog) {
+        AlertDialog(
+            onDismissRequest = { showExitConfirmationDialog = false },
+            icon = {
+                Surface(
+                    shape = CircleShape,
+                    color = Color(0xFFFEF3C7),
+                    modifier = Modifier.size(52.dp)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            imageVector = Icons.Default.ExitToApp,
+                            contentDescription = null,
+                            tint = Color(0xFFD97706),
+                            modifier = Modifier.size(28.dp)
+                        )
+                    }
+                }
+            },
+            title = {
+                Text(
+                    text = if (isTamil) "செயல்பாட்டிலிருந்து வெளியேறவா?" else "Exit Activity?",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 18.sp,
+                    color = SelforaTextPrimary,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            },
+            text = {
+                Text(
+                    text = if (isTamil)
+                        "நீங்கள் இந்த செயல்பாட்டிலிருந்து வெளியேற விரும்புகிறீர்களா? உங்களின் முன்னேற்றம் பாதுகாக்கப்பட்டுள்ளது."
+                    else
+                        "Are you sure you want to exit? Your progress for completed steps has been saved.",
+                    fontSize = 13.sp,
+                    color = SelforaTextSecondary,
+                    textAlign = TextAlign.Center,
+                    lineHeight = 18.sp,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = { showExitConfirmationDialog = false },
+                    colors = ButtonDefaults.buttonColors(containerColor = ChildGreenPlay),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text(
+                        text = if (isTamil) "தொடர்ந்து விளையாடு! 🚀" else "Keep Playing! 🚀",
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                }
+            },
+            dismissButton = {
+                OutlinedButton(
+                    onClick = {
+                        showExitConfirmationDialog = false
+                        onBack()
+                    },
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = SelforaError),
+                    border = BorderStroke(1.dp, SelforaError.copy(alpha = 0.5f))
+                ) {
+                    Text(
+                        text = if (isTamil) "வெளியேறு" else "Exit",
+                        fontWeight = FontWeight.Bold,
+                        color = SelforaError
+                    )
+                }
+            },
+            shape = RoundedCornerShape(24.dp),
+            containerColor = Color.White
         )
     }
 
