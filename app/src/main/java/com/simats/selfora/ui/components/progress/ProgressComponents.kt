@@ -418,15 +418,29 @@ fun ADLProgressCard(
                     )
                     if (trendDelta != null) {
                         Spacer(modifier = Modifier.width(6.dp))
+                        val isNegative = trendDelta.startsWith("-")
+                        val isNeutral = trendDelta == "0%"
+                        val deltaBg = when {
+                            isNegative -> Color(0xFFEF4444).copy(alpha = 0.12f)
+                            isNeutral -> Color(0xFF64748B).copy(alpha = 0.12f)
+                            else -> SelforaProgressGreen.copy(alpha = 0.12f)
+                        }
+                        val deltaFg = when {
+                            isNegative -> Color(0xFFDC2626)
+                            isNeutral -> Color(0xFF475569)
+                            else -> Color(0xFF059669)
+                        }
                         Surface(
                             shape = RoundedCornerShape(6.dp),
-                            color = SelforaProgressGreen.copy(alpha = 0.12f)
+                            color = deltaBg
                         ) {
                             Text(
                                 text = trendDelta,
                                 fontSize = 10.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = Color(0xFF059669),
+                                color = deltaFg,
+                                maxLines = 1,
+                                softWrap = false,
                                 modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                             )
                         }

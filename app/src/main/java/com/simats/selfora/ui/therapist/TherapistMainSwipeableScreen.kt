@@ -24,6 +24,8 @@ fun TherapistMainSwipeableScreen(
     onNavigateToCreateHomeProgram: (Long) -> Unit = {},
     onNavigateToHomePrograms: (Long) -> Unit,
     onNavigateToProgress: (Long) -> Unit,
+    onNavigateToAnalyzeAndAdapt: (Long) -> Unit = {},
+    onNavigateToPromptFading: (Long) -> Unit = {},
     onNavigateToMessages: (Long) -> Unit,
     onNavigateToNotifications: () -> Unit,
     onLogout: () -> Unit
@@ -109,6 +111,14 @@ fun TherapistMainSwipeableScreen(
                 TherapistTab.PROGRESS -> TherapistProgressScreen(
                     childId = activeChildId ?: 0L,
                     onChildSelected = { id -> activeChildId = id },
+                    onNavigateToAnalyzeAndAdapt = { id ->
+                        activeChildId = id
+                        onNavigateToAnalyzeAndAdapt(id)
+                    },
+                    onNavigateToPromptFading = { id ->
+                        activeChildId = id
+                        onNavigateToPromptFading(id)
+                    },
                     onBack = {
                         coroutineScope.launch { pagerState.animateScrollToPage(0) }
                     }

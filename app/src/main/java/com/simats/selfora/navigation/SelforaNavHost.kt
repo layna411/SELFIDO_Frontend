@@ -302,6 +302,8 @@ fun SelforaNavHost(
                     onNavigateToCreateHomeProgram = { id -> navController.navigate(NavRoutes.HomeProgramCreate.createRoute(id)) },
                     onNavigateToHomePrograms = { id -> navController.navigate(NavRoutes.HomeProgramReview.createRoute(id)) },
                     onNavigateToProgress = { id -> navController.navigate(NavRoutes.Progress.createRoute(id)) },
+                    onNavigateToAnalyzeAndAdapt = { id -> navController.navigate(NavRoutes.AnalyzeAndAdapt.createRoute(id)) },
+                    onNavigateToPromptFading = { id -> navController.navigate(NavRoutes.PromptFading.createRoute(id)) },
                     onNavigateToMessages = { id -> navController.navigate(NavRoutes.Messages.createRoute(id)) },
                     onNavigateToNotifications = { navController.navigate(NavRoutes.CaregiverNotifications.route) },
                     onLogout = {
