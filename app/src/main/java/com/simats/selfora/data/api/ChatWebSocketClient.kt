@@ -91,6 +91,7 @@ object ChatWebSocketClient {
         val request = Request.Builder()
             .url(wsUrl)
             .header("Authorization", "Bearer $token")
+            .header("ngrok-skip-browser-warning", "true")
             .build()
 
         activeSocket = ApiClient.getWebSocketClient().newWebSocket(request, object : WebSocketListener() {

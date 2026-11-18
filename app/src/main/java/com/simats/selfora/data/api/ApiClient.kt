@@ -37,6 +37,7 @@ object ApiClient {
         }
 
         requestBuilder.header("Content-Type", "application/json")
+        requestBuilder.header("ngrok-skip-browser-warning", "true")
         chain.proceed(requestBuilder.build())
     }
 
@@ -52,13 +53,14 @@ object ApiClient {
     }
 
     /**
-     * Shared OkHttpClient instance preserving 15-second timeouts.
+     * Shared OkHttpClient instance with 30-second timeouts for reliable Ngrok/LAN connectivity.
      */
     private val okHttpClient = OkHttpClient.Builder()
         .addInterceptor(authInterceptor)
         .addInterceptor(loggingInterceptor)
-        .connectTimeout(15, TimeUnit.SECONDS)
-        .readTimeout(15, TimeUnit.SECONDS)
+        .connectTimeout(30, TimeUnit.SECONDS)
+        .readTimeout(30, TimeUnit.SECONDS)
+        .writeTimeout(30, TimeUnit.SECONDS)
         .build()
 
     private val wsOkHttpClient = OkHttpClient.Builder()
