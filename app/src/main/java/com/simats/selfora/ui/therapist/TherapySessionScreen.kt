@@ -1403,78 +1403,35 @@ fun TherapySessionScreen(
 
 
 
-                            // Back & Next Buttons
-
-
-                            Row(
-
-
+                            // Action Buttons (Full-width stacked layout to prevent wrapping/clipping)
+                            Column(
                                 modifier = Modifier.fillMaxWidth(),
-
-
-                                horizontalArrangement = Arrangement.spacedBy(12.dp)
-
-
+                                verticalArrangement = Arrangement.spacedBy(10.dp)
                             ) {
-
+                                GlassButton(
+                                    text = "Record Performance",
+                                    onClick = { viewModel.setStage(TherapySessionStage.RECORD_PERFORMANCE) },
+                                    icon = Icons.Default.AssignmentTurnedIn,
+                                    gradient = listOf(SelforaPrimary, Color(0xFF6D28D9)),
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(52.dp)
+                                )
 
                                 GlassOutlinedButton(
-
-
-                                    text = "Back",
-
-
+                                    text = if (currentStepIndex > 0) "Previous Step" else "Back",
                                     onClick = {
-
-
                                         if (currentStepIndex > 0) {
-
-
                                             viewModel.goToStep(currentStepIndex - 1)
-
-
                                         } else {
-
-
                                             showExitConfirmationDialog = true
-
-
                                         }
-
-
                                     },
-
-
-                                    modifier = Modifier.weight(1f)
-
-
+                                    icon = Icons.Default.ArrowBack,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(48.dp)
                                 )
-
-
-
-
-
-                                GlassButton(
-
-
-                                    text = "Record Performance →",
-
-
-                                    onClick = { viewModel.setStage(TherapySessionStage.RECORD_PERFORMANCE) },
-
-
-                                    icon = Icons.Default.ArrowForward,
-
-
-                                    gradient = listOf(SelforaPrimary, Color(0xFF6D28D9)),
-
-
-                                    modifier = Modifier.weight(1.5f)
-
-
-                                )
-
-
                             }
 
 
@@ -1911,260 +1868,104 @@ fun TherapySessionScreen(
 
 
                             Row(
-
-
-                                modifier = Modifier.fillMaxWidth(),
-
-
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(IntrinsicSize.Min),
                                 horizontalArrangement = Arrangement.spacedBy(10.dp)
-
-
                             ) {
-
-
                                 val isUnable = activeLevel == ClinicalPromptLevel.UNABLE
-
-
                                 val unableColor = ClinicalPromptLevel.UNABLE.composeColor
-
-
                                 Box(
-
-
                                     modifier = Modifier
-
-
                                         .weight(1f)
-
-
+                                        .fillMaxHeight()
                                         .clip(RoundedCornerShape(14.dp))
-
-
                                         .background(if (isUnable) unableColor.copy(alpha = 0.12f) else Color.White.copy(alpha = 0.9f))
-
-
                                         .border(
-
-
                                             width = if (isUnable) 2.dp else 1.dp,
-
-
                                             color = if (isUnable) unableColor else SelforaBorder.copy(alpha = 0.4f),
-
-
                                             shape = RoundedCornerShape(14.dp)
-
-
                                         )
-
-
                                         .clickable {
-
-
                                             viewModel.selectPromptLevel(currentStepIndex, ClinicalPromptLevel.UNABLE)
-
-
                                         }
-
-
-                                        .padding(vertical = 12.dp, horizontal = 12.dp)
-
-
+                                        .padding(vertical = 12.dp, horizontal = 12.dp),
+                                    contentAlignment = Alignment.CenterStart
                                 ) {
-
-
                                     Row(verticalAlignment = Alignment.CenterVertically) {
-
-
                                         Icon(
-
-
                                             Icons.Default.Cancel,
-
-
                                             contentDescription = null,
-
-
                                             tint = if (isUnable) unableColor else SelforaTextSecondary,
-
-
                                             modifier = Modifier.size(20.dp)
-
-
                                         )
-
-
                                         Spacer(modifier = Modifier.width(8.dp))
-
-
                                         Column {
-
-
                                             Text(
-
-
                                                 text = "Unable",
-
-
-                                                fontSize = 13.5.sp,
-
-
+                                                fontSize = 13.sp,
                                                 fontWeight = FontWeight.Bold,
-
-
-                                                color = if (isUnable) unableColor else SelforaTextPrimary
-
-
+                                                color = if (isUnable) unableColor else SelforaTextPrimary,
+                                                maxLines = 1,
+                                                overflow = TextOverflow.Ellipsis
                                             )
-
-
                                             Text(
-
-
                                                 text = "0% Indep.",
-
-
                                                 fontSize = 11.sp,
-
-
-                                                color = SelforaTextSecondary
-
-
+                                                color = SelforaTextSecondary,
+                                                maxLines = 1,
+                                                overflow = TextOverflow.Ellipsis
                                             )
-
-
                                         }
-
-
                                     }
-
-
                                 }
-
-
-
-
 
                                 val isNotAssessed = activeLevel == ClinicalPromptLevel.NOT_ASSESSED
-
-
                                 val notAssessedColor = ClinicalPromptLevel.NOT_ASSESSED.composeColor
-
-
                                 Box(
-
-
                                     modifier = Modifier
-
-
                                         .weight(1f)
-
-
+                                        .fillMaxHeight()
                                         .clip(RoundedCornerShape(14.dp))
-
-
                                         .background(if (isNotAssessed) notAssessedColor.copy(alpha = 0.12f) else Color.White.copy(alpha = 0.9f))
-
-
                                         .border(
-
-
                                             width = if (isNotAssessed) 2.dp else 1.dp,
-
-
                                             color = if (isNotAssessed) notAssessedColor else SelforaBorder.copy(alpha = 0.4f),
-
-
                                             shape = RoundedCornerShape(14.dp)
-
-
                                         )
-
-
                                         .clickable {
-
-
                                             viewModel.selectPromptLevel(currentStepIndex, ClinicalPromptLevel.NOT_ASSESSED)
-
-
                                         }
-
-
-                                        .padding(vertical = 12.dp, horizontal = 12.dp)
-
-
+                                        .padding(vertical = 12.dp, horizontal = 12.dp),
+                                    contentAlignment = Alignment.CenterStart
                                 ) {
-
-
                                     Row(verticalAlignment = Alignment.CenterVertically) {
-
-
                                         Icon(
-
-
                                             Icons.Default.SkipNext,
-
-
                                             contentDescription = null,
-
-
                                             tint = if (isNotAssessed) notAssessedColor else SelforaTextSecondary,
-
-
                                             modifier = Modifier.size(20.dp)
-
-
                                         )
-
-
                                         Spacer(modifier = Modifier.width(8.dp))
-
-
                                         Column {
-
-
                                             Text(
-
-
                                                 text = "Not Assessed",
-
-
-                                                fontSize = 13.5.sp,
-
-
+                                                fontSize = 13.sp,
                                                 fontWeight = FontWeight.Bold,
-
-
-                                                color = if (isNotAssessed) notAssessedColor else SelforaTextPrimary
-
-
+                                                color = if (isNotAssessed) notAssessedColor else SelforaTextPrimary,
+                                                maxLines = 1,
+                                                overflow = TextOverflow.Ellipsis
                                             )
-
-
                                             Text(
-
-
                                                 text = "Excluded",
-
-
                                                 fontSize = 11.sp,
-
-
-                                                color = SelforaTextSecondary
-
-
+                                                color = SelforaTextSecondary,
+                                                maxLines = 1,
+                                                overflow = TextOverflow.Ellipsis
                                             )
-
-
                                         }
-
-
                                     }
-
-
                                 }
-
-
                             }
 
 
@@ -2273,111 +2074,50 @@ fun TherapySessionScreen(
 
 
 
-                            // Navigation and Save Buttons
-
-
-                            Row(
-
-
+                            // Navigation and Save Buttons (Clean full-width stacked layout)
+                            Column(
                                 modifier = Modifier.fillMaxWidth(),
-
-
-                                horizontalArrangement = Arrangement.spacedBy(10.dp)
-
-
+                                verticalArrangement = Arrangement.spacedBy(10.dp)
                             ) {
-
+                                GlassButton(
+                                    text = if (uiState.isSaving) {
+                                        "Saving Performance..."
+                                    } else if (currentStepIndex == steps.size - 1) {
+                                        "Save & Complete Session"
+                                    } else {
+                                        "Save & Next Step"
+                                    },
+                                    onClick = {
+                                        if (!uiState.isSaving) {
+                                            viewModel.saveCurrentStepPerformance(
+                                                onAdvanceToNextStep = {},
+                                                onSessionComplete = {
+                                                    viewModel.completeSession(onSessionCompleted)
+                                                }
+                                            )
+                                        }
+                                    },
+                                    icon = if (uiState.isSaving) {
+                                        null
+                                    } else if (currentStepIndex == steps.size - 1) {
+                                        Icons.Default.CheckCircle
+                                    } else {
+                                        Icons.Default.Check
+                                    },
+                                    gradient = listOf(SelforaPrimary, Color(0xFF6D28D9)),
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(52.dp)
+                                )
 
                                 GlassOutlinedButton(
-
-
-                                    text = "Back",
-
-
+                                    text = "Back to Step",
                                     onClick = { viewModel.setStage(TherapySessionStage.STEP_VIEW) },
-
-
-                                    modifier = Modifier.weight(0.8f)
-
-
-                                )
-
-
-
-
-
-                                GlassButton(
-
-
-                                    text = if (uiState.isSaving) {
-
-
-                                        "Saving..."
-
-
-                                    } else if (currentStepIndex == steps.size - 1) {
-
-
-                                        "Save & Complete Session ✓"
-
-
-                                    } else {
-
-
-                                        "Save & Next Step →"
-
-
-                                    },
-
-
-                                    onClick = {
-
-
-                                        if (!uiState.isSaving) {
-
-
-                                            viewModel.saveCurrentStepPerformance(
-
-
-                                                onAdvanceToNextStep = {},
-
-
-                                                onSessionComplete = {
-
-
-                                                    viewModel.completeSession(onSessionCompleted)
-
-
-                                                }
-
-
-                                            )
-
-
-                                        }
-
-
-                                    },
-
-
-                                    icon = if (uiState.isSaving) null else Icons.Default.Check,
-
-
-                                    gradient = listOf(SelforaPrimary, Color(0xFF6D28D9)),
-
-
+                                    icon = Icons.Default.ArrowBack,
                                     modifier = Modifier
-
-
-                                        .weight(1.5f)
-
-
-                                        .height(52.dp)
-
-
+                                        .fillMaxWidth()
+                                        .height(48.dp)
                                 )
-
-
                             }
 
 
