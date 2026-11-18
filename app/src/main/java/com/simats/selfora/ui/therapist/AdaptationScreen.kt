@@ -19,6 +19,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.simats.selfora.data.api.ApiClient
@@ -126,6 +127,7 @@ fun AdaptationScreen(
             GlassTopBar(
                 title = "Analyze & Adapt",
                 subtitle = session?.let { "${it.childName} • ${it.activityTitle}" } ?: "Session #$sessionId",
+                onBackClick = onBack,
                 accentColor = SelforaPrimary
             )
         },
@@ -252,39 +254,77 @@ fun AdaptationScreen(
                     .verticalScroll(rememberScrollState())
                     .padding(16.dp)
             ) {
-                // Child & Session Context Card
+                // Child & Session Context Card (Clean aligned header + non-crushing Independence metric pill)
                 GlassCard(modifier = Modifier.fillMaxWidth()) {
-                    Column {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
+                    val indepPct = s.independencePercentage ?: 0.0
+                    val indepRounded = Math.round(indepPct).toInt()
+                    val pctColor = when {
+                        indepPct >= 75.0 -> SelforaSuccess
+                        indepPct >= 40.0 -> SelforaPrimary
+                        else -> Color(0xFFF59E0B)
+                    }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(end = 12.dp)
                         ) {
-                            Column {
-                                Text(
-                                    text = s.childName,
-                                    fontSize = 18.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = SelforaTextPrimary
-                                )
-                                Text(
-                                    text = "${s.activityTitle} • Session #${s.sessionId}",
-                                    fontSize = 13.sp,
-                                    color = SelforaTextSecondary
-                                )
-                            }
-                            val indepPct = s.independencePercentage ?: 0.0
-                            Surface(
-                                shape = RoundedCornerShape(10.dp),
-                                color = SelforaPrimary.copy(alpha = 0.12f),
-                                border = androidx.compose.foundation.BorderStroke(1.dp, SelforaPrimary.copy(alpha = 0.3f))
+                            Text(
+                                text = s.childName,
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = SelforaTextPrimary,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                            Spacer(modifier = Modifier.height(3.dp))
+                            Text(
+                                text = s.activityTitle,
+                                fontSize = 13.5.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = SelforaPrimary,
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = "Session #${s.sessionId}",
+                                fontSize = 12.sp,
+                                color = SelforaTextSecondary,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+
+                        Surface(
+                            shape = RoundedCornerShape(14.dp),
+                            color = pctColor.copy(alpha = 0.12f),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, pctColor.copy(alpha = 0.35f)),
+                            modifier = Modifier.width(IntrinsicSize.Max)
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
                             ) {
                                 Text(
-                                    text = "${Math.round(indepPct)}% Independence",
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = SelforaPrimary,
-                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
+                                    text = "$indepRounded%",
+                                    fontSize = 20.sp,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = pctColor,
+                                    maxLines = 1,
+                                    softWrap = false
+                                )
+                                Text(
+                                    text = "Independence",
+                                    fontSize = 10.5.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = pctColor,
+                                    maxLines = 1,
+                                    softWrap = false
                                 )
                             }
                         }
@@ -405,7 +445,9 @@ fun AdaptationScreen(
                                 ) {
                                     Row(
                                         verticalAlignment = Alignment.CenterVertically,
-                                        modifier = Modifier.weight(1f)
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .padding(end = 10.dp)
                                     ) {
                                         Checkbox(
                                             checked = isSelected,
@@ -420,7 +462,7 @@ fun AdaptationScreen(
                                             modifier = Modifier.size(28.dp)
                                         )
                                         Spacer(modifier = Modifier.width(8.dp))
-                                        Column {
+                                        Column(modifier = Modifier.weight(1f)) {
                                             Text(
                                                 text = "Step ${record.stepNumber}: ${record.stepTitle}",
                                                 fontSize = 13.5.sp,
@@ -438,16 +480,19 @@ fun AdaptationScreen(
                                     }
 
                                     Surface(
-                                        shape = RoundedCornerShape(6.dp),
+                                        shape = RoundedCornerShape(8.dp),
                                         color = badgeColor.copy(alpha = 0.15f),
-                                        border = androidx.compose.foundation.BorderStroke(1.dp, badgeColor.copy(alpha = 0.35f))
+                                        border = androidx.compose.foundation.BorderStroke(1.dp, badgeColor.copy(alpha = 0.35f)),
+                                        modifier = Modifier.width(IntrinsicSize.Max)
                                     ) {
                                         Text(
                                             text = record.promptLevelName.ifBlank { record.promptLevelCode },
                                             fontSize = 11.sp,
                                             fontWeight = FontWeight.Bold,
                                             color = badgeColor,
-                                            modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp)
+                                            maxLines = 1,
+                                            softWrap = false,
+                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                                         )
                                     }
                                 }
@@ -493,31 +538,47 @@ fun AdaptationScreen(
                                 Row(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                                        .padding(horizontal = 12.dp, vertical = 10.dp),
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.SpaceBetween
                                 ) {
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .padding(end = 10.dp)
+                                    ) {
                                         RadioButton(
                                             selected = isTarget,
                                             onClick = { selectedTargetLevel = prompt },
                                             colors = RadioButtonDefaults.colors(selectedColor = pColor),
                                             modifier = Modifier.size(24.dp)
                                         )
-                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Spacer(modifier = Modifier.width(10.dp))
                                         Text(
                                             text = prompt.label,
-                                            fontSize = 13.sp,
+                                            fontSize = 13.5.sp,
                                             fontWeight = if (isTarget) FontWeight.Bold else FontWeight.Medium,
-                                            color = SelforaTextPrimary
+                                            color = SelforaTextPrimary,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
                                         )
                                     }
-                                    Text(
-                                        text = prompt.shortLabel,
-                                        fontSize = 11.5.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = pColor
-                                    )
+                                    Surface(
+                                        shape = RoundedCornerShape(6.dp),
+                                        color = pColor.copy(alpha = 0.14f),
+                                        modifier = Modifier.width(IntrinsicSize.Max)
+                                    ) {
+                                        Text(
+                                            text = prompt.shortLabel,
+                                            fontSize = 11.5.sp,
+                                            fontWeight = FontWeight.ExtraBold,
+                                            color = pColor,
+                                            maxLines = 1,
+                                            softWrap = false,
+                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -533,7 +594,11 @@ fun AdaptationScreen(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Column(modifier = Modifier.weight(1f)) {
+                        Column(
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(end = 12.dp)
+                        ) {
                             Text(
                                 text = "Therapist Approval",
                                 fontSize = 14.sp,
@@ -636,15 +701,14 @@ fun AdaptationScreen(
 
                 Spacer(modifier = Modifier.height(10.dp))
 
-                OutlinedButton(
+                GlassOutlinedButton(
+                    text = "Cancel",
                     onClick = onBack,
-                    shape = RoundedCornerShape(14.dp),
+                    accentColor = SelforaTextSecondary,
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(48.dp)
-                ) {
-                    Text("Cancel", color = SelforaTextSecondary, fontWeight = FontWeight.SemiBold)
-                }
+                )
 
                 Spacer(modifier = Modifier.height(80.dp))
             }

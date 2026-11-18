@@ -100,6 +100,9 @@ interface SelforaApiService {
     @POST("api/sessions/{id}/complete")
     suspend fun completeSession(@Path("id") id: Long): Response<SessionSummaryResponse>
 
+    @DELETE("api/sessions/{id}")
+    suspend fun cancelSession(@Path("id") id: Long): Response<Unit>
+
     @GET("api/sessions/{id}")
     suspend fun getSessionById(@Path("id") id: Long): Response<SessionResponse>
 

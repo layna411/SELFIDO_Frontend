@@ -770,7 +770,7 @@ fun ChildProfileScreen(
                                     date = dateStr,
                                     activityName = s.activityTitle,
                                     duration = durationStr,
-                                    status = if (s.endTime != null) "COMPLETED" else "IN PROGRESS",
+                                    status = s.sessionOutcome ?: if (s.endTime != null) "COMPLETED" else "IN PROGRESS",
                                     independencePercentage = indepPct
                                 )
                             }
@@ -1024,8 +1024,14 @@ fun GlassSessionHistoryCard(
                     height = 6.dp
                 )
             }
-            Surface(shape = RoundedCornerShape(10.dp), color = SelforaSuccess.copy(alpha = 0.15f)) {
-                Text(status, fontSize = 10.sp, fontWeight = FontWeight.Bold, color = SelforaSuccess, modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp))
+            val badgeColor = when (status.uppercase()) {
+                "COMPLETED" -> SelforaSuccess
+                "PARTIAL" -> Color(0xFFF59E0B)
+                "INCOMPLETE" -> SelforaError
+                else -> SelforaPrimary
+            }
+            Surface(shape = RoundedCornerShape(10.dp), color = badgeColor.copy(alpha = 0.15f)) {
+                Text(status, fontSize = 10.sp, fontWeight = FontWeight.Bold, color = badgeColor, modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp))
             }
         }
     }
@@ -1035,8 +1041,15 @@ fun GlassSessionHistoryCard(
 fun RecentSessionItem(
     date: String,
     activityName: String,
-    promptLevel: String
+    promptLevel: String,
+    status: String = "Completed"
 ) {
+    val badgeColor = when (status.uppercase()) {
+        "COMPLETED" -> SelforaSuccess
+        "PARTIAL" -> Color(0xFFF59E0B)
+        "INCOMPLETE" -> SelforaError
+        else -> SelforaPrimary
+    }
     Surface(
         shape = RoundedCornerShape(14.dp),
         color = Color.White.copy(alpha = 0.85f),
@@ -1050,7 +1063,7 @@ fun RecentSessionItem(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Column {
+            Column(modifier = Modifier.weight(1f).padding(end = 8.dp)) {
                 Text(date, fontSize = 11.sp, color = SelforaTextSecondary, fontWeight = FontWeight.Medium)
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(activityName, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = SelforaTextPrimary)
@@ -1059,13 +1072,13 @@ fun RecentSessionItem(
             }
             Surface(
                 shape = RoundedCornerShape(10.dp),
-                color = SelforaSuccess.copy(alpha = 0.15f)
+                color = badgeColor.copy(alpha = 0.15f)
             ) {
                 Text(
-                    text = "Completed",
+                    text = status,
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Bold,
-                    color = SelforaSuccess,
+                    color = badgeColor,
                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                 )
             }

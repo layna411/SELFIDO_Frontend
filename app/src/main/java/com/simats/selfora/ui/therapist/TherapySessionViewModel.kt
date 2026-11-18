@@ -51,8 +51,10 @@ class TherapySessionViewModel : ViewModel() {
     val uiState: StateFlow<TherapySessionUiState> = _uiState.asStateFlow()
 
     private var timerJob: Job? = null
+    private var isResumedSession: Boolean = false
 
     fun initSession(childId: Long, activityId: Long, existingSessionId: Long? = null) {
+        isResumedSession = existingSessionId != null && existingSessionId > 0L
         _uiState.update {
             it.copy(
                 childId = childId,
@@ -324,6 +326,32 @@ class TherapySessionViewModel : ViewModel() {
                 ApiClient.apiService.completeSession(sId)
             } catch (_: Exception) {}
             onCompleted(sId)
+        }
+    }
+
+    fun cancelAndDiscardSession(onDiscarded: () -> Unit) {
+        timerJob?.cancel()
+        val sId = _uiState.value.sessionId
+        val shouldDelete = sId != null && sId > 0L && !isResumedSession
+        _uiState.update {
+            it.copy(
+                stage = TherapySessionStage.SELECT_ACTIVITY,
+                sessionId = null,
+                stepRecords = emptyMap(),
+                secondsElapsed = 0,
+                errorMessage = null,
+                successMessage = null
+            )
+        }
+        if (shouldDelete && sId != null) {
+            viewModelScope.launch {
+                try {
+                    ApiClient.apiService.cancelSession(sId)
+                } catch (_: Exception) {}
+                onDiscarded()
+            }
+        } else {
+            onDiscarded()
         }
     }
 

@@ -2263,35 +2263,16 @@ fun TherapySessionScreen(
 
 
                 Button(
-
-
                     onClick = {
-
-
                         showExitConfirmationDialog = false
-
-
-                        viewModel.setStage(TherapySessionStage.SELECT_ACTIVITY)
-
-
-                        onBack()
-
-
+                        viewModel.cancelAndDiscardSession {
+                            onBack()
+                        }
                     },
-
-
                     colors = ButtonDefaults.buttonColors(containerColor = SelforaError),
-
-
                     shape = RoundedCornerShape(10.dp)
-
-
                 ) {
-
-
                     Text("Yes, Exit Session", color = Color.White, fontWeight = FontWeight.Bold)
-
-
                 }
 
 

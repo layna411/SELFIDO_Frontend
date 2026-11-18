@@ -193,7 +193,11 @@ fun SessionSummaryScreen(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Column(modifier = Modifier.weight(1f)) {
+                        Column(
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(end = 10.dp)
+                        ) {
                             Text(
                                 text = s.childName,
                                 fontSize = 20.sp,
@@ -224,13 +228,16 @@ fun SessionSummaryScreen(
                         Surface(
                             shape = RoundedCornerShape(10.dp),
                             color = outcomeColor.copy(alpha = 0.15f),
-                            border = androidx.compose.foundation.BorderStroke(1.dp, outcomeColor.copy(alpha = 0.35f))
+                            border = androidx.compose.foundation.BorderStroke(1.dp, outcomeColor.copy(alpha = 0.35f)),
+                            modifier = Modifier.width(IntrinsicSize.Max)
                         ) {
                             Text(
                                 text = outcome.uppercase(),
                                 fontSize = 11.5.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = outcomeColor,
+                                maxLines = 1,
+                                softWrap = false,
                                 modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
                             )
                         }
@@ -495,7 +502,9 @@ private fun StepPerformanceCard(record: PerformanceRecordResponse) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Row(
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(end = 10.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Surface(
@@ -522,16 +531,19 @@ private fun StepPerformanceCard(record: PerformanceRecordResponse) {
                 }
 
                 Surface(
-                    shape = RoundedCornerShape(6.dp),
+                    shape = RoundedCornerShape(8.dp),
                     color = levelColor.copy(alpha = 0.15f),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, levelColor.copy(alpha = 0.35f))
+                    border = androidx.compose.foundation.BorderStroke(1.dp, levelColor.copy(alpha = 0.35f)),
+                    modifier = Modifier.width(IntrinsicSize.Max)
                 ) {
                     Text(
                         text = record.promptLevelName.ifBlank { record.promptLevelCode },
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
                         color = levelColor,
-                        modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp)
+                        maxLines = 1,
+                        softWrap = false,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                     )
                 }
             }
