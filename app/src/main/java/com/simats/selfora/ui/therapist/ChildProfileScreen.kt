@@ -453,17 +453,29 @@ fun ChildProfileScreen(
                         val eatingCard = dashboardData?.activityCards?.find { it.categoryName.contains("Eating", ignoreCase = true) }
                         val shoesCard = dashboardData?.activityCards?.find { it.categoryName.contains("Shoes", ignoreCase = true) }
 
-                        val dressingScore = dressingCard?.currentIndependencePct?.toInt()
-                            ?: sessionsList.filter { it.activityTitle.contains("T-Shirt", ignoreCase = true) || it.activityTitle.contains("Shirt", ignoreCase = true) || it.activityTitle.contains("Dressing", ignoreCase = true) }
-                                .mapNotNull { it.independencePercentage }.maxOrNull()?.toInt() ?: 0
+                        val dressingScore = dressingCard?.currentIndependencePct?.let { Math.round(it).toInt() }
+                            ?: sessionsList.firstOrNull { s ->
+                                val t = s.activityTitle.lowercase()
+                                !t.contains("shoe") && !t.contains("sock") && (
+                                    t.contains("shirt") || t.contains("dress") || t.contains("frock") ||
+                                    t.contains("jacket") || t.contains("trouser") || t.contains("short") ||
+                                    t.contains("vest") || t.contains("skirt") || t.contains("top") ||
+                                    t.contains("brief") || t.contains("panties") || t.contains("camisole")
+                                )
+                            }?.independencePercentage?.let { Math.round(it).toInt() } ?: 0
 
-                        val eatingScore = eatingCard?.currentIndependencePct?.toInt()
-                            ?: sessionsList.filter { it.activityTitle.contains("Eating", ignoreCase = true) || it.activityTitle.contains("Spoon", ignoreCase = true) }
-                                .mapNotNull { it.independencePercentage }.maxOrNull()?.toInt() ?: 0
+                        val eatingScore = eatingCard?.currentIndependencePct?.let { Math.round(it).toInt() }
+                            ?: sessionsList.firstOrNull { s ->
+                                val t = s.activityTitle.lowercase()
+                                t.contains("eat") || t.contains("spoon") || t.contains("rice") ||
+                                    t.contains("breakfast") || t.contains("food") || t.contains("drink") || t.contains("cup")
+                            }?.independencePercentage?.let { Math.round(it).toInt() } ?: 0
 
-                        val shoesScore = shoesCard?.currentIndependencePct?.toInt()
-                            ?: sessionsList.filter { it.activityTitle.contains("Shoes", ignoreCase = true) || it.activityTitle.contains("Socks", ignoreCase = true) }
-                                .mapNotNull { it.independencePercentage }.maxOrNull()?.toInt() ?: 0
+                        val shoesScore = shoesCard?.currentIndependencePct?.let { Math.round(it).toInt() }
+                            ?: sessionsList.firstOrNull { s ->
+                                val t = s.activityTitle.lowercase()
+                                t.contains("shoe") || t.contains("sock") || t.contains("sandal") || t.contains("slipper") || t.contains("footwear")
+                            }?.independencePercentage?.let { Math.round(it).toInt() } ?: 0
 
                         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                             Row(

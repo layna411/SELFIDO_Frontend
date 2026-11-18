@@ -443,7 +443,7 @@ fun AnalyzeAndAdaptScreen(
                                 }
 
                                 Column(horizontalAlignment = Alignment.End) {
-                                    Text("${card.currentIndependencePct}%", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = categoryColor)
+                                    Text("${Math.round(card.currentIndependencePct)}%", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = categoryColor)
                                     Surface(shape = RoundedCornerShape(8.dp), color = SelforaSuccess.copy(alpha = 0.15f)) {
                                         Text(card.trend, fontSize = 9.sp, fontWeight = FontWeight.Bold, color = SelforaSuccess, modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp))
                                     }
