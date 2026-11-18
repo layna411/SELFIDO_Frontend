@@ -41,24 +41,7 @@ data class PracticeRecordEntry(
 )
 
 object PracticeSessionStore {
-    private val _records = MutableStateFlow<List<PracticeRecordEntry>>(
-        listOf(
-            PracticeRecordEntry(
-                sessionId = 101L,
-                programId = 1L,
-                childId = 1L,
-                activityId = 1L,
-                activityTitle = "Boy T-Shirt Dressing",
-                practiceDate = LocalDate.now().minusDays(1).toString(),
-                durationMinutes = 12,
-                caregiverNotes = "Child did head insertion independently!",
-                totalSteps = 8,
-                independentCount = 6,
-                neededHelpCount = 2,
-                stepResults = emptyList()
-            )
-        )
-    )
+    private val _records = MutableStateFlow<List<PracticeRecordEntry>>(emptyList())
     val records: StateFlow<List<PracticeRecordEntry>> = _records.asStateFlow()
 
     fun addPracticeRecord(
